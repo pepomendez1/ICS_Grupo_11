@@ -77,7 +77,7 @@ Este repositorio tiene como finalidad:
 
 El proyecto utiliza **Git** como sistema de control de versiones y **GitHub** como plataforma para alojar y gestionar el repositorio remoto.
 
-> **Repositorio GitHub:** [_[agregar aquí el enlace al repositorio._](https://github.com/pepomendez1/ICS_Grupo_11)]
+> **Repositorio GitHub:** [_[ENLACE._](https://github.com/pepomendez1/ICS_Grupo_11)]
 
 ---
 
