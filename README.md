@@ -151,7 +151,6 @@ Con el objetivo de mantener una estructura consistente y facilitar la identifica
 
 ### Reglas generales
 
-- No utilizar espacios en los nombres de archivos.
 - Los nombres de los archivos deberán utilizar la convención lowerCamelCase (camelCase), comenzando con letra minúscula y utilizando mayúscula al inicio de cada palabra siguiente, sin espacios, guiones ni guiones bajos.
 - Evitar caracteres especiales y tildes en los nombres de archivos.
 - Mantener las extensiones originales de los documentos.
