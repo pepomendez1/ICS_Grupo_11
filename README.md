@@ -37,17 +37,21 @@ Ayudante Alumno	Salvador Barbera
 
 Integrantes del grupo
 
-Nombre y apellido	Legajo
-Barzola Augusto	59247
-Dagnino Dailly Facundo	94307
-García Ignacio	97114
-Martínez Dalke Facundo Andrés	98479
-Méndez Carranza Pedro	94214
-Novello Crivelli Pedro	75198
-Pérez Carullo Lautaro	423349
-Salguero Juan Román	96135
-Succar Agustín	73540
-Torres Gec Federico	85918
+Nombre y apellido	
+400042- Cardelli Enzo Valentino 
+400021 - Martín Benjamin 
+403831 - Fernández Juan Martín
+400496 - Ribero Valentin
+400491 - Emiliano Ruiz Michelotti
+400106 - Luca Camaño grossi
+94444 - Zecchin Valentino
+402852 - Alfonso Garcia Verea
+400170 - Sanchez Segura Emilio
+400742 - Manuel Pérez
+85246 - Kilic Aslan Haik Martin
+400016 - Lucero Pedro
+94214 - Pedro Mendez Carranza
+400174- Mateo Garcia
 
 ⸻
 
