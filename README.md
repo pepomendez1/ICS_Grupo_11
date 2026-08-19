@@ -89,30 +89,30 @@ La estructura general del repositorio es la siguiente:
 ICS_Grupo_11/
 │
 ├── material-teorico/
-│   ├── apuntes/
-│   ├── bibliografia/
-│   └── diapositivas/
+│   ├── Apuntes/
+│   ├── Bibliografia/
+│   └── Diapositivas/
 │
 ├── trabajos-practicos/
-│   ├── isw-enunciados-tp-evaluables-2025.pdf
+│   ├── isw-enunciados-tp-evaluables-2026.pdf
 │   │
-│   ├── tp01/
-│   ├── tp02/
-│   ├── tp03/
-│   ├── tp04/
-│   ├── tp05/
-│   ├── tp06/
-│   ├── tp07/
-│   ├── tp08/
-│   ├── tp09/
-│   ├── tp10/
-│   ├── tp11/
-│   ├── tp12/
-│   ├── tp13/
-│   └── tp14/
+│   ├── TP01/
+│   ├── TP02/
+│   ├── TP03/
+│   ├── TP04/
+│   ├── TP05/
+│   ├── TP06/
+│   ├── TP07/
+│   ├── TP08/
+│   ├── TP09/
+│   ├── TP10/
+│   ├── TP11/
+│   ├── TP12/
+│   ├── TP13/
+│   └── TP14/
 │       
 │
-├── trabajos-investigacion/
+├── Trabajos-investigacion/
 │
 ├── README.md
 ```
