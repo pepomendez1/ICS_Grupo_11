@@ -88,13 +88,6 @@ La estructura general del repositorio es la siguiente:
 ```
 ICS_Grupo_11/
 │
-├── README.md
-│
-├── catedra/
-│   ├── plan-de-catedra.pdf
-│   ├── condiciones-de-cursado.pdf
-│   └── reglas-de-comunicacion.md
-│
 ├── material-teorico/
 │   ├── apuntes/
 │   ├── bibliografia/
@@ -117,22 +110,14 @@ ICS_Grupo_11/
 │   ├── tp12/
 │   ├── tp13/
 │   └── tp14/
-│       └── tp14-salida.pdf
+│       
 │
 ├── trabajos-investigacion/
 │
-└── parciales/
+├── README.md
 ```
 
 ### Descripción de directorios
-
-**`README.md`**
-
-Contiene la información general del repositorio, integrantes del grupo, estructura, convenciones, ítems de configuración y reglas utilizadas para la gestión de configuración.
-
-**`catedra/`**
-
-Contiene las "reglas del juego" de la cátedra: plan de cátedra, condiciones de cursado y aprobación, y reglas de comunicación acordadas con el equipo docente.
 
 **`material-teorico/`**
 
@@ -160,9 +145,9 @@ tp14/
 
 Contiene los trabajos de investigación desarrollados durante el cursado.
 
-**`parciales/`**
+**`README.md`**
 
-Contiene el material relacionado con las instancias de evaluación parcial (enunciados y resoluciones propias del grupo).
+Contiene la información general del repositorio, integrantes del grupo, estructura, convenciones, ítems de configuración y reglas utilizadas para la gestión de configuración.
 
 ---
 
