@@ -340,7 +340,7 @@ Los commits deberán representar, siempre que sea posible, una unidad lógica de
 
 Una **línea base** representa una versión formalmente revisada y/o aprobada de un conjunto de ítems de configuración.
 
-Para este proyecto, se establecerá una línea base luego de la revisión y/o aprobación por parte del equipo docente de cada trabajo práctico.
+Para este proyecto, se establecerá una línea base cuando el grupo revise y acuerde que un trabajo práctico se encuentra completo y listo para su entrega. Si el equipo docente solicita correcciones, se generará una nueva versión de esa línea base.
 
 Una vez establecida una línea base, cualquier modificación posterior deberá estar debidamente justificada, por ejemplo:
 

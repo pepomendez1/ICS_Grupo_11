@@ -165,13 +165,13 @@ Una **línea base** es una configuración que ha sido formalmente revisada y aco
 
 ### 5.2. Momento de creación
 
-**Se establecerá una línea base cuando un trabajo práctico se encuentre completo y listo para su entrega, y luego de la revisión y/o aprobación por parte del equipo docente.**
+**Se establecerá una línea base cuando el grupo revise y acuerde que un trabajo práctico se encuentra completo y listo para su entrega. Si el equipo docente solicita correcciones, se generará una nueva versión de esa línea base.**
 
 Se eligió ese momento porque:
 
 - Marca un estado **cerrado y verificable** del conjunto de ítems de configuración.
 - Permite reproducir exactamente el contenido entregado, independientemente de los cambios posteriores.
-- Coincide con una instancia de revisión formal externa al grupo, que es lo que distingue una línea base de un simple punto de guardado.
+- Está precedido por una revisión formal y un acuerdo explícito del equipo, que es lo que distingue una línea base de un simple punto de guardado.
 
 ### 5.3. Mecanismo de marcado
 
