@@ -88,39 +88,46 @@ La estructura general del repositorio es la siguiente:
 ```
 ICS_Grupo_11/
 │
+├── catedra/
+│
 ├── material-teorico/
-│   ├── Apuntes/
-│   ├── Bibliografia/
-│   └── Diapositivas/
+│   ├── apuntes/
+│   ├── bibliografia/
+│   └── diapositivas/
+│
+├── parciales/
 │
 ├── trabajos-practicos/
 │   ├── isw-enunciados-tp-evaluables-2026.pdf
 │   │
-│   ├── TP01/
-│   ├── TP02/
-│   ├── TP03/
-│   ├── TP04/
-│   ├── TP05/
-│   ├── TP06/
-│   ├── TP07/
-│   ├── TP08/
-│   ├── TP09/
-│   ├── TP10/
-│   ├── TP11/
-│   ├── TP12/
-│   ├── TP13/
-│   └── TP14/
-│       
+│   ├── tp01/
+│   ├── tp02/
+│   ├── tp03/
+│   ├── tp04/
+│   ├── tp05/
+│   ├── tp06/
+│   ├── tp07/
+│   ├── tp08/
+│   ├── tp09/
+│   ├── tp10/
+│   ├── tp11/
+│   ├── tp12/
+│   ├── tp13/
+│   └── tp14/
 │
 ├── trabajos-investigacion/
 │   ├── isw-lineamientos-trabajos-investigacion-2026-2c.pdf
 │   ├── ti01/
 │   └── ti02/
 │
-├── README.md
+└── README.md
 ```
 
 ### Descripción de directorios
+
+**`catedra/`**
+
+Contiene el material institucional provisto por la cátedra, como el plan de cátedra, las condiciones de cursado y documentos equivalentes.
 
 **`material-teorico/`**
 
@@ -129,6 +136,10 @@ Contiene el material académico utilizado durante el cursado.
 - `apuntes/`: resúmenes, notas y apuntes realizados durante las clases.
 - `bibliografia/`: libros, artículos, papers y demás bibliografía complementaria.
 - `diapositivas/`: presentaciones y filminas utilizadas por la cátedra.
+
+**`parciales/`**
+
+Contiene el material correspondiente a las instancias de evaluación parcial, como los temas incluidos en cada parcial y la documentación asociada.
 
 **`trabajos-practicos/`**
 
