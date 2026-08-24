@@ -30,4 +30,7 @@ Product Manager=> responsabilidad de devolucion de producto
 Product Owner => no tecnico responsable del negocio
 
 
-Users Stories => existen en el dominio del problema, el PO nos cuenta necesidad, 3C: Card, Converseation, Confirmation
+Users Stories => hay que satisfacer al cliente con entregas tempranas
+  -existen en el dominio del problema 
+  -el PO nos cuenta necesidad 
+  -3C: Card, Converseation, Confirmation
