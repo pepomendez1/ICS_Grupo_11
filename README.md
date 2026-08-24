@@ -112,7 +112,10 @@ ICS_Grupo_11/
 │   └── TP14/
 │       
 │
-├── Trabajos-investigacion/
+├── trabajos-investigacion/
+│   ├── isw-lineamientos-trabajos-investigacion-2026-2c.pdf
+│   ├── ti01/
+│   └── ti02/
 │
 ├── README.md
 ```
@@ -143,7 +146,16 @@ tp14/
 
 **`trabajos-investigacion/`**
 
-Contiene los trabajos de investigación desarrollados durante el cursado.
+Contiene los lineamientos generales y los trabajos de investigación desarrollados durante el cursado.
+
+Los lineamientos generales provistos por la cátedra se almacenan directamente en este directorio.
+
+Cada trabajo de investigación posee su propio directorio bajo la convención `ti<nro>/` (numeración de dos dígitos). Por ejemplo:
+
+```text
+ti01/
+ti02/
+```
 
 **`README.md`**
 
@@ -201,12 +213,14 @@ tp10-evidencias.pdf
 
 ### Trabajos de investigación
 
-Los trabajos de investigación deberán utilizar la convención `ti<nro>-<tema>.<extension>`. Ejemplos:
+Los trabajos de investigación se almacenarán en carpetas con la estructura `ti<nro>/`, utilizando numeración de dos dígitos. Ejemplos:
 
+```text
+ti01/
+ti02/
 ```
-ti01-metricas-de-calidad.pdf
-ti02-normas-iso-25000.pdf
-```
+Dentro de cada carpeta se almacenarán los archivos necesarios para el desarrollo del trabajo de investigación.
+Los archivos deberán utilizar la convención `ti<nro>-<descripcion>.<extension>`.
 
 ### Diapositivas
 
@@ -268,7 +282,8 @@ Se consideran **Ítems de Configuración (IC)** aquellos elementos que, debido a
 | Enunciados de TP | `isw-enunciados-tp-evaluables-<año>.pdf` | `/trabajos-practicos/` | Documentación |
 | Trabajos prácticos | `tp<nro>-<descripcion>.<ext>` | `/trabajos-practicos/tp<nro>/` | Producto |
 | Salidas de TP | `tp<nro>-salida.<ext>` | `/trabajos-practicos/tp<nro>/` | Producto |
-| Trabajos de investigación | `ti<nro>-<tema>.<ext>` | `/trabajos-investigacion/` | Producto |
+| Trabajos de investigación | `ti<nro>-<descripcion>.<ext>` | `/trabajos-investigacion/ti<nro>/` | Producto |
+| Lineamientos de trabajos de investigación | `isw-lineamientos-trabajos-investigacion-<año>-<cuatrimestre>.pdf` | `/trabajos-investigacion/` | Documentación |
 | Parciales | `<descripcion>.<ext>` | `/parciales/` | Producto |
 
 Los ítems definidos en esta tabla se encuentran sujetos a las reglas de gestión de configuración establecidas por el grupo.
@@ -386,6 +401,14 @@ Número correlativo de dos dígitos utilizado para representar el orden de las d
 **`<fecha>`**
 
 Fecha en la que se genera o incorpora un archivo al repositorio. Se utiliza el estándar ISO 8601: `AAAA-MM-DD` (ejemplo: `2026-08-18`).
+
+**`<cuatrimestre>`**
+
+Cuatrimestre correspondiente al cursado. Se utiliza `1c` para el primer cuatrimestre y `2c` para el segundo cuatrimestre.
+
+**`<año>`**
+
+Año correspondiente al cursado, expresado con cuatro dígitos. Ejemplo: `2026`.
 
 **`<tema>`**
 
