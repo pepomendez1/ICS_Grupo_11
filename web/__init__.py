@@ -1,4 +1,4 @@
-"""Aplicación web de EcoHarmony Park (Flask)."""
+"""Aplicación web de EcoHarmony Park, parque de diversiones (Flask)."""
 import os
 import secrets
 import uuid
@@ -18,6 +18,7 @@ from parque.compra import (
     TipoPase,
     Usuario,
 )
+from web.contenido import ATRACCIONES, PASES
 from web.repositorio import crear_repositorio
 from web.servicios import CalendarioEcoHarmony, NotificadorMailSimulado, PasarelaMercadoPagoSimulada
 from web.usuarios import RepositorioUsuarios
@@ -89,7 +90,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None):
 
     @app.context_processor
     def contexto_global():
-        return {"usuario": usuario_actual(), "precios": PRECIOS}
+        return {"usuario": usuario_actual(), "precios": PRECIOS, "pases": PASES}
 
     def login_requerido(vista):
         @wraps(vista)
@@ -104,7 +105,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None):
 
     @app.get("/")
     def inicio():
-        return render_template("inicio.html")
+        return render_template("inicio.html", atracciones=ATRACCIONES)
 
     @app.route("/registro", methods=["GET", "POST"])
     def registro():

@@ -2,6 +2,14 @@
 
 Ingeniería y Calidad de Software — UTN FRC.
 
+EcoHarmony Park es un **parque de diversiones** con seis atracciones: calesita,
+montaña rusa, rueda de la fortuna, casa del terror, autitos chocadores y hamacas.
+
+| Pase | Incluye |
+|---|---|
+| Regular | Acceso a las 6 atracciones haciendo la fila común. |
+| VIP | Todo lo del Regular, más fila rápida en todas las atracciones y vueltas ilimitadas en la montaña rusa. |
+
 **User story:** COMO visitante QUIERO comprar una entrada PARA asegurar mi visita al parque.
 
 App web en Flask con base de datos en Supabase (Postgres), deployable en Vercel.
@@ -14,6 +22,7 @@ parque/compra.py                 Lógica de negocio (validaciones de la user sto
 web/__init__.py                  App Flask: rutas y pantallas
 web/repositorio.py               Persistencia: Postgres (Supabase) o memoria
 web/servicios.py                 Calendario del parque, Mercado Pago y mail (simulados)
+web/contenido.py                 Textos de atracciones y pases
 web/templates/                   Pantallas HTML
 supabase/schema.sql              Tablas de la base
 app.py                           Entrada para Vercel

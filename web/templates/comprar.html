@@ -31,10 +31,10 @@
   <div class="campo">
     <label>Tipo de pase</label>
     <div class="opciones">
-      {% for valor, nombre, desc in [("REGULAR", "Regular", "Senderos, miradores y picnic"), ("VIP", "VIP", "Incluye visita guiada y kayak")] %}
+      {% for valor, pase in pases.items() %}
       <label class="opcion">
         <input type="radio" name="tipo_pase" value="{{ valor }}" {% if form.get('tipo_pase') == valor %}checked{% endif %}>
-        <span><strong>{{ nombre }} · {{ precios[valor] | pesos }}</strong><small>{{ desc }}</small></span>
+        <span><strong>{{ pase.nombre }} · {{ precios[valor] | pesos }}</strong><small>{{ pase.resumen }}</small></span>
       </label>
       {% endfor %}
     </div>

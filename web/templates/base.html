@@ -8,26 +8,30 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bosque: #1f3d2b;
-      --musgo: #3f6b4a;
-      --hoja: #7fa86a;
-      --crema: #f5f1e6;
-      --papel: #fffdf7;
-      --tierra: #8a5a3b;
-      --texto: #22281f;
-      --suave: #5e6658;
-      --borde: #ddd5c2;
-      --error: #a63d2f;
-      --ok: #2f7a4a;
+      --noche: #1c2541;
+      --noche-2: #2e3a66;
+      --coral: #e4572e;
+      --coral-oscuro: #c4461f;
+      --mostaza: #f3b23a;
+      --crema: #fbf6ee;
+      --papel: #fffdf9;
+      --texto: #1d2233;
+      --suave: #5f6478;
+      --borde: #e6ddcd;
+      --error: #b3261e;
+      --ok: #2e7d4f;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0; background: var(--crema); color: var(--texto);
       font-family: "Inter", system-ui, sans-serif; line-height: 1.5;
     }
-    a { color: var(--musgo); }
-    header {
-      background: var(--bosque); color: var(--crema);
+    a { color: var(--coral-oscuro); }
+    header { background: var(--noche); color: var(--crema); }
+    /* Franja tipo carpa de feria debajo de la barra */
+    header::after {
+      content: ""; display: block; height: 6px;
+      background: repeating-linear-gradient(90deg, var(--coral) 0 28px, var(--mostaza) 28px 56px);
     }
     .barra {
       max-width: 960px; margin: 0 auto; padding: 14px 20px;
@@ -37,15 +41,15 @@
       font-family: "Fraunces", Georgia, serif; font-size: 1.4rem; font-weight: 700;
       color: var(--crema); text-decoration: none; display: flex; align-items: center; gap: 10px;
     }
-    .marca svg { width: 28px; height: 28px; }
+    .marca svg { width: 30px; height: 30px; }
     nav { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
     nav a, nav button {
       color: var(--crema); text-decoration: none; font-size: .95rem; opacity: .9;
       background: none; border: 0; cursor: pointer; font-family: inherit; padding: 0;
     }
-    nav a:hover, nav button:hover { opacity: 1; text-decoration: underline; }
+    nav a:hover, nav button:hover { opacity: 1; text-decoration: underline; text-decoration-color: var(--mostaza); }
     main { max-width: 960px; margin: 0 auto; padding: 32px 20px 64px; }
-    h1, h2 { font-family: "Fraunces", Georgia, serif; color: var(--bosque); line-height: 1.15; }
+    h1, h2 { font-family: "Fraunces", Georgia, serif; color: var(--noche); line-height: 1.15; }
     h1 { font-size: 2.2rem; margin: 0 0 8px; }
     .bajada { color: var(--suave); margin: 0 0 28px; }
     .tarjeta {
@@ -59,7 +63,7 @@
       width: 100%; padding: 11px 12px; border: 1px solid var(--borde); border-radius: 8px;
       font: inherit; background: #fff; color: var(--texto);
     }
-    input:focus, select:focus { outline: 2px solid var(--hoja); border-color: var(--hoja); }
+    input:focus, select:focus { outline: 2px solid var(--mostaza); border-color: var(--mostaza); }
     .campo { margin-bottom: 20px; }
     .grilla { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -69,27 +73,28 @@
       display: block; border: 1px solid var(--borde); border-radius: 10px; padding: 14px;
       cursor: pointer; background: #fff; height: 100%;
     }
-    .opcion strong { display: block; color: var(--bosque); }
+    .opcion strong { display: block; color: var(--noche); }
     .opcion small { color: var(--suave); }
-    .opcion input:checked + span { border-color: var(--musgo); box-shadow: inset 0 0 0 1px var(--musgo); background: #f1f6ec; }
-    .opcion input:focus-visible + span { outline: 2px solid var(--hoja); }
+    .opcion input:checked + span { border-color: var(--coral); box-shadow: inset 0 0 0 1px var(--coral); background: #fdf0eb; }
+    .opcion input:focus-visible + span { outline: 2px solid var(--mostaza); }
     .edades { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
     .boton {
-      display: inline-block; background: var(--bosque); color: var(--crema); border: 0;
+      display: inline-block; background: var(--coral); color: #fff; border: 0;
       padding: 13px 22px; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer;
       text-decoration: none;
     }
-    .boton:hover { background: var(--musgo); }
-    .boton.secundario { background: transparent; color: var(--bosque); border: 1px solid var(--bosque); }
+    .boton:hover { background: var(--coral-oscuro); }
+    .boton.secundario { background: transparent; color: var(--noche); border: 1px solid var(--noche); }
+    .boton.secundario:hover { background: var(--noche); color: var(--crema); }
     .ancho { width: 100%; }
     .aviso { padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: .95rem; }
-    .aviso.error { background: #f8e6e2; color: var(--error); border: 1px solid #ecc5bd; }
-    .aviso.ok { background: #e4f1e7; color: var(--ok); border: 1px solid #bfdcc7; }
+    .aviso.error { background: #fbe7e4; color: var(--error); border: 1px solid #f0c4be; }
+    .aviso.ok { background: #e5f2ea; color: var(--ok); border: 1px solid #bfdcc9; }
     .total {
       display: flex; justify-content: space-between; align-items: baseline;
       border-top: 1px dashed var(--borde); padding-top: 16px; margin: 8px 0 20px;
     }
-    .total strong { font-family: "Fraunces", Georgia, serif; font-size: 1.6rem; color: var(--bosque); }
+    .total strong { font-family: "Fraunces", Georgia, serif; font-size: 1.6rem; color: var(--noche); }
     dl.detalle { display: grid; grid-template-columns: auto 1fr; gap: 10px 24px; margin: 0; }
     dl.detalle dt { color: var(--suave); }
     dl.detalle dd { margin: 0; font-weight: 600; }
@@ -107,10 +112,11 @@
     <div class="barra">
       <a class="marca" href="{{ url_for('inicio') }}">
         <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
-          <circle cx="16" cy="16" r="15" fill="#3f6b4a"/>
-          <path d="M16 25V13" stroke="#f5f1e6" stroke-width="2" stroke-linecap="round"/>
-          <path d="M16 15c0-4 3-7 7-7 0 4-3 7-7 7Z" fill="#7fa86a"/>
-          <path d="M16 19c0-4-3-7-7-7 0 4 3 7 7 7Z" fill="#a9c98f"/>
+          <circle cx="16" cy="13" r="10" stroke="#fbf6ee" stroke-width="1.6"/>
+          <path d="M16 3v20M6 13h20M8.9 5.9l14.2 14.2M23.1 5.9 8.9 20.1" stroke="#fbf6ee" stroke-width="1" opacity=".6"/>
+          <circle cx="16" cy="3" r="2.2" fill="#e4572e"/><circle cx="26" cy="13" r="2.2" fill="#f3b23a"/>
+          <circle cx="6" cy="13" r="2.2" fill="#f3b23a"/><circle cx="16" cy="23" r="2.2" fill="#e4572e"/>
+          <path d="M16 13 10 30M16 13l6 17M8 30h16" stroke="#fbf6ee" stroke-width="1.6" stroke-linecap="round"/>
         </svg>
         EcoHarmony Park
       </a>
@@ -136,7 +142,7 @@
     {% endwith %}
     {% block contenido %}{% endblock %}
   </main>
-  <div class="pie">EcoHarmony Park · Abierto de martes a domingo</div>
+  <div class="pie">EcoHarmony Park · Parque de diversiones · Abierto de martes a domingo</div>
   {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -2,43 +2,84 @@
 {% block estilos %}
 <style>
   .hero {
-    background: linear-gradient(135deg, var(--bosque), var(--musgo));
-    color: var(--crema); border-radius: 18px; padding: 48px 40px; margin-bottom: 28px;
-    position: relative; overflow: hidden;
+    background: var(--noche); color: var(--crema); border-radius: 18px;
+    padding: 48px 40px; margin-bottom: 40px; position: relative; overflow: hidden;
   }
   .hero h1 { color: var(--crema); font-size: 2.8rem; max-width: 560px; }
-  .hero p { max-width: 520px; opacity: .9; margin: 0 0 24px; font-size: 1.05rem; }
-  .hero .boton { background: var(--crema); color: var(--bosque); }
-  .hero .boton:hover { background: #fff; }
-  .hero svg.deco { position: absolute; right: -40px; bottom: -40px; width: 280px; opacity: .18; }
+  .hero h1 em { font-style: normal; color: var(--mostaza); }
+  .hero p { max-width: 500px; opacity: .9; margin: 0 0 24px; font-size: 1.05rem; position: relative; }
+  .hero .boton { position: relative; }
+  .hero svg.deco { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); width: 300px; opacity: .22; }
+  .seccion { margin-bottom: 40px; }
+  .seccion h2 { margin: 0 0 6px; font-size: 1.7rem; }
+  .atracciones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .atraccion { padding: 22px; border-top: 4px solid var(--coral); }
+  .atraccion:nth-child(even) { border-top-color: var(--mostaza); }
+  .atraccion h3 { font-family: "Fraunces", Georgia, serif; color: var(--noche); margin: 8px 0 6px; font-size: 1.2rem; }
+  .atraccion p { margin: 0; color: var(--suave); font-size: .95rem; }
+  .etiqueta {
+    display: inline-block; font-size: .75rem; font-weight: 600; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--noche-2); background: #eef0f7;
+    padding: 3px 9px; border-radius: 999px;
+  }
   .pases { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .pases .tarjeta h2 { margin-top: 0; }
-  .precio { font-family: "Fraunces", Georgia, serif; font-size: 1.8rem; color: var(--tierra); }
-  @media (max-width: 640px) { .pases { grid-template-columns: 1fr; } .hero { padding: 32px 24px; } .hero h1 { font-size: 2rem; } }
+  .pases .tarjeta h3 { font-family: "Fraunces", Georgia, serif; color: var(--noche); margin: 0 0 4px; font-size: 1.35rem; }
+  .pase-vip { background: var(--noche); border-color: var(--noche); }
+  .pase-vip h3, .pase-vip .bajada { color: var(--crema) !important; }
+  .pase-vip .precio { color: var(--mostaza); }
+  .precio { font-family: "Fraunces", Georgia, serif; font-size: 1.8rem; color: var(--coral); margin-bottom: 8px; }
+  .pases .bajada { margin: 0; }
+  @media (max-width: 760px) { .atracciones { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) {
+    .atracciones, .pases { grid-template-columns: 1fr; }
+    .hero { padding: 32px 24px; } .hero h1 { font-size: 2rem; }
+  }
 </style>
 {% endblock %}
 {% block contenido %}
 <section class="hero">
-  <h1>Un día entre bosques, lagunas y senderos.</h1>
-  <p>Reservá tus entradas online y asegurá tu visita. Podés pagar con tarjeta por Mercado Pago o en efectivo en boletería.</p>
-  <a class="boton" href="{{ url_for('comprar') }}">Comprar entradas</a>
-  <svg class="deco" viewBox="0 0 100 100" aria-hidden="true">
-    <path d="M50 95V40" stroke="#fff" stroke-width="4"/>
-    <path d="M50 50c0-20 15-35 35-35 0 20-15 35-35 35Z" fill="#fff"/>
-    <path d="M50 65c0-20-15-35-35-35 0 20 15 35 35 35Z" fill="#fff"/>
+  <svg class="deco" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+    <circle cx="50" cy="46" r="38" stroke="#fbf6ee" stroke-width="3"/>
+    <circle cx="50" cy="46" r="6" fill="#fbf6ee"/>
+    <path d="M50 8v76M12 46h76M23 19l54 54M77 19 23 73" stroke="#fbf6ee" stroke-width="1.5"/>
+    <circle cx="50" cy="8" r="6" fill="#e4572e"/><circle cx="88" cy="46" r="6" fill="#f3b23a"/>
+    <circle cx="50" cy="84" r="6" fill="#e4572e"/><circle cx="12" cy="46" r="6" fill="#f3b23a"/>
+    <circle cx="77" cy="19" r="5" fill="#fbf6ee"/><circle cx="77" cy="73" r="5" fill="#fbf6ee"/>
+    <circle cx="23" cy="73" r="5" fill="#fbf6ee"/><circle cx="23" cy="19" r="5" fill="#fbf6ee"/>
   </svg>
+  <h1>Un día entero de <em>vueltas, gritos y risas</em>.</h1>
+  <p>Seis atracciones para todas las edades, de la calesita a la montaña rusa. Comprá tus entradas online y pagá con tarjeta por Mercado Pago o en efectivo en boletería.</p>
+  <a class="boton" href="{{ url_for('comprar') }}">Comprar entradas</a>
 </section>
 
-<div class="pases">
-  <div class="tarjeta">
-    <h2>Pase regular</h2>
-    <div class="precio">{{ precios["REGULAR"] | pesos }}</div>
-    <p class="bajada">Acceso a todos los senderos, miradores y áreas de picnic.</p>
+<section class="seccion">
+  <h2>Atracciones</h2>
+  <p class="bajada">Todas incluidas en cualquiera de los dos pases.</p>
+  <div class="atracciones">
+    {% for a in atracciones %}
+    <div class="tarjeta atraccion">
+      <span class="etiqueta">{{ a.tipo }}</span>
+      <h3>{{ a.nombre }}</h3>
+      <p>{{ a.descripcion }}</p>
+    </div>
+    {% endfor %}
   </div>
-  <div class="tarjeta">
-    <h2>Pase VIP</h2>
-    <div class="precio">{{ precios["VIP"] | pesos }}</div>
-    <p class="bajada">Todo lo del regular más visita guiada, avistaje de aves y kayak en la laguna.</p>
+</section>
+
+<section class="seccion">
+  <h2>Pases</h2>
+  <p class="bajada">Abierto de martes a domingo. Hasta 10 entradas por compra.</p>
+  <div class="pases">
+    <div class="tarjeta">
+      <h3>Pase {{ pases["REGULAR"].nombre }}</h3>
+      <div class="precio">{{ precios["REGULAR"] | pesos }}</div>
+      <p class="bajada">{{ pases["REGULAR"].descripcion }}</p>
+    </div>
+    <div class="tarjeta pase-vip">
+      <h3>Pase {{ pases["VIP"].nombre }}</h3>
+      <div class="precio">{{ precios["VIP"] | pesos }}</div>
+      <p class="bajada">{{ pases["VIP"].descripcion }}</p>
+    </div>
   </div>
-</div>
+</section>
 {% endblock %}
