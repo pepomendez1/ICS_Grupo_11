@@ -21,14 +21,15 @@ La lógica de la compra está separada de la web y se desarrolló con TDD.
 parque/compra.py                 Lógica de negocio (validaciones de la user story)
 web/__init__.py                  App Flask: rutas y pantallas
 web/repositorio.py               Persistencia: Postgres (Supabase) o memoria
-web/servicios.py                 Calendario del parque, Mercado Pago y mail (simulados)
+web/servicios.py                 Calendario del parque, Mercado Pago y mail (reales y simulados)
 web/contenido.py                 Textos de atracciones y pases
 web/templates/                   Pantallas HTML
 supabase/schema.sql              Tablas de la base
 app.py                           Entrada para Vercel
 run.py                           Entrada para correr local
 tests/test_comprar_entradas.py   24 tests unitarios de la user story (TDD)
-tests/test_web.py                8 tests de integración de la web
+tests/test_web.py                Tests de integración de la web (incluye webhook de MP)
+tests/test_mercadopago.py        PasarelaMercadoPago con el SDK mockeado
 ```
 
 ## Correrlo local
@@ -37,14 +38,19 @@ tests/test_web.py                8 tests de integración de la web
 python -m venv .venv
 source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env           # descomentá y completá lo que quieras usar (todo es opcional)
 python run.py
 ```
 
 Abrí http://localhost:5000. Usuario de prueba: `demo@ecoharmony.com` / `demo123`.
 
-Sin `DATABASE_URL` la app guarda todo en memoria (se pierde al reiniciar).
-Para usar Supabase también local, exportá las variables de `.env.example`
-antes de `python run.py`.
+`run.py` lee el archivo `.env` (que **no** se sube a git). Cada variable que
+falte cae en una versión local:
+
+| Variable | Si no está |
+|---|---|
+| `DATABASE_URL` | Todo se guarda en memoria (se pierde al reiniciar). |
+| `MP_ACCESS_TOKEN` | Checkout de Mercado Pago simulado. |
 
 ## Tests
 
@@ -80,17 +86,57 @@ Para correr un solo grupo: `pytest -v -k TestCantidad`.
    - `DATABASE_URL`: la connection string del paso anterior.
    - `SECRET_KEY`: un texto largo y aleatorio. Tiene que ser fijo, si no se
      pierde la sesión entre requests.
+   - `MP_ACCESS_TOKEN` y `APP_BASE_URL`: ver [Mercado Pago](#mercado-pago-checkout-pro-entorno-de-prueba).
 4. **Deploy**.
 
-## Qué está simulado
+Si cambiás una variable después del deploy, hay que hacer **Redeploy** para que
+la tome.
 
-- **Mercado Pago:** la app genera un pago y redirige a un checkout propio que
-  simula el de Mercado Pago. No se cobra nada.
-- **Mail:** los mails de confirmación se guardan en la tabla `mails` y se ven en
-  **Mis mails**.
+## Mercado Pago (Checkout Pro, entorno de prueba)
 
-Para hacerlos reales hay que reemplazar las clases de `web/servicios.py` por otras
-que usen el SDK de Mercado Pago y un servicio de mail. La lógica de negocio no cambia.
+Sin `MP_ACCESS_TOKEN` la app usa un checkout propio que simula el de Mercado
+Pago. Con el token usa `PasarelaMercadoPago` (SDK oficial `mercadopago`):
+
+1. La compra con tarjeta crea una **preferencia** con `external_reference` = id
+   de la compra, `back_urls` a `/compras/<id>?mp=success|failure|pending`,
+   `auto_return=approved` y `notification_url` = `/mercadopago/webhook`.
+2. El visitante paga en Mercado Pago y vuelve a la confirmación. Los query
+   params de esa vuelta **no** marcan nada: solo cambian el aviso que se muestra.
+3. Mercado Pago llama al **webhook**, que consulta el pago a la API y marca la
+   compra como pagada solo si el estado es `approved` y el monto coincide.
+
+### Cómo obtener las credenciales
+
+1. Entrá a https://www.mercadopago.com.ar/developers/panel/app con tu cuenta y
+   creá una aplicación (producto: **Checkout Pro**, pagos online).
+2. En **Cuentas de prueba** creá dos usuarios: uno **vendedor** y uno **comprador**.
+   Anotá usuario y contraseña de cada uno.
+3. Abrí una ventana de incógnito, iniciá sesión con el **vendedor de prueba**,
+   creá una aplicación igual que en el paso 1 y copiá su **Access Token** de
+   **Credenciales de producción**. Es de una cuenta de prueba, así que no
+   mueve plata real. Ese valor va en `MP_ACCESS_TOKEN`.
+   Si tu panel todavía te da credenciales que empiezan con `TEST-`, también
+   sirven: la app usa automáticamente el checkout de sandbox.
+4. Para pagar, iniciá sesión en el checkout con el **comprador de prueba** y
+   usá una tarjeta de prueba, por ejemplo Mastercard `5031 7557 3453 0604`,
+   CVV `123`, vencimiento `11/30`. En el nombre del titular poné `APRO` para un
+   pago aprobado u `OTHE` para uno rechazado.
+
+`APP_BASE_URL` es la URL pública de la app, sin `/` al final. Mercado Pago la usa
+para volver a la app y para llamar al webhook, así que tiene que ser accesible
+desde internet:
+
+- **Vercel:** la URL de producción, por ejemplo `https://ecoharmony-park.vercel.app`.
+  No uses la URL de un deploy puntual (`...-git-xxx.vercel.app`): esas están
+  protegidas por Vercel y Mercado Pago recibe un 401.
+- **Local:** levantá un túnel con `ngrok http 5001` y usá la URL `https://...`
+  que te da. Con `localhost` Mercado Pago no puede llamar al webhook y la compra
+  queda pendiente.
+
+### Cargarlas en Vercel
+
+**Settings** → **Environment Variables** → agregá `MP_ACCESS_TOKEN` y
+`APP_BASE_URL` para el entorno **Production** → **Redeploy**.
 
 ## Trazabilidad criterios ↔ tests
 

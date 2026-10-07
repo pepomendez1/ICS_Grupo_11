@@ -1,4 +1,8 @@
-from web import create_app
+from dotenv import load_dotenv
+
+load_dotenv()  # lee .env antes de crear la app; en Vercel las variables ya vienen cargadas
+
+from web import create_app  # noqa: E402
 
 app = create_app()
 
