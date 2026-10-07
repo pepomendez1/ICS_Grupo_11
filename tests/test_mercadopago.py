@@ -5,7 +5,15 @@ from unittest.mock import patch
 import pytest
 
 from parque.compra import CompraError
-from web.servicios import EstadoPago, PagoNoDisponibleError, PasarelaMercadoPago
+from web import create_app
+from web.repositorio import RepositorioMemoria
+from web.servicios import (
+    EstadoPago,
+    PagoNoDisponibleError,
+    PasarelaMercadoPago,
+    PasarelaMercadoPagoSimulada,
+    crear_pasarela,
+)
 
 BASE_URL = "https://ecoharmony.vercel.app"
 
@@ -87,3 +95,29 @@ class TestConsultarPago:
         sdk.payment.return_value.get.return_value = {"status": 404, "response": {"message": "not found"}}
         with pytest.raises(PagoNoDisponibleError):
             PasarelaMercadoPago("APP_USR-token", BASE_URL).consultar_pago("555")
+
+
+class TestElegirPasarela:
+    """Con MP_ACCESS_TOKEN se usa Mercado Pago real; sin él, la simulada."""
+
+    def test_sin_access_token_usa_la_simulada(self):
+        assert isinstance(crear_pasarela(RepositorioMemoria(), {}), PasarelaMercadoPagoSimulada)
+
+    def test_con_access_token_usa_mercado_pago(self, sdk):
+        entorno = {"MP_ACCESS_TOKEN": "TEST-token", "APP_BASE_URL": BASE_URL}
+        assert isinstance(crear_pasarela(RepositorioMemoria(), entorno), PasarelaMercadoPago)
+
+    def test_con_access_token_sin_app_base_url_falla(self, sdk):
+        with pytest.raises(ValueError, match="APP_BASE_URL"):
+            crear_pasarela(RepositorioMemoria(), {"MP_ACCESS_TOKEN": "TEST-token"})
+
+    def test_la_app_usa_mercado_pago_si_hay_access_token(self, sdk, monkeypatch):
+        monkeypatch.setenv("MP_ACCESS_TOKEN", "TEST-token")
+        monkeypatch.setenv("APP_BASE_URL", BASE_URL)
+        cliente = create_app(testing=True, repo=RepositorioMemoria()).test_client()
+        cliente.post("/login", data={"email": "demo@ecoharmony.com", "password": "demo123"})
+        cliente.post("/comprar", data={
+            "fecha_visita": "2099-01-01", "cantidad": "1", "edades": ["30"],  # jueves
+            "tipo_pase": "VIP", "forma_pago": "TARJETA",
+        })
+        assert preferencia_enviada(sdk)["items"][0]["unit_price"] == 15000
