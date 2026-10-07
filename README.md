@@ -43,7 +43,7 @@ cp .env.example .env           # descomentá y completá lo que quieras usar (to
 python run.py
 ```
 
-Abrí http://localhost:5000. Usuario de prueba: `demo@ecoharmony.com` / `demo123`.
+Abrí http://localhost:5001 (no el 5000: en Mac lo ocupa AirPlay). Usuario de prueba: `demo@ecoharmony.com` / `demo123`.
 
 `run.py` lee el archivo `.env` (que **no** se sube a git). Cada variable que
 falte cae en una versión local:
