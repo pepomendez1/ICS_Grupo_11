@@ -20,7 +20,7 @@ from parque.compra import (
     TipoPase,
     Usuario,
 )
-from web.contenido import ATRACCIONES, PASES
+from web.contenido import ATRACCIONES, PASES, pesos
 from web.repositorio import crear_repositorio
 from web.servicios import (
     CalendarioEcoHarmony,
@@ -85,9 +85,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
     )
     app.extensions["ecoharmony"] = {"repo": repo}
 
-    @app.template_filter("pesos")
-    def pesos(monto):
-        return "$" + f"{monto:,}".replace(",", ".")
+    app.add_template_filter(pesos, "pesos")
 
     @app.template_filter("fecha_hora")
     def fecha_hora(momento):

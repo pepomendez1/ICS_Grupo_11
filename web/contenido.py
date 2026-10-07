@@ -30,3 +30,13 @@ PASES = {
         "resumen": "Fila rápida + vueltas ilimitadas en la montaña rusa",
     },
 }
+
+
+FORMAS_DE_PAGO = {
+    "TARJETA": "Tarjeta (Mercado Pago)",
+    "EFECTIVO": "Efectivo en boletería",
+}
+
+
+def pesos(monto: int) -> str:
+    return "$" + f"{monto:,}".replace(",", ".")
