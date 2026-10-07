@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titulo %}Compra confirmada · EcoHarmony Park{% endblock %}
+{% block contenido %}
+<div class="angosta" style="max-width:560px">
+  <div class="aviso ok" role="status">{{ r.mensaje }}</div>
+  <h1>¡Listo, te esperamos!</h1>
+  <p class="bajada">Te mandamos un mail de confirmación a <strong>{{ compra.email }}</strong>.</p>
+
+  <div class="tarjeta">
+    <dl class="detalle">
+      <dt>Fecha de visita</dt><dd>{{ r.fecha_visita.strftime('%d/%m/%Y') }}</dd>
+      <dt>Entradas</dt><dd>{{ r.cantidad }}</dd>
+      <dt>Tipo de pase</dt><dd>{{ "VIP" if r.tipo_pase.value == "VIP" else "Regular" }}</dd>
+      <dt>Total</dt><dd>{{ r.monto | pesos }}</dd>
+      <dt>Pago</dt>
+      <dd>
+        {% if r.forma_pago.value == "TARJETA" %}
+          Tarjeta · Mercado Pago {{ "(aprobado)" if compra.pagada else "(pendiente)" }}
+        {% else %}
+          Efectivo en boletería
+        {% endif %}
+      </dd>
+    </dl>
+  </div>
+
+  <p style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap">
+    <a class="boton" href="{{ url_for('mails') }}">Ver mail de confirmación</a>
+    <a class="boton secundario" href="{{ url_for('comprar') }}">Comprar más entradas</a>
+  </p>
+</div>
+{% endblock %}

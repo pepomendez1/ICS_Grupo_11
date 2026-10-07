@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Checkout de pago (simulado)</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #eef1f5; color: #1f2933; }
+    .aviso-sim { background: #fff4d6; color: #7a5b00; text-align: center; padding: 10px; font-size: .9rem; }
+    .caja { max-width: 420px; margin: 48px auto; background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,.06); }
+    h1 { font-size: 1.3rem; margin: 0 0 4px; }
+    .gris { color: #66707a; font-size: .9rem; }
+    .monto { font-size: 2rem; font-weight: 700; margin: 20px 0; }
+    label { display: block; font-size: .85rem; font-weight: 600; margin: 14px 0 6px; }
+    input { width: 100%; box-sizing: border-box; padding: 11px; border: 1px solid #cfd6de; border-radius: 8px; font: inherit; }
+    .fila { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    button { width: 100%; margin-top: 24px; padding: 14px; border: 0; border-radius: 8px; background: #2d6cdf; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+    button:hover { background: #2459bb; }
+  </style>
+</head>
+<body>
+  <div class="aviso-sim">Checkout simulado para el TP: no se cobra nada. Usá cualquier dato de prueba.</div>
+  <form class="caja" method="post" action="{{ url_for('mercadopago_checkout', pago_id=pago_id, compra=compra_id) }}">
+    <h1>Pagar con tarjeta</h1>
+    <div class="gris">EcoHarmony Park · {{ pago.email }}</div>
+    <div class="monto">{{ pago.monto | pesos }}</div>
+    <label for="tarjeta">Número de tarjeta</label>
+    <input id="tarjeta" placeholder="4509 9535 6623 3704" value="4509 9535 6623 3704">
+    <div class="fila">
+      <div><label for="venc">Vencimiento</label><input id="venc" value="11/30"></div>
+      <div><label for="cvv">CVV</label><input id="cvv" value="123"></div>
+    </div>
+    <button type="submit">Pagar</button>
+  </form>
+</body>
+</html>

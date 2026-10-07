@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}EcoHarmony Park{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bosque: #1f3d2b;
+      --musgo: #3f6b4a;
+      --hoja: #7fa86a;
+      --crema: #f5f1e6;
+      --papel: #fffdf7;
+      --tierra: #8a5a3b;
+      --texto: #22281f;
+      --suave: #5e6658;
+      --borde: #ddd5c2;
+      --error: #a63d2f;
+      --ok: #2f7a4a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--crema); color: var(--texto);
+      font-family: "Inter", system-ui, sans-serif; line-height: 1.5;
+    }
+    a { color: var(--musgo); }
+    header {
+      background: var(--bosque); color: var(--crema);
+    }
+    .barra {
+      max-width: 960px; margin: 0 auto; padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    }
+    .marca {
+      font-family: "Fraunces", Georgia, serif; font-size: 1.4rem; font-weight: 700;
+      color: var(--crema); text-decoration: none; display: flex; align-items: center; gap: 10px;
+    }
+    .marca svg { width: 28px; height: 28px; }
+    nav { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+    nav a, nav button {
+      color: var(--crema); text-decoration: none; font-size: .95rem; opacity: .9;
+      background: none; border: 0; cursor: pointer; font-family: inherit; padding: 0;
+    }
+    nav a:hover, nav button:hover { opacity: 1; text-decoration: underline; }
+    main { max-width: 960px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1, h2 { font-family: "Fraunces", Georgia, serif; color: var(--bosque); line-height: 1.15; }
+    h1 { font-size: 2.2rem; margin: 0 0 8px; }
+    .bajada { color: var(--suave); margin: 0 0 28px; }
+    .tarjeta {
+      background: var(--papel); border: 1px solid var(--borde); border-radius: 14px;
+      padding: 28px; box-shadow: 0 1px 0 rgba(0,0,0,.03);
+    }
+    .angosta { max-width: 440px; margin: 0 auto; }
+    label { display: block; font-weight: 600; font-size: .92rem; margin-bottom: 6px; }
+    .ayuda { font-weight: 400; color: var(--suave); font-size: .85rem; }
+    input, select {
+      width: 100%; padding: 11px 12px; border: 1px solid var(--borde); border-radius: 8px;
+      font: inherit; background: #fff; color: var(--texto);
+    }
+    input:focus, select:focus { outline: 2px solid var(--hoja); border-color: var(--hoja); }
+    .campo { margin-bottom: 20px; }
+    .grilla { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .opcion { position: relative; }
+    .opcion input { position: absolute; opacity: 0; }
+    .opcion span {
+      display: block; border: 1px solid var(--borde); border-radius: 10px; padding: 14px;
+      cursor: pointer; background: #fff; height: 100%;
+    }
+    .opcion strong { display: block; color: var(--bosque); }
+    .opcion small { color: var(--suave); }
+    .opcion input:checked + span { border-color: var(--musgo); box-shadow: inset 0 0 0 1px var(--musgo); background: #f1f6ec; }
+    .opcion input:focus-visible + span { outline: 2px solid var(--hoja); }
+    .edades { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+    .boton {
+      display: inline-block; background: var(--bosque); color: var(--crema); border: 0;
+      padding: 13px 22px; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer;
+      text-decoration: none;
+    }
+    .boton:hover { background: var(--musgo); }
+    .boton.secundario { background: transparent; color: var(--bosque); border: 1px solid var(--bosque); }
+    .ancho { width: 100%; }
+    .aviso { padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: .95rem; }
+    .aviso.error { background: #f8e6e2; color: var(--error); border: 1px solid #ecc5bd; }
+    .aviso.ok { background: #e4f1e7; color: var(--ok); border: 1px solid #bfdcc7; }
+    .total {
+      display: flex; justify-content: space-between; align-items: baseline;
+      border-top: 1px dashed var(--borde); padding-top: 16px; margin: 8px 0 20px;
+    }
+    .total strong { font-family: "Fraunces", Georgia, serif; font-size: 1.6rem; color: var(--bosque); }
+    dl.detalle { display: grid; grid-template-columns: auto 1fr; gap: 10px 24px; margin: 0; }
+    dl.detalle dt { color: var(--suave); }
+    dl.detalle dd { margin: 0; font-weight: 600; }
+    .pie { color: var(--suave); font-size: .85rem; text-align: center; padding: 24px; }
+    @media (max-width: 640px) {
+      .grilla, .opciones { grid-template-columns: 1fr; }
+      h1 { font-size: 1.8rem; }
+      .tarjeta { padding: 20px; }
+    }
+  </style>
+  {% block estilos %}{% endblock %}
+</head>
+<body>
+  <header>
+    <div class="barra">
+      <a class="marca" href="{{ url_for('inicio') }}">
+        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <circle cx="16" cy="16" r="15" fill="#3f6b4a"/>
+          <path d="M16 25V13" stroke="#f5f1e6" stroke-width="2" stroke-linecap="round"/>
+          <path d="M16 15c0-4 3-7 7-7 0 4-3 7-7 7Z" fill="#7fa86a"/>
+          <path d="M16 19c0-4-3-7-7-7 0 4 3 7 7 7Z" fill="#a9c98f"/>
+        </svg>
+        EcoHarmony Park
+      </a>
+      <nav>
+        {% if usuario %}
+          <a href="{{ url_for('comprar') }}">Comprar entradas</a>
+          <a href="{{ url_for('mails') }}">Mis mails</a>
+          <form method="post" action="{{ url_for('logout') }}" style="margin:0">
+            <button type="submit">Salir ({{ usuario.nombre }})</button>
+          </form>
+        {% else %}
+          <a href="{{ url_for('login') }}">Ingresar</a>
+          <a href="{{ url_for('registro') }}">Crear cuenta</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+  <main>
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+      {% for categoria, mensaje in mensajes %}
+        <div class="aviso {{ categoria }}">{{ mensaje }}</div>
+      {% endfor %}
+    {% endwith %}
+    {% block contenido %}{% endblock %}
+  </main>
+  <div class="pie">EcoHarmony Park · Abierto de martes a domingo</div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

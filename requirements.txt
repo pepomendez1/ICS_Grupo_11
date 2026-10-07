@@ -1,0 +1,4 @@
+flask>=3.0
+psycopg[binary]>=3.2
+tzdata
+pytest>=8.0

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block titulo %}Comprar entradas · EcoHarmony Park{% endblock %}
+{% block contenido %}
+<h1>Comprar entradas</h1>
+<p class="bajada">Elegí el día, cuántos van y cómo querés pagar. Máximo {{ maximo }} entradas por compra.</p>
+
+{% if error %}<div class="aviso error" role="alert">{{ error }}</div>{% endif %}
+
+<form class="tarjeta" method="post" novalidate id="form-compra">
+  <div class="grilla">
+    <div class="campo">
+      <label for="fecha_visita">Fecha de visita <span class="ayuda">(cerrado los lunes)</span></label>
+      <input id="fecha_visita" name="fecha_visita" type="date" min="{{ hoy }}" value="{{ form.get('fecha_visita', '') }}">
+    </div>
+    <div class="campo">
+      <label for="cantidad">Cantidad de entradas</label>
+      <input id="cantidad" name="cantidad" type="number" min="1" max="{{ maximo }}" value="{{ form.get('cantidad', '') }}">
+    </div>
+  </div>
+
+  <div class="campo">
+    <label>Edad de cada visitante</label>
+    <div class="edades" id="edades">
+      {% for edad in edades %}
+        <input name="edades" type="number" min="0" placeholder="Visitante {{ loop.index }}" aria-label="Edad visitante {{ loop.index }}" value="{{ edad }}">
+      {% endfor %}
+    </div>
+    <p class="ayuda" id="edades-ayuda" {% if edades %}hidden{% endif %}>Indicá la cantidad de entradas para cargar las edades.</p>
+  </div>
+
+  <div class="campo">
+    <label>Tipo de pase</label>
+    <div class="opciones">
+      {% for valor, nombre, desc in [("REGULAR", "Regular", "Senderos, miradores y picnic"), ("VIP", "VIP", "Incluye visita guiada y kayak")] %}
+      <label class="opcion">
+        <input type="radio" name="tipo_pase" value="{{ valor }}" {% if form.get('tipo_pase') == valor %}checked{% endif %}>
+        <span><strong>{{ nombre }} · {{ precios[valor] | pesos }}</strong><small>{{ desc }}</small></span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="campo">
+    <label>Forma de pago</label>
+    <div class="opciones">
+      <label class="opcion">
+        <input type="radio" name="forma_pago" value="TARJETA" {% if form.get('forma_pago') == 'TARJETA' %}checked{% endif %}>
+        <span><strong>Tarjeta</strong><small>Te redirigimos a Mercado Pago</small></span>
+      </label>
+      <label class="opcion">
+        <input type="radio" name="forma_pago" value="EFECTIVO" {% if form.get('forma_pago') == 'EFECTIVO' %}checked{% endif %}>
+        <span><strong>Efectivo</strong><small>Pagás en boletería el día de la visita</small></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="total">
+    <span>Total estimado</span>
+    <strong id="total">$0</strong>
+  </div>
+
+  <button class="boton ancho" type="submit">Confirmar compra</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const precios = {{ precios | tojson }};
+  const maximo = {{ maximo }};
+  const cantidad = document.getElementById("cantidad");
+  const contenedor = document.getElementById("edades");
+  const ayuda = document.getElementById("edades-ayuda");
+  const total = document.getElementById("total");
+  const formato = n => "$" + n.toLocaleString("es-AR");
+
+  function renderEdades() {
+    const n = Math.min(parseInt(cantidad.value, 10) || 0, maximo);
+    const actuales = [...contenedor.querySelectorAll("input")].map(i => i.value);
+    contenedor.innerHTML = "";
+    for (let i = 0; i < Math.max(n, 0); i++) {
+      const input = document.createElement("input");
+      input.name = "edades"; input.type = "number"; input.min = "0";
+      input.placeholder = "Visitante " + (i + 1);
+      input.setAttribute("aria-label", "Edad visitante " + (i + 1));
+      input.value = actuales[i] || "";
+      contenedor.appendChild(input);
+    }
+    ayuda.hidden = n > 0;
+    actualizarTotal();
+  }
+
+  function actualizarTotal() {
+    const n = parseInt(cantidad.value, 10) || 0;
+    const pase = document.querySelector("input[name=tipo_pase]:checked");
+    total.textContent = formato(pase && n > 0 ? n * precios[pase.value] : 0);
+  }
+
+  cantidad.addEventListener("input", renderEdades);
+  document.querySelectorAll("input[name=tipo_pase]").forEach(r => r.addEventListener("change", actualizarTotal));
+  renderEdades();
+</script>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block titulo %}Mis mails · EcoHarmony Park{% endblock %}
+{% block contenido %}
+<h1>Mis mails</h1>
+<p class="bajada">Bandeja simulada: acá aparecen los mails de confirmación que envía el sistema.</p>
+{% for m in mails %}
+  <div class="tarjeta" style="margin-bottom:14px">
+    <div class="ayuda">{{ m.enviado | fecha_hora }} · Para: {{ m.para }}</div>
+    <h2 style="margin:6px 0 8px; font-size:1.15rem">{{ m.asunto }}</h2>
+    <p style="margin:0">{{ m.cuerpo }}</p>
+  </div>
+{% else %}
+  <div class="tarjeta">Todavía no recibiste mails. <a href="{{ url_for('comprar') }}">Comprá tus entradas</a>.</div>
+{% endfor %}
+{% endblock %}

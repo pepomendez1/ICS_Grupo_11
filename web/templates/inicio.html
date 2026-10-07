@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block estilos %}
+<style>
+  .hero {
+    background: linear-gradient(135deg, var(--bosque), var(--musgo));
+    color: var(--crema); border-radius: 18px; padding: 48px 40px; margin-bottom: 28px;
+    position: relative; overflow: hidden;
+  }
+  .hero h1 { color: var(--crema); font-size: 2.8rem; max-width: 560px; }
+  .hero p { max-width: 520px; opacity: .9; margin: 0 0 24px; font-size: 1.05rem; }
+  .hero .boton { background: var(--crema); color: var(--bosque); }
+  .hero .boton:hover { background: #fff; }
+  .hero svg.deco { position: absolute; right: -40px; bottom: -40px; width: 280px; opacity: .18; }
+  .pases { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .pases .tarjeta h2 { margin-top: 0; }
+  .precio { font-family: "Fraunces", Georgia, serif; font-size: 1.8rem; color: var(--tierra); }
+  @media (max-width: 640px) { .pases { grid-template-columns: 1fr; } .hero { padding: 32px 24px; } .hero h1 { font-size: 2rem; } }
+</style>
+{% endblock %}
+{% block contenido %}
+<section class="hero">
+  <h1>Un día entre bosques, lagunas y senderos.</h1>
+  <p>Reservá tus entradas online y asegurá tu visita. Podés pagar con tarjeta por Mercado Pago o en efectivo en boletería.</p>
+  <a class="boton" href="{{ url_for('comprar') }}">Comprar entradas</a>
+  <svg class="deco" viewBox="0 0 100 100" aria-hidden="true">
+    <path d="M50 95V40" stroke="#fff" stroke-width="4"/>
+    <path d="M50 50c0-20 15-35 35-35 0 20-15 35-35 35Z" fill="#fff"/>
+    <path d="M50 65c0-20-15-35-35-35 0 20 15 35 35 35Z" fill="#fff"/>
+  </svg>
+</section>
+
+<div class="pases">
+  <div class="tarjeta">
+    <h2>Pase regular</h2>
+    <div class="precio">{{ precios["REGULAR"] | pesos }}</div>
+    <p class="bajada">Acceso a todos los senderos, miradores y áreas de picnic.</p>
+  </div>
+  <div class="tarjeta">
+    <h2>Pase VIP</h2>
+    <div class="precio">{{ precios["VIP"] | pesos }}</div>
+    <p class="bajada">Todo lo del regular más visita guiada, avistaje de aves y kayak en la laguna.</p>
+  </div>
+</div>
+{% endblock %}
