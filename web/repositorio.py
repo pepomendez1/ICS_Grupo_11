@@ -91,26 +91,43 @@ class RepositorioPostgres:
         self._psycopg = psycopg
         self._dict_row = dict_row
         self._url = url
+        self._con = None
 
     def _conexion(self):
-        # prepare_threshold=None: compatible con el pooler de Supabase (pgbouncer)
-        return self._psycopg.connect(self._url, row_factory=self._dict_row, prepare_threshold=None)
+        """Reutiliza una sola conexión mientras la instancia siga viva.
+
+        Abrir una conexión nueva cuesta varios viajes de ida y vuelta a la base
+        (TCP + TLS + login). En Vercel la instancia queda "tibia" entre requests,
+        así que reutilizarla ahorra la mayor parte del tiempo.
+        """
+        if self._con is None or self._con.closed or self._con.broken:
+            # prepare_threshold=None: compatible con el pooler de Supabase (pgbouncer)
+            self._con = self._psycopg.connect(
+                self._url, row_factory=self._dict_row, prepare_threshold=None, autocommit=True
+            )
+        return self._con
 
     def _ejecutar(self, sql, params=(), uno=False, todos=False):
-        with self._conexion() as con, con.cursor() as cur:
-            cur.execute(sql, params)
-            if uno:
-                return cur.fetchone()
-            if todos:
-                return cur.fetchall()
-            return cur.rowcount
+        for intento in range(2):
+            try:
+                with self._conexion().cursor() as cur:
+                    cur.execute(sql, params)
+                    if uno:
+                        return cur.fetchone()
+                    if todos:
+                        return cur.fetchall()
+                    return cur.rowcount
+            except self._psycopg.OperationalError:
+                # La conexión se cortó (por ejemplo, la instancia estuvo dormida): reintentar una vez.
+                self._con = None
+                if intento == 1:
+                    raise
 
     def crear_tablas(self):
         ruta = os.path.join(os.path.dirname(__file__), "..", "supabase", "schema.sql")
         with open(ruta, encoding="utf-8") as f:
             sql = f.read()
-        with self._conexion() as con:
-            con.execute(sql)
+        self._conexion().execute(sql)
 
     # Usuarios
     def crear_usuario(self, nombre, email, password_hash):

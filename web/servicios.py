@@ -6,6 +6,7 @@ no se entera.
 """
 import logging
 import uuid
+from dataclasses import dataclass
 from datetime import date
 from typing import Optional
 from urllib.parse import urlsplit
@@ -54,6 +55,13 @@ class PagoNoDisponibleError(CompraError):
     """Mercado Pago no pudo iniciar el pago."""
 
 
+@dataclass
+class EstadoPago:
+    estado: str       # "approved", "pending", "rejected", ...
+    referencia: str   # external_reference = id de la compra
+    monto: int
+
+
 class PasarelaMercadoPago:
     """Checkout Pro de Mercado Pago con el SDK oficial.
 
@@ -94,6 +102,18 @@ class PasarelaMercadoPago:
             )
         preferencia = respuesta["response"]
         return preferencia["sandbox_init_point" if self._sandbox else "init_point"]
+
+    def consultar_pago(self, pago_id: str) -> EstadoPago:
+        respuesta = self._sdk.payment().get(pago_id)
+        if respuesta.get("status") != 200:
+            log.error("No se pudo consultar el pago %s en Mercado Pago: %s", pago_id, respuesta)
+            raise PagoNoDisponibleError(f"No se pudo consultar el pago {pago_id}")
+        pago = respuesta["response"]
+        return EstadoPago(
+            estado=pago["status"],
+            referencia=pago.get("external_reference"),
+            monto=round(pago["transaction_amount"]),
+        )
 
 
 class NotificadorMailSimulado:
