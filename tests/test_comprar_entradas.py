@@ -176,3 +176,15 @@ class TestConfirmacion:
         with pytest.raises(CantidadInvalidaError):
             servicio.comprar(usuario_registrado, solicitud_valida)
         notificador.enviar_confirmacion.assert_not_called()
+
+
+class TestIntegraciones:
+    """Datos que la compra le pasa a Mercado Pago y al mail de confirmación."""
+
+    def test_comprar_entrada_con_tarjeta_envia_referencia_de_compra_a_mp_pasa(self, servicio, usuario_registrado, solicitud_valida, pasarela_mp):
+        solicitud_valida.forma_pago = FormaPago.TARJETA
+        solicitud_valida.referencia = "compra-123"
+        servicio.comprar(usuario_registrado, solicitud_valida)
+        pasarela_mp.crear_pago.assert_called_once_with(
+            24000, usuario_registrado.email, referencia="compra-123"
+        )
