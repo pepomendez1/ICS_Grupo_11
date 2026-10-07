@@ -27,7 +27,7 @@ web/templates/                   Pantallas HTML
 supabase/schema.sql              Tablas de la base
 app.py                           Entrada para Vercel
 run.py                           Entrada para correr local
-tests/test_comprar_entradas.py   24 tests unitarios de la user story (TDD)
+tests/test_comprar_entradas.py   24 tests unitarios de la user story (TDD) + TestIntegraciones
 tests/test_web.py                Tests de integración de la web (incluye webhook de MP)
 tests/test_mercadopago.py        PasarelaMercadoPago con el SDK mockeado
 tests/test_gmail.py              NotificadorGmail con smtplib mockeado
