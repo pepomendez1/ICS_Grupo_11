@@ -78,6 +78,7 @@ class SolicitudCompra:
     edades: list = field(default_factory=list)
     tipo_pase: Optional[TipoPase] = None
     forma_pago: Optional[FormaPago] = None
+    referencia: Optional[str] = None  # id de la compra, viaja a Mercado Pago
 
 
 @dataclass
@@ -104,7 +105,7 @@ class CalendarioParque(Protocol):
 
 
 class PasarelaMercadoPago(Protocol):
-    def crear_pago(self, monto: int, email: str) -> str:
+    def crear_pago(self, monto: int, email: str, referencia: Optional[str] = None) -> str:
         """Devuelve la URL a la que se redirige al usuario."""
 
 
@@ -134,7 +135,9 @@ class ServicioCompraEntradas:
 
         url_pago = None
         if solicitud.forma_pago == FormaPago.TARJETA:
-            url_pago = self._pasarela_pago.crear_pago(monto, usuario.email)
+            url_pago = self._pasarela_pago.crear_pago(
+                monto, usuario.email, referencia=solicitud.referencia
+            )
 
         resultado = ResultadoCompra(
             cantidad=solicitud.cantidad,

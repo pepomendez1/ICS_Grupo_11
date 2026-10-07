@@ -6,6 +6,8 @@ el SDK de Mercado Pago y un servidor SMTP, sin tocar parque/compra.py.
 """
 import uuid
 from datetime import date
+from typing import Optional
+from urllib.parse import urlsplit
 
 
 class CalendarioEcoHarmony:
@@ -27,10 +29,18 @@ class PasarelaMercadoPagoSimulada:
     def __init__(self, repo):
         self._repo = repo
 
-    def crear_pago(self, monto: int, email: str) -> str:
+    PREFIJO_URL = "/mercadopago/checkout/"
+
+    def crear_pago(self, monto: int, email: str, referencia: Optional[str] = None) -> str:
         pago_id = uuid.uuid4().hex[:10]
         self._repo.guardar_pago(pago_id, monto, email)
-        return f"/mercadopago/checkout/{pago_id}"
+        return f"{self.PREFIJO_URL}{pago_id}?compra={referencia}"
+
+    @classmethod
+    def id_de_pago(cls, url: Optional[str]) -> Optional[str]:
+        """El id del pago simulado que está en la URL, o None si la URL no es suya."""
+        ruta = urlsplit(url or "").path
+        return ruta.removeprefix(cls.PREFIJO_URL) if ruta.startswith(cls.PREFIJO_URL) else None
 
 
 class NotificadorMailSimulado:

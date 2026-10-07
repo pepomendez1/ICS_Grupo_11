@@ -155,6 +155,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None):
         if request.method == "GET":
             return render_template("comprar.html", **contexto)
 
+        compra_id = uuid.uuid4().hex[:10]
         edades = [_parse_int(e) for e in request.form.getlist("edades")]
         solicitud = SolicitudCompra(
             fecha_visita=_parse_fecha(request.form.get("fecha_visita")),
@@ -162,6 +163,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None):
             edades=edades,
             tipo_pase=_parse_enum(TipoPase, request.form.get("tipo_pase")),
             forma_pago=_parse_enum(FormaPago, request.form.get("forma_pago")),
+            referencia=compra_id,
         )
         u = usuario_actual()
         try:
@@ -170,12 +172,13 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None):
             contexto.update(form=request.form, edades=request.form.getlist("edades"), error=str(e))
             return render_template("comprar.html", **contexto), 400
 
-        compra_id = uuid.uuid4().hex[:10]
-        pago_id = resultado.url_pago.rsplit("/", 1)[-1] if resultado.url_pago else None
+        # Solo el checkout simulado registra el pago en nuestra base; con
+        # Mercado Pago real la compra se vincula por external_reference.
+        pago_id = PasarelaMercadoPagoSimulada.id_de_pago(resultado.url_pago)
         repo.guardar_compra(compra_id, u["email"], resultado, solicitud.edades, pago_id)
 
         if resultado.url_pago:  # tarjeta → Mercado Pago
-            return redirect(resultado.url_pago + f"?compra={compra_id}")
+            return redirect(resultado.url_pago)
         return redirect(url_for("confirmacion", compra_id=compra_id))
 
     @app.get("/compras/<compra_id>")
