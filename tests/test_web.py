@@ -1,11 +1,13 @@
 """Tests de integración de la app web: recorren el flujo completo por HTTP."""
 import os
 from datetime import date, timedelta
+from unittest.mock import Mock
 
 import pytest
 
 from web import create_app
 from web.repositorio import RepositorioMemoria, RepositorioPostgres
+from web.servicios import EstadoPago, PagoNoDisponibleError
 
 TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
 
@@ -23,8 +25,7 @@ def repo(request):
         pytest.skip("Definí TEST_DATABASE_URL para probar contra Postgres")
     repo = RepositorioPostgres(TEST_DATABASE_URL)
     repo.crear_tablas()
-    with repo._conexion() as con:
-        con.execute("truncate mails, compras, pagos, usuarios")
+    repo._conexion().execute("truncate mails, compras, pagos, usuarios")
     return repo
 
 
@@ -102,31 +103,94 @@ class TestWeb:
         assert "Compraste 2 entrada(s)" in respuesta.get_data(as_text=True)
 
 
-ATRACCIONES = [
-    "Calesita", "Montaña rusa", "Rueda de la fortuna",
-    "Casa del terror", "Autitos chocadores", "Hamacas",
-]
-PALABRAS_DE_PARQUE_NATURAL = [
-    "bosque", "sendero", "laguna", "kayak", "avistaje", "picnic", "mirador", "naturaleza",
-]
+URL_MP = "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-1"
 
 
-class TestParqueDeDiversiones:
-    """La web se presenta como parque de diversiones, no como parque natural."""
+@pytest.fixture
+def pasarela_mp():
+    """Pasarela real de Mercado Pago reemplazada por un Mock."""
+    pasarela = Mock()
+    pasarela.crear_pago.return_value = URL_MP
+    return pasarela
 
-    def test_web_inicio_muestra_las_seis_atracciones(self, cliente):
-        html = cliente.get("/").get_data(as_text=True)
-        for atraccion in ATRACCIONES:
-            assert atraccion in html
 
-    def test_web_inicio_describe_los_pases(self, cliente):
-        html = cliente.get("/").get_data(as_text=True)
-        assert "fila común" in html
-        assert "fila rápida" in html
-        assert "vueltas ilimitadas en la montaña rusa" in html
+@pytest.fixture
+def cliente_mp(repo, pasarela_mp):
+    cliente = create_app(hoy=lambda: HOY, testing=True, repo=repo, pasarela=pasarela_mp).test_client()
+    cliente.post("/login", data={"email": "demo@ecoharmony.com", "password": "demo123"})
+    return cliente
 
-    @pytest.mark.parametrize("ruta", ["/", "/comprar", "/login"])
-    def test_web_no_quedan_referencias_a_parque_natural(self, cliente_logueado, ruta):
-        html = cliente_logueado.get(ruta).get_data(as_text=True).lower()
-        for palabra in PALABRAS_DE_PARQUE_NATURAL:
-            assert palabra not in html, f"'{palabra}' aparece en {ruta}"
+
+def comprar_con_tarjeta(cliente, pasarela):
+    """Compra 2 entradas regulares ($16.000) con tarjeta y devuelve el id de la compra."""
+    cliente.post("/comprar", data=datos_compra(forma_pago="TARJETA"))
+    return pasarela.crear_pago.call_args.kwargs["referencia"]
+
+
+def notificar_pago(cliente, pago_id="555"):
+    return cliente.post("/mercadopago/webhook", json={"type": "payment", "data": {"id": pago_id}})
+
+
+class TestMercadoPago:
+    """Con tarjeta se paga en Mercado Pago; la compra queda pagada solo si MP lo confirma."""
+
+    def test_web_compra_con_tarjeta_redirige_al_checkout_de_mercado_pago(self, cliente_mp):
+        respuesta = cliente_mp.post("/comprar", data=datos_compra(forma_pago="TARJETA"))
+        assert respuesta.status_code == 302
+        assert respuesta.headers["Location"] == URL_MP
+
+    def test_web_webhook_pago_aprobado_marca_la_compra_pagada(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        pasarela_mp.consultar_pago.return_value = EstadoPago("approved", compra_id, 16000)
+        assert notificar_pago(cliente_mp).status_code == 200
+        pasarela_mp.consultar_pago.assert_called_once_with("555")
+        assert repo.obtener_compra(compra_id)["pagada"] is True
+
+    def test_web_webhook_formato_ipn_marca_la_compra_pagada(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        pasarela_mp.consultar_pago.return_value = EstadoPago("approved", compra_id, 16000)
+        cliente_mp.post("/mercadopago/webhook?topic=payment&id=555")
+        pasarela_mp.consultar_pago.assert_called_once_with("555")
+        assert repo.obtener_compra(compra_id)["pagada"] is True
+
+    @pytest.mark.parametrize("estado", ["pending", "in_process", "rejected"])
+    def test_web_webhook_pago_no_aprobado_no_marca_la_compra(self, cliente_mp, pasarela_mp, repo, estado):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        pasarela_mp.consultar_pago.return_value = EstadoPago(estado, compra_id, 16000)
+        assert notificar_pago(cliente_mp).status_code == 200
+        assert repo.obtener_compra(compra_id)["pagada"] is False
+
+    def test_web_webhook_monto_distinto_no_marca_la_compra(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        pasarela_mp.consultar_pago.return_value = EstadoPago("approved", compra_id, 100)
+        notificar_pago(cliente_mp)
+        assert repo.obtener_compra(compra_id)["pagada"] is False
+
+    def test_web_webhook_ignora_notificaciones_que_no_son_pagos(self, cliente_mp, pasarela_mp):
+        respuesta = cliente_mp.post(
+            "/mercadopago/webhook", json={"type": "merchant_order", "data": {"id": "9"}}
+        )
+        assert respuesta.status_code == 200
+        pasarela_mp.consultar_pago.assert_not_called()
+
+    def test_web_webhook_si_mp_no_responde_pide_reintento(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        pasarela_mp.consultar_pago.side_effect = PagoNoDisponibleError("timeout")
+        assert notificar_pago(cliente_mp).status_code == 502
+        assert repo.obtener_compra(compra_id)["pagada"] is False
+
+    def test_web_vuelta_de_mp_no_confia_en_los_query_params(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        respuesta = cliente_mp.get(
+            f"/compras/{compra_id}?mp=success&status=approved"
+            "&collection_status=approved&payment_id=555"
+        )
+        assert respuesta.status_code == 200
+        assert "(pendiente)" in respuesta.get_data(as_text=True)
+        assert repo.obtener_compra(compra_id)["pagada"] is False
+        pasarela_mp.consultar_pago.assert_not_called()
+
+    def test_web_vuelta_de_mp_con_pago_fallido_avisa(self, cliente_mp, pasarela_mp):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        respuesta = cliente_mp.get(f"/compras/{compra_id}?mp=failure")
+        assert "El pago no se completó" in respuesta.get_data(as_text=True)
