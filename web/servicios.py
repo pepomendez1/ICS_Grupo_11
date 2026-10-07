@@ -1,13 +1,20 @@
 """Implementaciones concretas de las dependencias externas para la app web.
 
-Mercado Pago y el envío de mail están simulados: no hay credenciales reales.
-Para pasar a producción alcanza con reemplazar estas clases por otras que usen
-el SDK de Mercado Pago y un servidor SMTP, sin tocar parque/compra.py.
+Mercado Pago y el mail tienen una versión real y una simulada con la misma
+interfaz; cuál se usa depende de las variables de entorno. parque/compra.py
+no se entera.
 """
+import logging
 import uuid
 from datetime import date
 from typing import Optional
 from urllib.parse import urlsplit
+
+import mercadopago
+
+from parque.compra import CompraError
+
+log = logging.getLogger(__name__)
 
 
 class CalendarioEcoHarmony:
@@ -41,6 +48,52 @@ class PasarelaMercadoPagoSimulada:
         """El id del pago simulado que está en la URL, o None si la URL no es suya."""
         ruta = urlsplit(url or "").path
         return ruta.removeprefix(cls.PREFIJO_URL) if ruta.startswith(cls.PREFIJO_URL) else None
+
+
+class PagoNoDisponibleError(CompraError):
+    """Mercado Pago no pudo iniciar el pago."""
+
+
+class PasarelaMercadoPago:
+    """Checkout Pro de Mercado Pago con el SDK oficial.
+
+    No mandamos el email del comprador en la preferencia: en el entorno de
+    prueba, mezclar un email real con usuarios de prueba hace que MP rechace
+    el pago.
+    """
+
+    TITULO = "EcoHarmony Park · Entradas"
+
+    def __init__(self, access_token: str, base_url: str):
+        self._sdk = mercadopago.SDK(access_token)
+        self._base_url = base_url.rstrip("/")
+        self._sandbox = access_token.startswith("TEST-")
+
+    def crear_pago(self, monto: int, email: str, referencia: Optional[str] = None) -> str:
+        vuelta = f"{self._base_url}/compras/{referencia}?mp="
+        respuesta = self._sdk.preference().create({
+            "items": [{
+                "title": self.TITULO,
+                "quantity": 1,
+                "unit_price": monto,
+                "currency_id": "ARS",
+            }],
+            "external_reference": referencia,
+            "back_urls": {
+                "success": vuelta + "success",
+                "failure": vuelta + "failure",
+                "pending": vuelta + "pending",
+            },
+            "auto_return": "approved",
+            "notification_url": f"{self._base_url}/mercadopago/webhook",
+        })
+        if respuesta.get("status") not in (200, 201):
+            log.error("Mercado Pago rechazó la preferencia: %s", respuesta)
+            raise PagoNoDisponibleError(
+                "No pudimos conectar con Mercado Pago. Probá de nuevo o elegí pagar en efectivo."
+            )
+        preferencia = respuesta["response"]
+        return preferencia["sandbox_init_point" if self._sandbox else "init_point"]
 
 
 class NotificadorMailSimulado:
