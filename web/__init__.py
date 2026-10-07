@@ -8,7 +8,7 @@ from functools import wraps
 
 import logging
 
-from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, g, redirect, render_template, request, session, url_for
 
 from parque.compra import (
     CANTIDAD_MAXIMA_ENTRADAS,
@@ -96,8 +96,11 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
         return momento.astimezone(ZONA_PARQUE).strftime("%d/%m/%Y %H:%M")
 
     def usuario_actual():
-        email = session.get("email")
-        return usuarios.obtener(email) if email else None
+        # Se busca una sola vez por request y se guarda en g.
+        if "usuario" not in g:
+            email = session.get("email")
+            g.usuario = usuarios.obtener(email) if email else None
+        return g.usuario
 
     @app.context_processor
     def contexto_global():
