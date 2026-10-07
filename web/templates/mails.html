@@ -2,7 +2,7 @@
 {% block titulo %}Mis mails · EcoHarmony Park{% endblock %}
 {% block contenido %}
 <h1>Mis mails</h1>
-<p class="bajada">Bandeja simulada: acá aparecen los mails de confirmación que envía el sistema.</p>
+<p class="bajada">Copia de los mails de confirmación que te mandamos.</p>
 {% for m in mails %}
   <div class="tarjeta" style="margin-bottom:14px">
     <div class="ayuda">{{ m.enviado | fecha_hora }} · Para: {{ m.para }}</div>

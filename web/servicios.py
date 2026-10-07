@@ -137,7 +137,8 @@ def crear_pasarela(repo, entorno):
 
 
 class NotificadorMailSimulado:
-    """Guarda los mails en la base (bandeja simulada) y los imprime por consola."""
+    """Sin credenciales de Gmail: guarda el mail en la base (se ve en "Mis mails")
+    y lo imprime por consola."""
 
     ASUNTO = ASUNTO_CONFIRMACION
 

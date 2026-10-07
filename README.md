@@ -30,6 +30,7 @@ run.py                           Entrada para correr local
 tests/test_comprar_entradas.py   24 tests unitarios de la user story (TDD)
 tests/test_web.py                Tests de integración de la web (incluye webhook de MP)
 tests/test_mercadopago.py        PasarelaMercadoPago con el SDK mockeado
+tests/test_gmail.py              NotificadorGmail con smtplib mockeado
 ```
 
 ## Correrlo local
@@ -51,6 +52,7 @@ falte cae en una versión local:
 |---|---|
 | `DATABASE_URL` | Todo se guarda en memoria (se pierde al reiniciar). |
 | `MP_ACCESS_TOKEN` | Checkout de Mercado Pago simulado. |
+| `GMAIL_USER` + `GMAIL_APP_PASSWORD` | El mail no sale: queda solo en **Mis mails**. |
 
 ## Tests
 
@@ -87,6 +89,7 @@ Para correr un solo grupo: `pytest -v -k TestCantidad`.
    - `SECRET_KEY`: un texto largo y aleatorio. Tiene que ser fijo, si no se
      pierde la sesión entre requests.
    - `MP_ACCESS_TOKEN` y `APP_BASE_URL`: ver [Mercado Pago](#mercado-pago-checkout-pro-entorno-de-prueba).
+   - `GMAIL_USER` y `GMAIL_APP_PASSWORD`: ver [Mail con Gmail](#mail-con-gmail).
 4. **Deploy**.
 
 Si cambiás una variable después del deploy, hay que hacer **Redeploy** para que
@@ -138,6 +141,37 @@ desde internet:
 **Settings** → **Environment Variables** → agregá `MP_ACCESS_TOKEN` y
 `APP_BASE_URL` para el entorno **Production** → **Redeploy**.
 
+## Mail con Gmail
+
+Sin `GMAIL_USER` y `GMAIL_APP_PASSWORD` el mail de confirmación no sale: se guarda
+en la base y se ve en **Mis mails**. Con las dos variables, `NotificadorGmail` lo
+manda por `smtp.gmail.com:587` con STARTTLS. Es un mail en HTML con versión de
+texto plano que incluye el parque, la cantidad de entradas, la fecha, el tipo de
+pase, el total y la forma de pago. También guarda una copia en **Mis mails**.
+
+Si Gmail falla (contraseña mal, sin red, límite diario), el error queda en el log
+(`No se pudo enviar el mail de confirmación a ...`) y la compra se completa igual.
+
+### Cómo obtener las credenciales
+
+1. Usá una cuenta de Gmail para el parque. Conviene que sea una nueva y no la
+   personal.
+2. Activá la **verificación en 2 pasos** en https://myaccount.google.com/security.
+   Sin ella Google no deja crear contraseñas de aplicación.
+3. Entrá a https://myaccount.google.com/apppasswords, creá una con el nombre
+   `EcoHarmony Park` y copiá los 16 caracteres que te muestra. Se ve una sola vez.
+4. `GMAIL_USER` es la dirección completa (`algo@gmail.com`) y
+   `GMAIL_APP_PASSWORD` es esa contraseña de aplicación (con o sin espacios).
+   **No** es la contraseña de la cuenta.
+
+Gmail permite unos 500 envíos por día, que alcanza para el TP.
+
+### Cargarlas en Vercel
+
+**Settings** → **Environment Variables** → agregá `GMAIL_USER` y
+`GMAIL_APP_PASSWORD` → **Redeploy**. Si los mails no llegan, buscá el error en
+**Logs** del proyecto.
+
 ## Trazabilidad criterios ↔ tests
 
 | Criterio de aceptación | Clase | Tests |
@@ -149,3 +183,10 @@ desde internet:
 | Tipo de pase (VIP o regular) | `TestTipoPase` | `sin_indicar_tipo_de_pase_falla`, `pase_vip_pasa`, `pase_regular_pasa` |
 | Forma de pago; tarjeta redirige a Mercado Pago | `TestFormaPago` | `sin_indicar_forma_de_pago_falla`, `con_tarjeta_redirige_mp_pasa`, `con_efectivo_pasa`, `con_efectivo_no_redirige_mp_pasa` |
 | Mail de confirmación; informar cantidad y fecha | `TestConfirmacion` | `exitosa_envia_mail_confirmacion_pasa`, `exitosa_informa_cantidad_y_fecha_pasa`, `fallida_no_envia_mail_falla` |
+| Tarjeta redirige a Mercado Pago (referencia); mail de confirmación (detalle) | `TestIntegraciones` | `con_tarjeta_envia_referencia_de_compra_a_mp_pasa`, `exitosa_envia_detalle_de_compra_al_mail_pasa` |
+
+Las integraciones reales tienen sus propios tests, siempre con mocks:
+`tests/test_mercadopago.py` (preferencia, consulta de pagos y elección de
+pasarela), `tests/test_gmail.py` (SMTP, contenido del mail, fallas y elección de
+notificador) y `TestMercadoPago` en `tests/test_web.py` (webhook y vuelta del
+checkout).
