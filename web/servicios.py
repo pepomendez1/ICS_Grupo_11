@@ -116,6 +116,19 @@ class PasarelaMercadoPago:
         )
 
 
+def crear_pasarela(repo, entorno):
+    """Mercado Pago real si está MP_ACCESS_TOKEN; si no, el checkout simulado."""
+    access_token = entorno.get("MP_ACCESS_TOKEN")
+    if not access_token:
+        return PasarelaMercadoPagoSimulada(repo)
+    base_url = entorno.get("APP_BASE_URL")
+    if not base_url:
+        raise ValueError(
+            "Falta APP_BASE_URL: Mercado Pago la necesita para volver a la app y avisar los pagos"
+        )
+    return PasarelaMercadoPago(access_token, base_url)
+
+
 class NotificadorMailSimulado:
     """Guarda los mails en la base (bandeja simulada) y los imprime por consola."""
 

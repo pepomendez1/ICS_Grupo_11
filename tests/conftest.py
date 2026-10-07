@@ -16,6 +16,14 @@ DIA_CERRADO = date(2026, 10, 12)  # lunes: el parque cierra los lunes
 URL_MP = "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=123"
 
 
+@pytest.fixture(autouse=True)
+def sin_credenciales_reales(monkeypatch):
+    """Aunque estén exportadas en la terminal, los tests nunca usan Mercado Pago
+    ni Gmail de verdad: cada test que las necesita las define y mockea."""
+    for variable in ("MP_ACCESS_TOKEN", "APP_BASE_URL", "GMAIL_USER", "GMAIL_APP_PASSWORD"):
+        monkeypatch.delenv(variable, raising=False)
+
+
 class CalendarioFake:
     """El parque abre todos los días menos los lunes."""
 
