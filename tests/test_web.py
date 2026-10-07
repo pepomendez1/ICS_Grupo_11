@@ -100,3 +100,33 @@ class TestWeb:
         cliente.post("/registro", data={"nombre": "Ana", "email": "ana@mail.com", "password": "secreta1"})
         respuesta = cliente.post("/comprar", data=datos_compra(), follow_redirects=True)
         assert "Compraste 2 entrada(s)" in respuesta.get_data(as_text=True)
+
+
+ATRACCIONES = [
+    "Calesita", "Montaña rusa", "Rueda de la fortuna",
+    "Casa del terror", "Autitos chocadores", "Hamacas",
+]
+PALABRAS_DE_PARQUE_NATURAL = [
+    "bosque", "sendero", "laguna", "kayak", "avistaje", "picnic", "mirador", "naturaleza",
+]
+
+
+class TestParqueDeDiversiones:
+    """La web se presenta como parque de diversiones, no como parque natural."""
+
+    def test_web_inicio_muestra_las_seis_atracciones(self, cliente):
+        html = cliente.get("/").get_data(as_text=True)
+        for atraccion in ATRACCIONES:
+            assert atraccion in html
+
+    def test_web_inicio_describe_los_pases(self, cliente):
+        html = cliente.get("/").get_data(as_text=True)
+        assert "fila común" in html
+        assert "fila rápida" in html
+        assert "vueltas ilimitadas en la montaña rusa" in html
+
+    @pytest.mark.parametrize("ruta", ["/", "/comprar", "/login"])
+    def test_web_no_quedan_referencias_a_parque_natural(self, cliente_logueado, ruta):
+        html = cliente_logueado.get(ruta).get_data(as_text=True).lower()
+        for palabra in PALABRAS_DE_PARQUE_NATURAL:
+            assert palabra not in html, f"'{palabra}' aparece en {ruta}"
