@@ -8,7 +8,9 @@ import pytest
 
 from parque.compra import FormaPago, ResultadoCompra, ServicioCompraEntradas, TipoPase, Usuario
 from tests.conftest import HOY, CalendarioFake
-from web.servicios import NotificadorGmail
+from web import create_app
+from web.repositorio import RepositorioMemoria
+from web.servicios import NotificadorGmail, NotificadorMailSimulado, crear_notificador
 
 USUARIO_GMAIL = "ecoharmony.park@gmail.com"
 APP_PASSWORD = "abcd efgh ijkl mnop"
@@ -115,3 +117,30 @@ class TestFallas:
         )
         r = servicio.comprar(Usuario(email="ana@mail.com", registrado=True), solicitud_valida)
         assert r.cantidad == solicitud_valida.cantidad
+
+
+class TestElegirNotificador:
+    """Con GMAIL_USER y GMAIL_APP_PASSWORD se usa Gmail; si falta alguna, la bandeja simulada."""
+
+    @pytest.mark.parametrize("entorno", [
+        {},
+        {"GMAIL_USER": USUARIO_GMAIL},
+        {"GMAIL_APP_PASSWORD": APP_PASSWORD},
+    ])
+    def test_sin_las_dos_variables_usa_el_simulado(self, entorno):
+        assert isinstance(crear_notificador(RepositorioMemoria(), entorno), NotificadorMailSimulado)
+
+    def test_con_las_dos_variables_usa_gmail(self):
+        entorno = {"GMAIL_USER": USUARIO_GMAIL, "GMAIL_APP_PASSWORD": APP_PASSWORD}
+        assert isinstance(crear_notificador(RepositorioMemoria(), entorno), NotificadorGmail)
+
+    def test_la_app_manda_por_gmail_si_estan_las_variables(self, smtp, monkeypatch):
+        monkeypatch.setenv("GMAIL_USER", USUARIO_GMAIL)
+        monkeypatch.setenv("GMAIL_APP_PASSWORD", APP_PASSWORD)
+        cliente = create_app(hoy=lambda: HOY, testing=True, repo=RepositorioMemoria()).test_client()
+        cliente.post("/login", data={"email": "demo@ecoharmony.com", "password": "demo123"})
+        cliente.post("/comprar", data={
+            "fecha_visita": "2026-10-08", "cantidad": "1", "edades": ["30"],
+            "tipo_pase": "REGULAR", "forma_pago": "EFECTIVO",
+        })
+        assert mail_enviado(smtp)["To"] == "demo@ecoharmony.com"
