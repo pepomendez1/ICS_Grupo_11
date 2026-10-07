@@ -2,8 +2,14 @@
 {% block titulo %}Compra confirmada · EcoHarmony Park{% endblock %}
 {% block contenido %}
 <div class="angosta" style="max-width:560px">
-  <div class="aviso ok" role="status">{{ r.mensaje }}</div>
-  <h1>¡Listo, te esperamos!</h1>
+  {% set falta_pagar = r.forma_pago.value == "TARJETA" and not compra.pagada %}
+  {% if falta_pagar and vuelta_mp == "failure" %}
+    <div class="aviso error" role="alert">El pago no se completó en Mercado Pago. Podés hacer una nueva compra o elegir pagar en efectivo en boletería.</div>
+    <h1>Tu pago quedó pendiente</h1>
+  {% else %}
+    <div class="aviso ok" role="status">{{ r.mensaje }}</div>
+    <h1>¡Listo, te esperamos!</h1>
+  {% endif %}
   <p class="bajada">Te mandamos un mail de confirmación a <strong>{{ compra.email }}</strong>.</p>
 
   <div class="tarjeta">
@@ -21,6 +27,9 @@
         {% endif %}
       </dd>
     </dl>
+    {% if falta_pagar and vuelta_mp in ("success", "pending") %}
+      <p class="ayuda" style="margin:16px 0 0">Mercado Pago nos avisa cuando se acredita el pago. Si ya pagaste, actualizá esta página en unos segundos.</p>
+    {% endif %}
   </div>
 
   <p style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap">

@@ -6,6 +6,8 @@ from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo
 from functools import wraps
 
+import logging
+
 from flask import Flask, abort, flash, redirect, render_template, request, session, url_for
 
 from parque.compra import (
@@ -20,8 +22,16 @@ from parque.compra import (
 )
 from web.contenido import ATRACCIONES, PASES
 from web.repositorio import crear_repositorio
-from web.servicios import CalendarioEcoHarmony, NotificadorMailSimulado, PasarelaMercadoPagoSimulada
+from web.servicios import (
+    CalendarioEcoHarmony,
+    NotificadorMailSimulado,
+    PagoNoDisponibleError,
+    PasarelaMercadoPagoSimulada,
+)
 from web.usuarios import RepositorioUsuarios
+
+
+log = logging.getLogger(__name__)
 
 
 def _parse_fecha(valor):
@@ -53,7 +63,7 @@ def hoy_en_el_parque() -> date:
     return datetime.now(ZONA_PARQUE).date()
 
 
-def create_app(hoy=hoy_en_el_parque, testing=False, repo=None):
+def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, notificador=None):
     app = Flask(__name__)
     # En Vercel SECRET_KEY tiene que ser fija: si cada instancia generara una
     # distinta, la sesión se perdería entre requests.
@@ -64,8 +74,8 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None):
     usuarios = RepositorioUsuarios(repo)
     usuarios.asegurar_usuario_demo()
 
-    pasarela = PasarelaMercadoPagoSimulada(repo)
-    notificador = NotificadorMailSimulado(repo)
+    pasarela = pasarela or PasarelaMercadoPagoSimulada(repo)
+    notificador = notificador or NotificadorMailSimulado(repo)
     servicio = ServicioCompraEntradas(
         calendario=CalendarioEcoHarmony(),
         pasarela_pago=pasarela,
@@ -187,9 +197,44 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None):
         compra = repo.obtener_compra(compra_id)
         if not compra or compra["email"] != usuario_actual()["email"]:
             abort(404)
-        return render_template("confirmacion.html", compra=compra, r=compra["resultado"])
+        # ?mp=... lo agrega Mercado Pago al volver: solo cambia el aviso que
+        # mostramos, nunca el estado del pago (eso lo decide el webhook).
+        return render_template(
+            "confirmacion.html", compra=compra, r=compra["resultado"], vuelta_mp=request.args.get("mp")
+        )
 
-    # ---------- Mercado Pago (simulado) ----------
+    # ---------- Mercado Pago ----------
+
+    @app.post("/mercadopago/webhook")
+    def mercadopago_webhook():
+        """notification_url de la preferencia. MP avisa que cambió un pago y acá
+        se lo consultamos a su API: el aviso en sí no se toma como prueba de nada."""
+        if not hasattr(pasarela, "consultar_pago"):
+            abort(404)  # pasarela simulada: no hay webhook
+        datos = request.get_json(silent=True) or {}
+        # Webhooks: {"type": "payment", "data": {"id": ...}}; IPN: ?topic=payment&id=...
+        tipo = datos.get("type") or request.args.get("type") or request.args.get("topic")
+        pago_id = (datos.get("data") or {}).get("id") or request.args.get("data.id") or request.args.get("id")
+        if tipo != "payment" or not pago_id:
+            return "", 200
+
+        try:
+            pago = pasarela.consultar_pago(str(pago_id))
+        except PagoNoDisponibleError:
+            return "", 502  # MP reintenta la notificación más tarde
+
+        compra = repo.obtener_compra(pago.referencia) if pago.referencia else None
+        if not compra:
+            log.warning("Pago %s de MP sin compra asociada (%s)", pago_id, pago.referencia)
+        elif pago.estado != "approved":
+            log.info("Pago %s de la compra %s en estado %s", pago_id, pago.referencia, pago.estado)
+        elif pago.monto != compra["resultado"].monto:
+            log.warning("Pago %s por $%s no coincide con la compra %s", pago_id, pago.monto, pago.referencia)
+        else:
+            repo.marcar_compra_pagada(pago.referencia)
+        return "", 200
+
+    # ---------- Mercado Pago simulado ----------
 
     @app.route("/mercadopago/checkout/<pago_id>", methods=["GET", "POST"])
     def mercadopago_checkout(pago_id):
