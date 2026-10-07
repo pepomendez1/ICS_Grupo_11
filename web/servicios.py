@@ -137,6 +137,6 @@ class NotificadorMailSimulado:
     def __init__(self, repo):
         self._repo = repo
 
-    def enviar_confirmacion(self, email: str, mensaje: str) -> None:
+    def enviar_confirmacion(self, email: str, mensaje: str, resultado=None) -> None:
         self._repo.guardar_mail(email, self.ASUNTO, mensaje)
         print(f"[MAIL] Para: {email} | {mensaje}")

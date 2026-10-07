@@ -110,7 +110,9 @@ class PasarelaMercadoPago(Protocol):
 
 
 class Notificador(Protocol):
-    def enviar_confirmacion(self, email: str, mensaje: str) -> None: ...
+    def enviar_confirmacion(
+        self, email: str, mensaje: str, resultado: Optional[ResultadoCompra] = None
+    ) -> None: ...
 
 
 # ---------- Servicio ----------
@@ -147,7 +149,7 @@ class ServicioCompraEntradas:
             tipo_pase=solicitud.tipo_pase,
             forma_pago=solicitud.forma_pago,
         )
-        self._notificador.enviar_confirmacion(usuario.email, resultado.mensaje)
+        self._notificador.enviar_confirmacion(usuario.email, resultado.mensaje, resultado=resultado)
         return resultado
 
     def _validar(self, usuario: Usuario, s: SolicitudCompra) -> None:
