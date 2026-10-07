@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from parque.compra import CompraError
-from web.servicios import PagoNoDisponibleError, PasarelaMercadoPago
+from web.servicios import EstadoPago, PagoNoDisponibleError, PasarelaMercadoPago
 
 BASE_URL = "https://ecoharmony.vercel.app"
 
@@ -72,3 +72,18 @@ class TestCrearPago:
         with pytest.raises(PagoNoDisponibleError) as error:
             PasarelaMercadoPago("APP_USR-token", BASE_URL).crear_pago(24000, "ana@mail.com", referencia="c1")
         assert isinstance(error.value, CompraError)
+
+
+class TestConsultarPago:
+    def test_consulta_el_pago_a_la_api(self, sdk):
+        sdk.payment.return_value.get.return_value = {"status": 200, "response": {
+            "id": 555, "status": "approved", "external_reference": "c1", "transaction_amount": 24000.0,
+        }}
+        estado = PasarelaMercadoPago("APP_USR-token", BASE_URL).consultar_pago("555")
+        sdk.payment.return_value.get.assert_called_once_with("555")
+        assert estado == EstadoPago(estado="approved", referencia="c1", monto=24000)
+
+    def test_si_la_api_falla_lanza_error(self, sdk):
+        sdk.payment.return_value.get.return_value = {"status": 404, "response": {"message": "not found"}}
+        with pytest.raises(PagoNoDisponibleError):
+            PasarelaMercadoPago("APP_USR-token", BASE_URL).consultar_pago("555")
