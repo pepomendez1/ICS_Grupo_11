@@ -24,9 +24,9 @@ from web.contenido import ATRACCIONES, PASES, pesos
 from web.repositorio import crear_repositorio
 from web.servicios import (
     CalendarioEcoHarmony,
-    NotificadorMailSimulado,
     PagoNoDisponibleError,
     PasarelaMercadoPagoSimulada,
+    crear_notificador,
     crear_pasarela,
 )
 from web.usuarios import RepositorioUsuarios
@@ -76,7 +76,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
     usuarios.asegurar_usuario_demo()
 
     pasarela = pasarela or crear_pasarela(repo, os.environ)
-    notificador = notificador or NotificadorMailSimulado(repo)
+    notificador = notificador or crear_notificador(repo, os.environ)
     servicio = ServicioCompraEntradas(
         calendario=CalendarioEcoHarmony(),
         pasarela_pago=pasarela,

@@ -233,3 +233,12 @@ class NotificadorGmail:
 
         # Copia en "Mis mails" para que se vea también desde la app.
         self._repo.guardar_mail(email, ASUNTO_CONFIRMACION, mensaje)
+
+
+def crear_notificador(repo, entorno):
+    """Gmail si están GMAIL_USER y GMAIL_APP_PASSWORD; si no, la bandeja simulada."""
+    usuario = entorno.get("GMAIL_USER")
+    app_password = entorno.get("GMAIL_APP_PASSWORD")
+    if usuario and app_password:
+        return NotificadorGmail(usuario, app_password, repo)
+    return NotificadorMailSimulado(repo)
