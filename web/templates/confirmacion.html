@@ -1,7 +1,17 @@
 {% extends "base.html" %}
 {% block titulo %}Compra confirmada · EcoHarmony Park{% endblock %}
+{% block estilos %}{% include "_ticket_estilos.html" %}
+<style>
+  .confirmacion { max-width: 720px; margin: 0 auto; }
+  .confirmacion h2 { margin: 32px 0 6px; font-size: 1.45rem; }
+  @media print {
+    .confirmacion > .aviso, .confirmacion > h1, .confirmacion > .bajada, .resumen { display: none; }
+    .confirmacion h2 { margin-top: 0; }
+  }
+</style>
+{% endblock %}
 {% block contenido %}
-<div class="angosta" style="max-width:560px">
+<div class="confirmacion">
   {% set falta_pagar = r.forma_pago.value == "TARJETA" and not compra.pagada %}
   {% if falta_pagar and vuelta_mp == "failure" %}
     <div class="aviso error" role="alert">El pago no se completó en Mercado Pago. Podés hacer una nueva compra o elegir pagar en efectivo en boletería.</div>
@@ -12,11 +22,11 @@
   {% endif %}
   <p class="bajada">Te mandamos un mail de confirmación a <strong>{{ compra.email }}</strong>.</p>
 
-  <div class="tarjeta">
+  <div class="tarjeta resumen">
     <dl class="detalle">
       <dt>Fecha de visita</dt><dd>{{ r.fecha_visita.strftime('%d/%m/%Y') }}</dd>
       <dt>Entradas</dt><dd>{{ r.cantidad }}</dd>
-      <dt>Tipo de pase</dt><dd>{{ "VIP" if r.tipo_pase.value == "VIP" else "Regular" }}</dd>
+      <dt>Tipo de pase</dt><dd>{{ pases[r.tipo_pase.value].nombre }}</dd>
       <dt>Total</dt><dd>{{ r.monto | pesos }}</dd>
       <dt>Pago</dt>
       <dd>
@@ -32,9 +42,20 @@
     {% endif %}
   </div>
 
-  <p style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap">
+  <h2>Tus entradas</h2>
+  <p class="bajada no-imprimir">
+    {% if estado.valida %}Cada visitante ingresa con su QR. Podés mostrarlo desde el celular o imprimirlo.{% else %}Las entradas tienen QR cuando se confirma el pago.{% endif %}
+  </p>
+  <div class="tickets">
+    {% for t in tickets %}
+      {% include "_ticket.html" %}
+    {% endfor %}
+  </div>
+
+  <p class="no-imprimir" style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap">
     <a class="boton" href="{{ url_for('mails') }}">Ver mail de confirmación</a>
     <a class="boton secundario" href="{{ url_for('comprar') }}">Comprar más entradas</a>
+    {% if estado.valida %}<button class="boton secundario" type="button" onclick="window.print()">Imprimir entradas</button>{% endif %}
   </p>
 </div>
 {% endblock %}

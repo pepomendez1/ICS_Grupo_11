@@ -8,8 +8,10 @@
     {% if estado.valida %}Mostrá este QR en el ingreso al parque.{% else %}Cuando Mercado Pago confirme el pago, acá vas a ver el QR para ingresar.{% endif %}
   </p>
   {% include "_ticket.html" %}
+  {% if estado.valida %}
   <p class="no-imprimir" style="margin-top:20px">
     <button class="boton secundario" type="button" onclick="window.print()">Imprimir entrada</button>
   </p>
+  {% endif %}
 </div>
 {% endblock %}

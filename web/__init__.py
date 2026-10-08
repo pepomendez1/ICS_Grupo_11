@@ -230,7 +230,8 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
         # ?mp=... lo agrega Mercado Pago al volver: solo cambia el aviso que
         # mostramos, nunca el estado del pago (eso lo decide el webhook).
         return render_template(
-            "confirmacion.html", compra=compra, r=compra["resultado"], vuelta_mp=request.args.get("mp")
+            "confirmacion.html", compra=compra, r=compra["resultado"], vuelta_mp=request.args.get("mp"),
+            tickets=tickets(compra), estado=estado_de(compra),
         )
 
     @app.get("/entradas/<codigo>")
