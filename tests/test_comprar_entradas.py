@@ -195,3 +195,19 @@ class TestIntegraciones:
         notificador.enviar_confirmacion.assert_called_once_with(
             usuario_registrado.email, resultado.mensaje, resultado=resultado
         )
+
+
+class TestPrecios:
+    """Regular $50.000 y VIP $75.000 por entrada."""
+
+    def test_comprar_tres_entradas_regulares_cobra_150000_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        solicitud_valida.tipo_pase = TipoPase.REGULAR
+        resultado = servicio.comprar(usuario_registrado, solicitud_valida)
+        assert resultado.monto == 150_000
+
+    def test_comprar_dos_entradas_vip_cobra_150000_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        solicitud_valida.tipo_pase = TipoPase.VIP
+        solicitud_valida.cantidad = 2
+        solicitud_valida.edades = [35, 33]
+        resultado = servicio.comprar(usuario_registrado, solicitud_valida)
+        assert resultado.monto == 150_000
