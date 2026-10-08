@@ -12,6 +12,7 @@ from flask import Flask, abort, flash, g, redirect, render_template, request, se
 
 from parque.compra import (
     CANTIDAD_MAXIMA_ENTRADAS,
+    EDAD_MAXIMA,
     PRECIOS,
     CompraError,
     FormaPago,
@@ -164,6 +165,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
         contexto = {
             "hoy": hoy().isoformat(),
             "maximo": CANTIDAD_MAXIMA_ENTRADAS,
+            "edad_maxima": EDAD_MAXIMA,
             "form": {},
             "edades": [],
         }

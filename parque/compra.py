@@ -16,6 +16,8 @@ from typing import Callable, Optional, Protocol
 
 CANTIDAD_MAXIMA_ENTRADAS = 10
 
+EDAD_MAXIMA = 150  # años; la edad 0 (bebés) es válida
+
 DIA_CIERRE = calendar.MONDAY  # el parque cierra los lunes
 
 PRECIOS = {  # por entrada, en pesos
@@ -175,8 +177,12 @@ class ServicioCompraEntradas:
 
         if len(s.edades) != s.cantidad:
             raise EdadesInvalidasError("Debe indicar la edad de cada visitante")
-        if any(e is None or e < 0 for e in s.edades):
-            raise EdadesInvalidasError("Todas las edades deben ser válidas")
+        if any(e is None for e in s.edades):
+            raise EdadesInvalidasError("Debe indicar la edad de cada visitante")
+        if any(e < 0 or e > EDAD_MAXIMA for e in s.edades):
+            raise EdadesInvalidasError(
+                f"La edad de cada visitante debe estar entre 0 y {EDAD_MAXIMA} años"
+            )
 
         if not isinstance(s.tipo_pase, TipoPase):
             raise TipoPaseInvalidoError("Debe indicar el tipo de pase (VIP o regular)")

@@ -22,7 +22,7 @@
     <label>Edad de cada visitante</label>
     <div class="edades" id="edades">
       {% for edad in edades %}
-        <input name="edades" type="number" min="0" placeholder="Visitante {{ loop.index }}" aria-label="Edad visitante {{ loop.index }}" value="{{ edad }}">
+        <input name="edades" type="number" min="0" max="{{ edad_maxima }}" step="1" inputmode="numeric" placeholder="Visitante {{ loop.index }}" aria-label="Edad visitante {{ loop.index }}" value="{{ edad }}">
       {% endfor %}
     </div>
     <p class="ayuda" id="edades-ayuda" {% if edades %}hidden{% endif %}>Indicá la cantidad de entradas para cargar las edades.</p>
@@ -80,6 +80,7 @@
     for (let i = 0; i < Math.max(n, 0); i++) {
       const input = document.createElement("input");
       input.name = "edades"; input.type = "number"; input.min = "0";
+      input.max = "{{ edad_maxima }}"; input.step = "1"; input.inputMode = "numeric";
       input.placeholder = "Visitante " + (i + 1);
       input.setAttribute("aria-label", "Edad visitante " + (i + 1));
       input.value = actuales[i] || "";
