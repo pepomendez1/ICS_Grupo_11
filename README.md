@@ -145,7 +145,7 @@ Pago. Con el token usa `PasarelaMercadoPago` (SDK oficial `mercadopago`):
 
    | Vuelta | Pantalla |
    |---|---|
-   | `success` | "¡Listo, te esperamos!"; los QR aparecen cuando llega el webhook. |
+   | `success` (o `approved`) | Si el webhook ya llegó: "¡Listo, te esperamos!" con los QR. Si no: "Estamos confirmando tu pago…"; la página consulta `/compras/<id>/estado` (JSON, solo del dueño) cada 3 s y recarga cuando la compra figura pagada. A los 60 s sin novedades corta y avisa que las entradas llegan por mail. |
    | `pending` | "Tu pago está pendiente": sin error ni QR; las entradas llegan por mail al aprobarse. |
    | `failure` (rechazado o volvió sin pagar) | "No se pudo completar el pago". La compra queda `rechazada` (columna `compras.estado`), sus entradas no son válidas y el botón **Volver e intentar de nuevo** abre `/comprar` precargado. Al confirmar se crea una compra nueva. |
 
