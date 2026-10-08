@@ -357,3 +357,44 @@ class TestEntradasConQR:
         html = cliente_logueado.get(f"/compras/{compra_id}").get_data(as_text=True)
         assert "@media print" in html
         assert "window.print()" in html
+
+
+ASUNTO_TUS_ENTRADAS = "EcoHarmony Park — Tus entradas"
+
+
+def mails_tus_entradas(repo):
+    return [m for m in repo.todos_los_mails() if m["asunto"] == ASUNTO_TUS_ENTRADAS]
+
+
+class TestMailTusEntradas:
+    """Con tarjeta, los QR llegan en un segundo mail cuando se aprueba el pago."""
+
+    def test_web_webhook_aprobado_manda_tus_entradas(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        pasarela_mp.consultar_pago.return_value = EstadoPago("approved", compra_id, MONTO_DOS_REGULARES)
+        notificar_pago(cliente_mp)
+        mails = mails_tus_entradas(repo)
+        assert len(mails) == 1
+        assert mails[0]["para"] == EMAIL_VISITANTE
+
+    def test_web_webhook_repetido_no_manda_tus_entradas_dos_veces(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        pasarela_mp.consultar_pago.return_value = EstadoPago("approved", compra_id, MONTO_DOS_REGULARES)
+        notificar_pago(cliente_mp)
+        notificar_pago(cliente_mp)  # MP reintenta las notificaciones
+        assert len(mails_tus_entradas(repo)) == 1
+
+    def test_web_webhook_pendiente_no_manda_tus_entradas(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        pasarela_mp.consultar_pago.return_value = EstadoPago("pending", compra_id, MONTO_DOS_REGULARES)
+        notificar_pago(cliente_mp)
+        assert mails_tus_entradas(repo) == []
+
+    def test_web_checkout_simulado_aprobado_manda_tus_entradas(self, cliente_logueado, repo):
+        redireccion = cliente_logueado.post("/comprar", data=datos_compra(forma_pago="TARJETA"))
+        cliente_logueado.post(redireccion.headers["Location"])
+        assert len(mails_tus_entradas(repo)) == 1
+
+    def test_web_compra_en_efectivo_no_manda_tus_entradas(self, cliente_logueado, repo):
+        comprar_en_efectivo(cliente_logueado)  # los QR ya van en el mail de confirmación
+        assert mails_tus_entradas(repo) == []
