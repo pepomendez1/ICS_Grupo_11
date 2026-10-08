@@ -75,6 +75,21 @@ def hoy_en_el_parque() -> date:
     return datetime.now(ZONA_PARQUE).date()
 
 
+def resultado_del_pago(compra, vuelta_mp):
+    """Qué pantalla de confirmación mostrar. Lo guardado en la base manda sobre
+    el query param: si el webhook ya aprobó el pago, es "aprobado" aunque MP
+    haya vuelto con failure."""
+    if compra["resultado"].forma_pago == FormaPago.EFECTIVO:
+        return "efectivo"
+    if compra["pagada"]:
+        return "aprobado"
+    if compra["estado"] == "rechazada":
+        return "rechazado"
+    if vuelta_mp == "success":
+        return "acreditando"  # MP dice que aprobó, falta que llegue el webhook
+    return "pendiente"
+
+
 def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, notificador=None):
     app = Flask(__name__)
     # En Vercel SECRET_KEY tiene que ser fija: si cada instancia generara una
@@ -231,10 +246,16 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
         compra = repo.obtener_compra(compra_id)
         if not compra or compra["email"] != usuario_actual()["email"]:
             abort(404)
-        # ?mp=... lo agrega Mercado Pago al volver: solo cambia el aviso que
-        # mostramos, nunca el estado del pago (eso lo decide el webhook).
+        # ?mp=... es la back_url de Mercado Pago. Sirve para MOSTRAR el resultado
+        # y para cancelar la compra si volvió sin pagar, pero nunca para marcarla
+        # pagada: eso lo decide solo el webhook.
+        vuelta_mp = request.args.get("mp")
+        con_tarjeta = compra["resultado"].forma_pago == FormaPago.TARJETA
+        if con_tarjeta and vuelta_mp == "failure" and repo.marcar_compra_rechazada(compra_id):
+            compra = repo.obtener_compra(compra_id)
         return render_template(
-            "confirmacion.html", compra=compra, r=compra["resultado"], vuelta_mp=request.args.get("mp"),
+            "confirmacion.html", compra=compra, r=compra["resultado"],
+            resultado_pago=resultado_del_pago(compra, vuelta_mp),
             tickets=tickets(compra), estado=estado_de(compra),
         )
 

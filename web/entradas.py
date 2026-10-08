@@ -32,7 +32,7 @@ def qr_png(url: str) -> bytes:
 
 @dataclass
 class EstadoEntrada:
-    clave: str   # "efectivo" | "pagada" | "pendiente"
+    clave: str   # "efectivo" | "pagada" | "pendiente" | "rechazada"
     texto: str
     valida: bool  # si tiene QR para entrar al parque
 
@@ -43,4 +43,6 @@ def estado_de(compra: dict) -> EstadoEntrada:
         return EstadoEntrada("efectivo", "Válida · Pagar en boletería", True)
     if compra["pagada"]:
         return EstadoEntrada("pagada", "Válida · Pagada con Mercado Pago", True)
+    if compra["estado"] == "rechazada":
+        return EstadoEntrada("rechazada", "Compra cancelada · Entrada no válida", False)
     return EstadoEntrada("pendiente", "Esperando confirmación del pago", False)

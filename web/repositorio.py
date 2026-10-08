@@ -17,6 +17,7 @@ def _armar_compra(fila: dict, entradas=()) -> dict:
         "id": fila["id"],
         "email": fila["email"],
         "pagada": fila["pagada"],
+        "estado": fila.get("estado") or "activa",  # "activa" | "rechazada"
         "pago_id": fila.get("pago_id"),
         "resultado": ResultadoCompra(
             cantidad=fila["cantidad"],
@@ -62,7 +63,7 @@ class RepositorioMemoria:
     # Compras
     def guardar_compra(self, compra_id, email, resultado: ResultadoCompra, edades, pago_id=None):
         self._compras[compra_id] = {
-            "id": compra_id, "email": email, "pagada": False, "pago_id": pago_id,
+            "id": compra_id, "email": email, "pagada": False, "estado": "activa", "pago_id": pago_id,
             "cantidad": resultado.cantidad, "fecha_visita": resultado.fecha_visita,
             "url_pago": resultado.url_pago, "monto": resultado.monto,
             "tipo_pase": resultado.tipo_pase.value, "forma_pago": resultado.forma_pago.value,
@@ -91,7 +92,15 @@ class RepositorioMemoria:
         fila = self._compras.get(compra_id)
         if not fila or fila["pagada"]:
             return False
-        fila["pagada"] = True
+        fila["pagada"], fila["estado"] = True, "activa"
+        return True
+
+    def marcar_compra_rechazada(self, compra_id):
+        """Rechaza la compra si no está pagada. Devuelve True si cambió el estado."""
+        fila = self._compras.get(compra_id)
+        if not fila or fila["pagada"] or fila["estado"] == "rechazada":
+            return False
+        fila["estado"] = "rechazada"
         return True
 
     # Mails
@@ -233,8 +242,19 @@ class RepositorioPostgres:
     def marcar_compra_pagada(self, compra_id):
         """Devuelve True solo si la compra pasó de no pagada a pagada. Es atómico:
         si llegan dos webhooks a la vez, solo uno ve el cambio."""
+        # Si MP termina cobrando una compra rechazada, el cobro manda: vuelve a activa.
         filas = self._ejecutar(
-            "update compras set pagada = true where id = %s and not pagada", (compra_id,)
+            "update compras set pagada = true, estado = 'activa' where id = %s and not pagada",
+            (compra_id,),
+        )
+        return filas == 1
+
+    def marcar_compra_rechazada(self, compra_id):
+        """Rechaza la compra si no está pagada. Devuelve True si cambió el estado."""
+        filas = self._ejecutar(
+            "update compras set estado = 'rechazada' "
+            "where id = %s and not pagada and estado = 'activa'",
+            (compra_id,),
         )
         return filas == 1
 

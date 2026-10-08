@@ -1,5 +1,7 @@
 {% extends "base.html" %}
-{% block titulo %}Compra confirmada · EcoHarmony Park{% endblock %}
+{# resultado_pago: "efectivo" | "aprobado" | "acreditando" | "pendiente" | "rechazado" #}
+{% set rechazado = resultado_pago == "rechazado" %}
+{% block titulo %}{{ "Pago no completado" if rechazado else "Tu compra" }} · EcoHarmony Park{% endblock %}
 {% block estilos %}{% include "_ticket_estilos.html" %}
 <style>
   .confirmacion { max-width: 720px; margin: 0 auto; }
@@ -14,23 +16,25 @@
 {% endblock %}
 {% block contenido %}
 <div class="confirmacion">
-  {% set falta_pagar = r.forma_pago.value == "TARJETA" and not compra.pagada %}
-  {% if falta_pagar and vuelta_mp == "failure" %}
-    <div class="aviso error" role="alert">El pago no se completó en Mercado Pago. Podés hacer una nueva compra o elegir pagar en efectivo en boletería.</div>
-    <h1>Tu pago quedó pendiente</h1>
+  {% if rechazado %}
+    <h1>No se pudo completar el pago</h1>
+    <p class="bajada">Mercado Pago no aprobó el pago o se canceló antes de terminar. Esta compra quedó cancelada y sus entradas no son válidas. Podés intentarlo de nuevo con tarjeta o elegir pagar en efectivo en boletería.</p>
+  {% elif resultado_pago == "pendiente" %}
+    <h1>Tu pago está pendiente</h1>
+    <p class="bajada">Cuando se apruebe te mandamos las entradas a <strong>{{ compra.email }}</strong>.</p>
   {% else %}
     <div class="aviso ok" role="status">{{ r.mensaje }}</div>
     <h1>¡Listo, te esperamos!</h1>
+    <p class="bajada">
+      {% if bandeja_simulada %}
+        Te mandamos un mail de confirmación a <strong>{{ compra.email }}</strong>.
+      {% elif resultado_pago == "acreditando" %}
+        Cuando se apruebe el pago te mandamos las entradas a <strong>{{ compra.email }}</strong>.
+      {% else %}
+        Te mandamos un mail con tus entradas a <strong>{{ compra.email }}</strong>.
+      {% endif %}
+    </p>
   {% endif %}
-  <p class="bajada">
-    {% if bandeja_simulada %}
-      Te mandamos un mail de confirmación a <strong>{{ compra.email }}</strong>.
-    {% elif falta_pagar %}
-      Cuando se apruebe el pago te mandamos las entradas a <strong>{{ compra.email }}</strong>.
-    {% else %}
-      Te mandamos un mail con tus entradas a <strong>{{ compra.email }}</strong>.
-    {% endif %}
-  </p>
 
   <div class="tarjeta resumen">
     <dl class="detalle">
@@ -40,32 +44,42 @@
       <dt>Total</dt><dd>{{ r.monto | pesos }}</dd>
       <dt>Pago</dt>
       <dd>
-        {% if r.forma_pago.value == "TARJETA" %}
-          Tarjeta · Mercado Pago {{ "(aprobado)" if compra.pagada else "(pendiente)" }}
-        {% else %}
+        {% if resultado_pago == "efectivo" %}
           Efectivo en boletería
+        {% elif resultado_pago == "aprobado" %}
+          Tarjeta · Mercado Pago (aprobado)
+        {% elif rechazado %}
+          Tarjeta · Mercado Pago (no completado)
+        {% else %}
+          Tarjeta · Mercado Pago (pendiente)
         {% endif %}
       </dd>
     </dl>
-    {% if falta_pagar and vuelta_mp in ("success", "pending") %}
+    {% if resultado_pago == "acreditando" %}
       <p class="ayuda" style="margin:16px 0 0">Mercado Pago nos avisa cuando se acredita el pago. Si ya pagaste, actualizá esta página en unos segundos.</p>
     {% endif %}
   </div>
 
-  <h2>Tus entradas</h2>
-  <p class="bajada no-imprimir">
-    {% if estado.valida %}Cada visitante ingresa con su QR. Podés mostrarlo desde el celular o imprimirlo.{% else %}Las entradas tienen QR cuando se confirma el pago.{% endif %}
-  </p>
-  <div class="tickets">
-    {% for t in tickets %}
-      {% include "_ticket.html" %}
-    {% endfor %}
-  </div>
+  {% if not rechazado %}
+    <h2>Tus entradas</h2>
+    <p class="bajada no-imprimir">
+      {% if estado.valida %}Cada visitante ingresa con su QR. Podés mostrarlo desde el celular o imprimirlo.{% else %}Las entradas tienen QR cuando se confirma el pago.{% endif %}
+    </p>
+    <div class="tickets">
+      {% for t in tickets %}
+        {% include "_ticket.html" %}
+      {% endfor %}
+    </div>
+  {% endif %}
 
   <p class="acciones no-imprimir">
-    <a class="boton" href="{{ url_for('comprar') }}">Comprar más entradas</a>
-    {% if estado.valida %}<button class="boton secundario" type="button" onclick="window.print()">Imprimir entradas</button>{% endif %}
-    {% if bandeja_simulada %}<a class="boton secundario" href="{{ url_for('mails') }}">Ver mail de confirmación</a>{% endif %}
+    {% if rechazado %}
+      <a class="boton" href="{{ url_for('comprar', reintentar=compra.id) }}">Volver e intentar de nuevo</a>
+    {% else %}
+      <a class="boton" href="{{ url_for('comprar') }}">Comprar más entradas</a>
+      {% if estado.valida %}<button class="boton secundario" type="button" onclick="window.print()">Imprimir entradas</button>{% endif %}
+      {% if bandeja_simulada %}<a class="boton secundario" href="{{ url_for('mails') }}">Ver mail de confirmación</a>{% endif %}
+    {% endif %}
   </p>
 </div>
 {% endblock %}

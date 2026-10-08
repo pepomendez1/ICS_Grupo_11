@@ -32,6 +32,12 @@ create table if not exists compras (
   creado        timestamptz not null default now()
 );
 
+-- Una compra con tarjeta queda 'rechazada' si el visitante vuelve de Mercado
+-- Pago sin pagar (back_url failure). Las compras existentes quedan 'activa'.
+alter table compras
+  add column if not exists estado text not null default 'activa'
+  check (estado in ('activa', 'rechazada'));
+
 -- Una fila por entrada individual de la compra. El código es el que va en el
 -- QR (secrets.token_urlsafe): no se puede adivinar.
 create table if not exists entradas (

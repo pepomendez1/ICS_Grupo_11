@@ -21,6 +21,8 @@
     {% if t.qr %}
       {{ t.qr | safe }}
       <code>{{ t.entrada.codigo[:12] }}</code>
+    {% elif estado.clave == "rechazada" %}
+      <p class="espera" style="color: var(--error)">Esta entrada no es válida</p>
     {% else %}
       <p class="espera">
         <svg viewBox="0 0 34 34" fill="none" aria-hidden="true"><circle cx="17" cy="17" r="14" stroke="#85600f" stroke-width="2"/><path d="M17 9v8l5 3" stroke="#85600f" stroke-width="2" stroke-linecap="round"/></svg>
