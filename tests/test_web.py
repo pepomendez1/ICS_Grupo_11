@@ -207,7 +207,7 @@ class TestMercadoPago:
     def test_web_vuelta_de_mp_con_pago_fallido_avisa(self, cliente_mp, pasarela_mp):
         compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
         respuesta = cliente_mp.get(f"/compras/{compra_id}?mp=failure")
-        assert "El pago no se completó" in respuesta.get_data(as_text=True)
+        assert "No se pudo completar el pago" in respuesta.get_data(as_text=True)
 
 
 class TestSinUsuarioDemo:
@@ -453,3 +453,69 @@ class TestBandejaSimulada:
         assert 'href="/mails"' in html
         assert BOTON_COMPRAR_MAS in html
         assert cliente_logueado.get("/mails").status_code == 200
+
+
+def volver_de_mp(cliente, compra_id, resultado=None):
+    """La back_url de Mercado Pago: /compras/<id>?mp=success|pending|failure."""
+    ruta = f"/compras/{compra_id}" + (f"?mp={resultado}" if resultado else "")
+    return cliente.get(ruta).get_data(as_text=True)
+
+
+def aprobar_por_webhook(cliente, pasarela, compra_id):
+    pasarela.consultar_pago.return_value = EstadoPago("approved", compra_id, MONTO_DOS_REGULARES)
+    notificar_pago(cliente)
+
+
+class TestVueltaDeMercadoPago:
+    """La vuelta de MP distingue aprobado / pendiente / rechazado. Pagada solo la marca el webhook."""
+
+    def test_web_rechazado_no_promete_mails_ni_muestra_qr(self, cliente_mp, pasarela_mp):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        html = volver_de_mp(cliente_mp, compra_id, "failure")
+        assert "No se pudo completar el pago" in html
+        assert "mail de confirmación" not in html.lower()
+        assert "te mandamos las entradas" not in html.lower()
+        assert QR not in html
+        assert "Volver e intentar de nuevo" in html
+        assert "Comprar más entradas" not in html
+
+    def test_web_rechazado_queda_registrado_en_la_base(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        volver_de_mp(cliente_mp, compra_id, "failure")
+        assert repo.obtener_compra(compra_id)["estado"] == "rechazada"
+        # Sigue rechazada aunque después se abra sin el query param.
+        assert "No se pudo completar el pago" in volver_de_mp(cliente_mp, compra_id)
+
+    def test_web_entrada_de_compra_rechazada_no_es_valida(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        volver_de_mp(cliente_mp, compra_id, "failure")
+        entrada = entradas_de(repo, compra_id)[0]
+        html = cliente_mp.get(f"/entradas/{entrada.codigo}").get_data(as_text=True)
+        assert "Compra cancelada · Entrada no válida" in html
+        assert QR not in html
+
+    def test_web_pendiente_sin_aviso_de_error_ni_qr(self, cliente_mp, pasarela_mp):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        html = volver_de_mp(cliente_mp, compra_id, "pending")
+        assert "Tu pago está pendiente" in html
+        assert f"Cuando se apruebe te mandamos las entradas a <strong>{EMAIL_VISITANTE}</strong>" in html
+        assert 'class="aviso error"' not in html
+        assert QR not in html
+
+    def test_web_webhook_aprobado_y_vuelta_con_failure_se_muestra_aprobada(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        aprobar_por_webhook(cliente_mp, pasarela_mp, compra_id)
+        html = volver_de_mp(cliente_mp, compra_id, "failure")
+        assert "¡Listo, te esperamos!" in html
+        assert QR in html
+        assert "No se pudo completar el pago" not in html
+        assert repo.obtener_compra(compra_id)["estado"] != "rechazada"
+
+    def test_web_rechazada_y_despues_aprobada_por_el_webhook_queda_aprobada(self, cliente_mp, pasarela_mp, repo):
+        # Si MP termina cobrando (por ejemplo, un medio que se acredita tarde), la compra vale.
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        volver_de_mp(cliente_mp, compra_id, "failure")
+        aprobar_por_webhook(cliente_mp, pasarela_mp, compra_id)
+        assert QR in volver_de_mp(cliente_mp, compra_id)
+        entrada = entradas_de(repo, compra_id)[0]
+        assert QR in cliente_mp.get(f"/entradas/{entrada.codigo}").get_data(as_text=True)
