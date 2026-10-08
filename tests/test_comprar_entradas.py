@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 import pytest
 
@@ -231,3 +232,23 @@ class TestPrecios:
         solicitud_valida.edades = [35, 33]
         resultado = servicio.comprar(usuario_registrado, solicitud_valida)
         assert resultado.monto == 150_000
+
+
+class TestEntradas:
+    """Cada entrada de la compra es individual y tiene su propio código."""
+
+    def test_comprar_tres_entradas_genera_tres_entradas_con_la_edad_de_cada_visitante_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        resultado = servicio.comprar(usuario_registrado, solicitud_valida)
+        assert [e.numero for e in resultado.entradas] == [1, 2, 3]
+        assert [e.edad for e in resultado.entradas] == [35, 33, 8]
+
+    def test_comprar_entradas_cada_una_tiene_codigo_unico_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        resultado = servicio.comprar(usuario_registrado, solicitud_valida)
+        codigos = [e.codigo for e in resultado.entradas]
+        assert len(set(codigos)) == 3
+
+    def test_comprar_entradas_codigo_no_adivinable_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        with patch("parque.compra.secrets.token_urlsafe", side_effect=["c1", "c2", "c3"]) as token:
+            resultado = servicio.comprar(usuario_registrado, solicitud_valida)
+        assert [e.codigo for e in resultado.entradas] == ["c1", "c2", "c3"]
+        token.assert_called_with(16)  # 128 bits de azar criptográfico
