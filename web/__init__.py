@@ -20,7 +20,7 @@ from parque.compra import (
     TipoPase,
     Usuario,
 )
-from web.contenido import ATRACCIONES, PASES, pesos
+from web.contenido import ATRACCIONES, PASES, dia_de_cierre, horario, pesos
 from web.repositorio import crear_repositorio
 from web.servicios import (
     CalendarioEcoHarmony,
@@ -102,7 +102,10 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
 
     @app.context_processor
     def contexto_global():
-        return {"usuario": usuario_actual(), "precios": PRECIOS, "pases": PASES}
+        return {
+            "usuario": usuario_actual(), "precios": PRECIOS, "pases": PASES,
+            "dia_cierre": dia_de_cierre(), "horario": horario(),
+        }
 
     def login_requerido(vista):
         @wraps(vista)

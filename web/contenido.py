@@ -1,4 +1,7 @@
 """Textos del parque que se muestran en la web y en el mail de confirmación."""
+import parque.compra
+
+DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
 ATRACCIONES = [
     {"nombre": "Montaña rusa", "tipo": "Adrenalina",
@@ -40,3 +43,14 @@ FORMAS_DE_PAGO = {
 
 def pesos(monto: int) -> str:
     return "$" + f"{monto:,}".replace(",", ".")
+
+
+def dia_de_cierre() -> str:
+    """"lunes": sale de parque.compra.DIA_CIERRE."""
+    return DIAS[parque.compra.DIA_CIERRE]
+
+
+def horario() -> str:
+    """"Abierto de martes a domingo": sale de parque.compra.DIA_CIERRE."""
+    cierre = parque.compra.DIA_CIERRE
+    return f"Abierto de {DIAS[(cierre + 1) % 7]} a {DIAS[(cierre - 1) % 7]}"

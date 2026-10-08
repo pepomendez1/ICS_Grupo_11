@@ -4,6 +4,7 @@ from unittest.mock import Mock
 import pytest
 
 from parque.compra import (
+    DIA_CIERRE,
     FormaPago,
     ServicioCompraEntradas,
     SolicitudCompra,
@@ -25,10 +26,10 @@ def sin_credenciales_reales(monkeypatch):
 
 
 class CalendarioFake:
-    """El parque abre todos los días menos los lunes."""
+    """El parque abre todos los días menos el de cierre (los lunes)."""
 
     def esta_abierto(self, fecha: date) -> bool:
-        return fecha.weekday() != 0
+        return fecha.weekday() != DIA_CIERRE
 
 
 @pytest.fixture

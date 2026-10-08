@@ -17,8 +17,9 @@ from urllib.parse import urlsplit
 
 import mercadopago
 
+import parque.compra
 from parque.compra import CompraError, ResultadoCompra
-from web.contenido import FORMAS_DE_PAGO, PASES, pesos
+from web.contenido import FORMAS_DE_PAGO, PASES, horario, pesos
 
 log = logging.getLogger(__name__)
 
@@ -26,8 +27,8 @@ ASUNTO_CONFIRMACION = "EcoHarmony Park — Confirmación de compra"
 
 
 class CalendarioEcoHarmony:
-    """EcoHarmony Park abre de martes a domingo (cierra los lunes)
-    y además cierra en los feriados cargados acá."""
+    """EcoHarmony Park cierra el día de la semana configurado en
+    parque.compra.DIA_CIERRE (los lunes) y en los feriados cargados acá."""
 
     FERIADOS_CERRADO = {
         date(2026, 12, 25),
@@ -35,7 +36,7 @@ class CalendarioEcoHarmony:
     }
 
     def esta_abierto(self, fecha: date) -> bool:
-        return fecha.weekday() != 0 and fecha not in self.FERIADOS_CERRADO
+        return fecha.weekday() != parque.compra.DIA_CIERRE and fecha not in self.FERIADOS_CERRADO
 
 
 class PasarelaMercadoPagoSimulada:
@@ -163,7 +164,7 @@ def armar_mail_confirmacion(mensaje: str, resultado: Optional[ResultadoCompra]) 
         ("Total", pesos(resultado.monto)),
         ("Forma de pago", FORMAS_DE_PAGO[resultado.forma_pago.value]),
     ]
-    cierre = "Te esperamos en EcoHarmony Park. Abrimos de martes a domingo."
+    cierre = f"Te esperamos en EcoHarmony Park. {horario()}."
 
     texto = "\n".join([
         "¡Gracias por tu compra en EcoHarmony Park!",

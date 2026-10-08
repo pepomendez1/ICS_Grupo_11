@@ -9,7 +9,7 @@
 <form class="tarjeta" method="post" novalidate id="form-compra">
   <div class="grilla">
     <div class="campo">
-      <label for="fecha_visita">Fecha de visita <span class="ayuda">(cerrado los lunes)</span></label>
+      <label for="fecha_visita">Fecha de visita <span class="ayuda">(cerrado los {{ dia_cierre }})</span></label>
       <input id="fecha_visita" name="fecha_visita" type="date" min="{{ hoy }}" value="{{ form.get('fecha_visita', '') }}">
     </div>
     <div class="campo">
