@@ -12,6 +12,10 @@ no se venden ni se incluyen en el pase.
 | Regular | Acceso al parque, senderos y exhibiciones. | $50.000 |
 | VIP | Lo mismo, con ingreso por fila preferencial. | $75.000 |
 
+Precios, día de cierre, cantidad máxima y edad máxima están en un solo lugar:
+las constantes del principio de `parque/compra.py`. Ver
+[Supuestos a confirmar con la PO](#supuestos-a-confirmar-con-la-po).
+
 **User story:** COMO visitante QUIERO comprar una entrada PARA asegurar mi visita al parque.
 
 App web en Flask con base de datos en Supabase (Postgres), deployable en Vercel.
@@ -25,12 +29,14 @@ web/__init__.py                  App Flask: rutas y pantallas
 web/repositorio.py               Persistencia: Postgres (Supabase) o memoria
 web/servicios.py                 Calendario del parque, Mercado Pago y mail (reales y simulados)
 web/contenido.py                 Textos del bioparque: sectores, actividades y pases
+web/entradas.py                  URL, QR (segno) y estado de cada entrada
 web/templates/                   Pantallas HTML
 supabase/schema.sql              Tablas de la base
 app.py                           Entrada para Vercel
 run.py                           Entrada para correr local
-tests/test_comprar_entradas.py   24 tests unitarios de la user story (TDD) + TestIntegraciones
-tests/test_web.py                Tests de integración de la web (incluye webhook de MP)
+tests/test_comprar_entradas.py   Tests unitarios de la user story (los 24 originales + los agregados)
+tests/test_calendario.py         Día de cierre configurable
+tests/test_web.py                Tests de integración de la web (webhook, entradas, QR, bandeja)
 tests/test_mercadopago.py        PasarelaMercadoPago con el SDK mockeado
 tests/test_gmail.py              NotificadorGmail con smtplib mockeado
 ```
@@ -56,6 +62,7 @@ falte cae en una versión local:
 | `DATABASE_URL` | Todo se guarda en memoria (se pierde al reiniciar). |
 | `MP_ACCESS_TOKEN` | Checkout de Mercado Pago simulado. |
 | `GMAIL_USER` + `GMAIL_APP_PASSWORD` | El mail no sale: queda solo en **Mis mails**. |
+| `APP_BASE_URL` | Los QR de las páginas apuntan a la URL con la que abriste la app; los de los mails, a `http://localhost:5001`. |
 
 ## Tests
 
@@ -98,6 +105,32 @@ Para correr un solo grupo: `pytest -v -k TestCantidad`.
 Si cambiás una variable después del deploy, hay que hacer **Redeploy** para que
 la tome.
 
+## Entradas con QR
+
+Cada entrada de una compra es individual: si comprás 3, se generan 3, cada una
+con la edad de su visitante y un código propio (`secrets.token_urlsafe`, no se
+puede adivinar). Se guardan en la tabla `entradas` y el QR apunta a
+`{APP_BASE_URL}/entradas/<codigo>`, una página pública con el parque, la fecha,
+el tipo de pase, la edad, el número de entrada (por ejemplo, 1 de 3) y el estado:
+
+| Forma de pago | Estado | QR |
+|---|---|---|
+| Efectivo | Válida · Pagar en boletería | Sí |
+| Tarjeta, pago pendiente | Esperando confirmación del pago | No |
+| Tarjeta, aprobada por el webhook | Válida · Pagada con Mercado Pago | Sí |
+
+La confirmación de la compra muestra las entradas como tickets con talón y se
+pueden imprimir. Los QR se generan con `segno` (Python puro, sin Pillow).
+
+Mails:
+
+- **Efectivo:** el mail de confirmación incluye los QR.
+- **Tarjeta:** el mail de confirmación dice "pago pendiente de confirmación".
+  Cuando el webhook aprueba el pago se manda un segundo mail, **Tus entradas**,
+  con los QR (una sola vez, aunque Mercado Pago repita la notificación).
+- Los QR van como imágenes inline con `Content-ID` (no como `data:` URI) y el
+  remitente es `EcoHarmony Park <GMAIL_USER>`.
+
 ## Mercado Pago (Checkout Pro, entorno de prueba)
 
 Sin `MP_ACCESS_TOKEN` la app usa un checkout propio que simula el de Mercado
@@ -129,8 +162,8 @@ Pago. Con el token usa `PasarelaMercadoPago` (SDK oficial `mercadopago`):
    pago aprobado u `OTHE` para uno rechazado.
 
 `APP_BASE_URL` es la URL pública de la app, sin `/` al final. Mercado Pago la usa
-para volver a la app y para llamar al webhook, así que tiene que ser accesible
-desde internet:
+para volver a la app y para llamar al webhook, y los QR de las entradas apuntan
+a ella, así que tiene que ser accesible desde internet:
 
 - **Vercel:** la URL de producción, por ejemplo `https://ecoharmony-park.vercel.app`.
   No uses la URL de un deploy puntual (`...-git-xxx.vercel.app`): esas están
@@ -146,11 +179,13 @@ desde internet:
 
 ## Mail con Gmail
 
-Sin `GMAIL_USER` y `GMAIL_APP_PASSWORD` el mail de confirmación no sale: se guarda
-en la base y se ve en **Mis mails**. Con las dos variables, `NotificadorGmail` lo
-manda por `smtp.gmail.com:587` con STARTTLS. Es un mail en HTML con versión de
-texto plano que incluye el parque, la cantidad de entradas, la fecha, el tipo de
-pase, el total y la forma de pago. También guarda una copia en **Mis mails**.
+Sin `GMAIL_USER` y `GMAIL_APP_PASSWORD` los mails no salen: se guardan en la base
+y se ven en **Mis mails** (la bandeja simulada, con su link en el menú y su botón
+en la confirmación). Con las dos variables, `NotificadorGmail` los manda por
+`smtp.gmail.com:587` con STARTTLS, en HTML con versión de texto plano: parque,
+cantidad de entradas, fecha, tipo de pase, total, forma de pago y los QR (ver
+[Entradas con QR](#entradas-con-qr)). Con Gmail real la bandeja simulada
+desaparece: no hay link ni botón y `/mails` devuelve 404.
 
 Si Gmail falla (contraseña mal, sin red, límite diario), el error queda en el log
 (`No se pudo enviar el mail de confirmación a ...`) y la compra se completa igual.
@@ -175,6 +210,17 @@ Gmail permite unos 500 envíos por día, que alcanza para el TP.
 `GMAIL_APP_PASSWORD` → **Redeploy**. Si los mails no llegan, buscá el error en
 **Logs** del proyecto.
 
+## Supuestos a confirmar con la PO
+
+| Tema | Supuesto actual | Dónde se cambia |
+|---|---|---|
+| Precios | Regular $50.000 y VIP $75.000 por entrada, iguales para todas las edades. | `PRECIOS` en `parque/compra.py` |
+| Día de cierre | Cierra los lunes. También están cerrados el 25/12 y el 1/1. | `DIA_CIERRE` en `parque/compra.py`; feriados en `CalendarioEcoHarmony` |
+| Para qué se usa la edad | Hoy solo se pide y queda en cada entrada. ¿Hay precio diferencial por edad (menores, jubilados, bebés sin cargo)? ¿Alguna actividad o sector tiene edad mínima? | `ServicioCompraEntradas.comprar` |
+| Límite de edad | Se aceptan edades de 0 a 150 años. ¿Hay un mínimo? ¿Un bebé ocupa una de las 10 entradas? | `EDAD_MAXIMA` en `parque/compra.py` |
+| Contenido | Las descripciones de los sectores y actividades y los horarios de alimentación son textos de ejemplo. | `web/contenido.py` |
+| Uso de la entrada | El QR identifica la entrada pero no se marca como "usada" en el ingreso. | Fuera del alcance de esta user story |
+
 ## Trazabilidad criterios ↔ tests
 
 | Criterio de aceptación | Clase | Tests |
@@ -182,14 +228,22 @@ Gmail permite unos 500 envíos por día, que alcanza para el TP.
 | Solo usuarios registrados | `TestAcceso` | `sin_estar_logueado_falla`, `usuario_registrado_pasa` |
 | Indicar cantidad; no mayor a 10 | `TestCantidad` | `sin_seleccionar_cantidad_falla`, `cero_entradas_falla`, `una_entrada_pasa`, `diez_entradas_pasa`, `once_entradas_falla` |
 | Fecha actual o futura; parque abierto | `TestFechaVisita` | `con_fecha_anterior_a_actual_falla`, `fecha_actual_pasa`, `fecha_futura_pasa`, `fecha_parque_cerrado_falla` |
-| Edad de cada visitante | `TestDatosVisitantes` | `sin_asignar_edad_todos_visitantes_falla`, `cantidad_edades_no_coincide_cantidad_entradas_falla`, `con_edad_de_todos_los_visitantes_pasa` |
+| Edad de cada visitante (entre 0 y 150) | `TestDatosVisitantes` | `sin_asignar_edad_todos_visitantes_falla`, `cantidad_edades_no_coincide_cantidad_entradas_falla`, `con_edad_de_todos_los_visitantes_pasa`, `edad_negativa_falla`, `edad_cero_pasa`, `edad_150_pasa`, `edad_151_falla` |
 | Tipo de pase (VIP o regular) | `TestTipoPase` | `sin_indicar_tipo_de_pase_falla`, `pase_vip_pasa`, `pase_regular_pasa` |
 | Forma de pago; tarjeta redirige a Mercado Pago | `TestFormaPago` | `sin_indicar_forma_de_pago_falla`, `con_tarjeta_redirige_mp_pasa`, `con_efectivo_pasa`, `con_efectivo_no_redirige_mp_pasa` |
 | Mail de confirmación; informar cantidad y fecha | `TestConfirmacion` | `exitosa_envia_mail_confirmacion_pasa`, `exitosa_informa_cantidad_y_fecha_pasa`, `fallida_no_envia_mail_falla` |
 | Tarjeta redirige a Mercado Pago (referencia); mail de confirmación (detalle) | `TestIntegraciones` | `con_tarjeta_envia_referencia_de_compra_a_mp_pasa`, `exitosa_envia_detalle_de_compra_al_mail_pasa` |
+| Tipo de pase (precio de cada pase) | `TestPrecios` | `tres_entradas_regulares_cobra_150000_pasa`, `dos_entradas_vip_cobra_150000_pasa` |
+| Indicar la edad de cada visitante (una entrada por visitante) | `TestEntradas` | `genera_tres_entradas_con_la_edad_de_cada_visitante_pasa`, `cada_una_tiene_codigo_unico_pasa`, `codigo_no_adivinable_pasa` |
+
+La validación de la edad también está probada de punta a punta en
+`tests/test_web.py`: `test_web_backend_rechaza_edad_151_aunque_se_saltee_el_html`
+(un POST directo, sin los `min`/`max` del formulario) y
+`test_web_inputs_de_edad_limitan_entre_0_y_150`.
 
 Las integraciones reales tienen sus propios tests, siempre con mocks:
 `tests/test_mercadopago.py` (preferencia, consulta de pagos y elección de
 pasarela), `tests/test_gmail.py` (SMTP, contenido del mail, fallas y elección de
-notificador) y `TestMercadoPago` en `tests/test_web.py` (webhook y vuelta del
-checkout).
+notificador, QR inline) y en `tests/test_web.py`: `TestMercadoPago` (webhook y
+vuelta del checkout), `TestEntradasConQR`, `TestMailTusEntradas`,
+`TestBandejaSimulada`, `TestBioparque` y `TestSinUsuarioDemo`.
