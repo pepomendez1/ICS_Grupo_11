@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from parque.compra import CompraError
+from parque.compra import PRECIOS, CompraError
 from web import create_app
 from web.repositorio import RepositorioMemoria
 from web.servicios import (
@@ -120,4 +120,4 @@ class TestElegirPasarela:
             "fecha_visita": "2099-01-01", "cantidad": "1", "edades": ["30"],  # jueves
             "tipo_pase": "VIP", "forma_pago": "TARJETA",
         })
-        assert preferencia_enviada(sdk)["items"][0]["unit_price"] == 15000
+        assert preferencia_enviada(sdk)["items"][0]["unit_price"] == PRECIOS["VIP"]

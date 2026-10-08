@@ -3,6 +3,7 @@ from datetime import timedelta
 import pytest
 
 from parque.compra import (
+    PRECIOS,
     CantidadInvalidaError,
     EdadesInvalidasError,
     FechaInvalidaError,
@@ -186,7 +187,7 @@ class TestIntegraciones:
         solicitud_valida.referencia = "compra-123"
         servicio.comprar(usuario_registrado, solicitud_valida)
         pasarela_mp.crear_pago.assert_called_once_with(
-            24000, usuario_registrado.email, referencia="compra-123"
+            3 * PRECIOS["REGULAR"], usuario_registrado.email, referencia="compra-123"
         )
 
     def test_comprar_entrada_exitosa_envia_detalle_de_compra_al_mail_pasa(self, servicio, usuario_registrado, solicitud_valida, notificador):

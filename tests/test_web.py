@@ -5,6 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from parque.compra import PRECIOS
 from web import create_app
 from web.repositorio import RepositorioMemoria, RepositorioPostgres
 from web.servicios import EstadoPago, PagoNoDisponibleError
@@ -103,6 +104,7 @@ class TestWeb:
         assert "Compraste 2 entrada(s)" in respuesta.get_data(as_text=True)
 
 
+MONTO_DOS_REGULARES = 2 * PRECIOS["REGULAR"]
 URL_MP = "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-1"
 
 
@@ -122,7 +124,7 @@ def cliente_mp(repo, pasarela_mp):
 
 
 def comprar_con_tarjeta(cliente, pasarela):
-    """Compra 2 entradas regulares ($16.000) con tarjeta y devuelve el id de la compra."""
+    """Compra 2 entradas regulares con tarjeta y devuelve el id de la compra."""
     cliente.post("/comprar", data=datos_compra(forma_pago="TARJETA"))
     return pasarela.crear_pago.call_args.kwargs["referencia"]
 
@@ -141,14 +143,14 @@ class TestMercadoPago:
 
     def test_web_webhook_pago_aprobado_marca_la_compra_pagada(self, cliente_mp, pasarela_mp, repo):
         compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
-        pasarela_mp.consultar_pago.return_value = EstadoPago("approved", compra_id, 16000)
+        pasarela_mp.consultar_pago.return_value = EstadoPago("approved", compra_id, MONTO_DOS_REGULARES)
         assert notificar_pago(cliente_mp).status_code == 200
         pasarela_mp.consultar_pago.assert_called_once_with("555")
         assert repo.obtener_compra(compra_id)["pagada"] is True
 
     def test_web_webhook_formato_ipn_marca_la_compra_pagada(self, cliente_mp, pasarela_mp, repo):
         compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
-        pasarela_mp.consultar_pago.return_value = EstadoPago("approved", compra_id, 16000)
+        pasarela_mp.consultar_pago.return_value = EstadoPago("approved", compra_id, MONTO_DOS_REGULARES)
         cliente_mp.post("/mercadopago/webhook?topic=payment&id=555")
         pasarela_mp.consultar_pago.assert_called_once_with("555")
         assert repo.obtener_compra(compra_id)["pagada"] is True
@@ -156,7 +158,7 @@ class TestMercadoPago:
     @pytest.mark.parametrize("estado", ["pending", "in_process", "rejected"])
     def test_web_webhook_pago_no_aprobado_no_marca_la_compra(self, cliente_mp, pasarela_mp, repo, estado):
         compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
-        pasarela_mp.consultar_pago.return_value = EstadoPago(estado, compra_id, 16000)
+        pasarela_mp.consultar_pago.return_value = EstadoPago(estado, compra_id, MONTO_DOS_REGULARES)
         assert notificar_pago(cliente_mp).status_code == 200
         assert repo.obtener_compra(compra_id)["pagada"] is False
 
