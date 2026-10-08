@@ -208,3 +208,17 @@ class TestMercadoPago:
         compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
         respuesta = cliente_mp.get(f"/compras/{compra_id}?mp=failure")
         assert "El pago no se completó" in respuesta.get_data(as_text=True)
+
+
+class TestSinUsuarioDemo:
+    """No hay un usuario con contraseña pública: cada visitante se registra."""
+
+    def test_web_no_existe_el_usuario_demo(self, cliente, repo):
+        respuesta = cliente.post("/login", data={"email": "demo@ecoharmony.com", "password": "demo123"})
+        assert respuesta.status_code == 401
+        assert repo.obtener_usuario("demo@ecoharmony.com") is None
+
+    def test_web_login_no_muestra_credenciales_de_prueba(self, cliente):
+        html = cliente.get("/login").get_data(as_text=True)
+        assert "demo@ecoharmony.com" not in html
+        assert "demo123" not in html
