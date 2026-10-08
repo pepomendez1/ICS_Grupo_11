@@ -7,7 +7,7 @@
   <div class="tarjeta" style="margin-bottom:14px">
     <div class="ayuda">{{ m.enviado | fecha_hora }} · Para: {{ m.para }}</div>
     <h2 style="margin:6px 0 8px; font-size:1.15rem">{{ m.asunto }}</h2>
-    <p style="margin:0">{{ m.cuerpo }}</p>
+    <p style="margin:0; white-space:pre-line; overflow-wrap:anywhere">{{ m.cuerpo }}</p>
   </div>
 {% else %}
   <div class="tarjeta">Todavía no recibiste mails. <a href="{{ url_for('comprar') }}">Comprá tus entradas</a>.</div>
