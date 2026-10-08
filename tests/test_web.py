@@ -274,3 +274,65 @@ class TestBioparque:
     def test_web_confirmacion_sin_terminos_de_parque_de_diversiones(self, cliente_logueado):
         respuesta = cliente_logueado.post("/comprar", data=datos_compra(), follow_redirects=True)
         sin_terminos_de_parque_de_diversiones(respuesta.get_data(as_text=True), "la confirmación")
+
+
+BASE_URL_APP = "https://ecoharmony.test"
+
+
+def comprar_en_efectivo(cliente, **cambios):
+    """Compra (por defecto 2 entradas: 30 y 8 años) en efectivo y devuelve el id de la compra."""
+    respuesta = cliente.post("/comprar", data=datos_compra(**cambios))
+    return respuesta.headers["Location"].rsplit("/", 1)[-1]
+
+
+def entradas_de(repo, compra_id):
+    return repo.obtener_compra(compra_id)["resultado"].entradas
+
+
+class TestEntradasConQR:
+    """Cada entrada tiene su página /entradas/<codigo>, con QR si es válida."""
+
+    def test_web_compra_guarda_una_entrada_por_visitante(self, cliente_logueado, repo):
+        compra_id = comprar_en_efectivo(cliente_logueado)
+        entradas = entradas_de(repo, compra_id)
+        assert [(e.numero, e.edad) for e in entradas] == [(1, 30), (2, 8)]
+        assert repo.obtener_entrada(entradas[1].codigo)["compra"]["id"] == compra_id
+
+    def test_web_pagina_de_entrada_muestra_sus_datos_sin_iniciar_sesion(self, cliente_logueado, repo, app):
+        compra_id = comprar_en_efectivo(cliente_logueado)
+        segunda = entradas_de(repo, compra_id)[1]
+        html = app.test_client().get(f"/entradas/{segunda.codigo}").get_data(as_text=True)
+        for dato in ["EcoHarmony Park", "08/10/2026", "Regular", "8 años", "Entrada 2 de 2"]:
+            assert dato in html
+
+    def test_web_entrada_en_efectivo_tiene_qr_valido_y_se_paga_en_boleteria(self, cliente_logueado, repo, monkeypatch):
+        from web.entradas import qr_svg
+        monkeypatch.setenv("APP_BASE_URL", BASE_URL_APP)
+        entrada = entradas_de(repo, comprar_en_efectivo(cliente_logueado))[0]
+        html = cliente_logueado.get(f"/entradas/{entrada.codigo}").get_data(as_text=True)
+        assert qr_svg(f"{BASE_URL_APP}/entradas/{entrada.codigo}") in html
+        assert "Pagar en boletería" in html
+
+    def test_web_entrada_con_tarjeta_pendiente_no_tiene_qr(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        entrada = entradas_de(repo, compra_id)[0]
+        html = cliente_mp.get(f"/entradas/{entrada.codigo}").get_data(as_text=True)
+        assert "Esperando confirmación del pago" in html
+        assert '<svg class="qr"' not in html
+
+    def test_web_entrada_con_tarjeta_aprobada_por_el_webhook_tiene_qr(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        pasarela_mp.consultar_pago.return_value = EstadoPago("approved", compra_id, MONTO_DOS_REGULARES)
+        notificar_pago(cliente_mp)
+        entrada = entradas_de(repo, compra_id)[0]
+        html = cliente_mp.get(f"/entradas/{entrada.codigo}").get_data(as_text=True)
+        assert '<svg class="qr"' in html
+        assert "Esperando confirmación del pago" not in html
+
+    def test_web_entrada_inexistente_da_404(self, cliente):
+        assert cliente.get("/entradas/no-existe").status_code == 404
+
+    def test_web_pagina_de_entrada_sin_terminos_de_parque_de_diversiones(self, cliente_logueado, repo):
+        entrada = entradas_de(repo, comprar_en_efectivo(cliente_logueado))[0]
+        html = cliente_logueado.get(f"/entradas/{entrada.codigo}").get_data(as_text=True)
+        sin_terminos_de_parque_de_diversiones(html, "la página de la entrada")
