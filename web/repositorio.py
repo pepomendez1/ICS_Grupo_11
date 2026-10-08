@@ -87,8 +87,12 @@ class RepositorioMemoria:
                 "compra": self.obtener_compra(fila["compra_id"])}
 
     def marcar_compra_pagada(self, compra_id):
-        if compra_id in self._compras:
-            self._compras[compra_id]["pagada"] = True
+        """Devuelve True solo si la compra pasó de no pagada a pagada."""
+        fila = self._compras.get(compra_id)
+        if not fila or fila["pagada"]:
+            return False
+        fila["pagada"] = True
+        return True
 
     # Mails
     def guardar_mail(self, para, asunto, cuerpo):
@@ -227,7 +231,12 @@ class RepositorioPostgres:
                 "compra": self.obtener_compra(fila["compra_id"])}
 
     def marcar_compra_pagada(self, compra_id):
-        self._ejecutar("update compras set pagada = true where id = %s", (compra_id,))
+        """Devuelve True solo si la compra pasó de no pagada a pagada. Es atómico:
+        si llegan dos webhooks a la vez, solo uno ve el cambio."""
+        filas = self._ejecutar(
+            "update compras set pagada = true where id = %s and not pagada", (compra_id,)
+        )
+        return filas == 1
 
     # Mails
     def guardar_mail(self, para, asunto, cuerpo):

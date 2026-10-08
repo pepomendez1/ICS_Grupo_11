@@ -234,6 +234,14 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
             tickets=tickets(compra), estado=estado_de(compra),
         )
 
+    def acreditar_pago(compra_id):
+        """Marca la compra pagada y manda "Tus entradas" con los QR. Si ya estaba
+        pagada no hace nada: MP puede repetir la misma notificación."""
+        if not repo.marcar_compra_pagada(compra_id):
+            return
+        compra = repo.obtener_compra(compra_id)
+        notificador.enviar_entradas(compra["email"], compra["resultado"])
+
     @app.get("/entradas/<codigo>")
     def entrada(codigo):
         """Página pública de una entrada: es a donde apunta su QR. El código no se
@@ -275,7 +283,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
         elif pago.monto != compra["resultado"].monto:
             log.warning("Pago %s por $%s no coincide con la compra %s", pago_id, pago.monto, pago.referencia)
         else:
-            repo.marcar_compra_pagada(pago.referencia)
+            acreditar_pago(pago.referencia)
         return "", 200
 
     # ---------- Mercado Pago simulado ----------
@@ -289,7 +297,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
             abort(404)
         if request.method == "POST":
             repo.aprobar_pago(pago_id)
-            repo.marcar_compra_pagada(compra_id)
+            acreditar_pago(compra_id)
             return redirect(url_for("confirmacion", compra_id=compra_id))
         return render_template("mp_checkout.html", pago=pago, pago_id=pago_id, compra_id=compra_id)
 
