@@ -1,39 +1,43 @@
-"""Textos del parque que se muestran en la web y en el mail de confirmación."""
+"""Textos del bioparque que se muestran en la web y en los mails."""
 import parque.compra
 
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 
-ATRACCIONES = [
-    {"nombre": "Montaña rusa", "tipo": "Adrenalina",
-     "descripcion": "Subidas, caídas libres y curvas cerradas a toda velocidad."},
-    {"nombre": "Casa del terror", "tipo": "Adrenalina",
-     "descripcion": "Un recorrido a oscuras con sustos en cada pasillo."},
-    {"nombre": "Autitos chocadores", "tipo": "Para todos",
-     "descripcion": "La pista clásica para chocar con amigos y familia."},
-    {"nombre": "Rueda de la fortuna", "tipo": "Para todos",
-     "descripcion": "La mejor vista del parque desde lo más alto."},
-    {"nombre": "Hamacas", "tipo": "Para todos",
-     "descripcion": "Las sillas voladoras que giran por encima del parque."},
-    {"nombre": "Calesita", "tipo": "Para los más chicos",
-     "descripcion": "Caballitos, música y la sortija de siempre."},
+SECTORES = [
+    {"clave": "terrestre", "nombre": "Terrestre",
+     "descripcion": "Senderos entre pastizales y monte nativo, con mamíferos y reptiles de la región."},
+    {"clave": "acuatico", "nombre": "Acuático",
+     "descripcion": "Lagunas y exhibiciones de peces, anfibios y tortugas, con miradores sobre el agua."},
+    {"clave": "aereo", "nombre": "Aéreo",
+     "descripcion": "Un aviario de recorrido libre para observar aves de cerca, sin rejas de por medio."},
+]
+
+HORARIOS_ALIMENTACION = [
+    {"hora": "10:30", "sector": "Aéreo", "detalle": "Aves del aviario"},
+    {"hora": "12:00", "sector": "Acuático", "detalle": "Peces y tortugas"},
+    {"hora": "16:00", "sector": "Terrestre", "detalle": "Mamíferos del monte nativo"},
+]
+
+# Se hacen en el parque con inscripción aparte: no se venden con la entrada.
+ACTIVIDADES = [
+    {"nombre": "Tirolesa", "descripcion": "Recorrido en altura sobre la copa de los árboles."},
+    {"nombre": "Safari", "descripcion": "Visita guiada en vehículo por el sector terrestre."},
+    {"nombre": "Palestra", "descripcion": "Muro de escalada para distintas edades."},
+    {"nombre": "Jardinería", "descripcion": "Taller en el vivero de plantas nativas."},
 ]
 
 PASES = {
     "REGULAR": {
         "nombre": "Regular",
-        "descripcion": "Acceso a las 6 atracciones haciendo la fila común.",
-        "resumen": "Las 6 atracciones · fila común",
+        "descripcion": "Acceso al parque, senderos y exhibiciones.",
+        "resumen": "Parque, senderos y exhibiciones",
     },
     "VIP": {
         "nombre": "VIP",
-        "descripcion": (
-            "Todo lo del Regular, más fila rápida en todas las atracciones "
-            "y vueltas ilimitadas en la montaña rusa."
-        ),
-        "resumen": "Fila rápida + vueltas ilimitadas en la montaña rusa",
+        "descripcion": "Acceso al parque, senderos y exhibiciones, con ingreso por fila preferencial.",
+        "resumen": "Lo mismo que el Regular + ingreso por fila preferencial",
     },
 }
-
 
 FORMAS_DE_PAGO = {
     "TARJETA": "Tarjeta (Mercado Pago)",

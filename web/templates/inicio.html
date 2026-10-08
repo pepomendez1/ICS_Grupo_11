@@ -2,65 +2,109 @@
 {% block estilos %}
 <style>
   .hero {
-    background: var(--noche); color: var(--crema); border-radius: 18px;
-    padding: 48px 40px; margin-bottom: 40px; position: relative; overflow: hidden;
+    background: var(--bosque); color: var(--crema); border-radius: 18px;
+    padding: 48px 40px; margin-bottom: 44px; position: relative; overflow: hidden;
   }
-  .hero h1 { color: var(--crema); font-size: 2.8rem; max-width: 560px; }
-  .hero h1 em { font-style: normal; color: var(--mostaza); }
+  .hero .sobre { font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; color: var(--hoja); font-weight: 600; margin: 0 0 10px; position: relative; }
+  .hero h1 { color: var(--crema); font-size: 2.7rem; max-width: 560px; position: relative; }
   .hero p { max-width: 500px; opacity: .9; margin: 0 0 24px; font-size: 1.05rem; position: relative; }
-  .hero .boton { position: relative; }
-  .hero svg.deco { position: absolute; right: -30px; top: 50%; transform: translateY(-50%); width: 300px; opacity: .22; }
-  .seccion { margin-bottom: 40px; }
+  .hero .boton { background: var(--crema); color: var(--bosque); position: relative; }
+  .hero .boton:hover { background: #fff; }
+  .hero svg.deco { position: absolute; right: -50px; bottom: -60px; width: 320px; opacity: .14; }
+  .seccion { margin-bottom: 44px; }
   .seccion h2 { margin: 0 0 6px; font-size: 1.7rem; }
-  .atracciones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  .atraccion { padding: 22px; border-top: 4px solid var(--coral); }
-  .atraccion:nth-child(even) { border-top-color: var(--mostaza); }
-  .atraccion h3 { font-family: "Fraunces", Georgia, serif; color: var(--noche); margin: 8px 0 6px; font-size: 1.2rem; }
-  .atraccion p { margin: 0; color: var(--suave); font-size: .95rem; }
-  .etiqueta {
-    display: inline-block; font-size: .75rem; font-weight: 600; letter-spacing: .04em;
-    text-transform: uppercase; color: var(--noche-2); background: #eef0f7;
-    padding: 3px 9px; border-radius: 999px;
-  }
+  .sectores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .sector { padding: 24px; }
+  .sector svg { width: 40px; height: 40px; }
+  .sector h3 { font-family: "Fraunces", Georgia, serif; color: var(--bosque); margin: 12px 0 6px; font-size: 1.25rem; }
+  .sector p { margin: 0; color: var(--suave); font-size: .95rem; }
+  .alimentacion { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; padding: 0; overflow: hidden; }
+  .alimentacion div { padding: 18px 22px; border-right: 1px solid var(--borde); }
+  .alimentacion div:last-child { border-right: 0; }
+  .alimentacion .hora { font-family: "Fraunces", Georgia, serif; font-size: 1.6rem; color: var(--tierra); display: block; }
+  .alimentacion strong { display: block; color: var(--bosque); }
+  .alimentacion span.detalle { color: var(--suave); font-size: .92rem; }
+  .nota { color: var(--suave); font-size: .85rem; margin: 10px 0 0; }
+  .actividades { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+  .actividad { background: var(--salvia); border-radius: 12px; padding: 16px; }
+  .actividad strong { display: block; color: var(--bosque); margin-bottom: 4px; }
+  .actividad span { color: var(--suave); font-size: .9rem; }
   .pases { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .pases .tarjeta h3 { font-family: "Fraunces", Georgia, serif; color: var(--noche); margin: 0 0 4px; font-size: 1.35rem; }
-  .pase-vip { background: var(--noche); border-color: var(--noche); }
-  .pase-vip h3, .pase-vip .bajada { color: var(--crema) !important; }
-  .pase-vip .precio { color: var(--mostaza); }
-  .precio { font-family: "Fraunces", Georgia, serif; font-size: 1.8rem; color: var(--coral); margin-bottom: 8px; }
+  .pases .tarjeta h3 { font-family: "Fraunces", Georgia, serif; color: var(--bosque); margin: 0 0 4px; font-size: 1.35rem; }
   .pases .bajada { margin: 0; }
-  @media (max-width: 760px) { .atracciones { grid-template-columns: 1fr 1fr; } }
+  .pase-vip { border-color: var(--musgo); box-shadow: inset 0 0 0 1px var(--musgo); }
+  .precio { font-family: "Fraunces", Georgia, serif; font-size: 1.8rem; color: var(--tierra); margin-bottom: 8px; }
+  @media (max-width: 760px) {
+    .sectores { grid-template-columns: 1fr; }
+    .actividades { grid-template-columns: 1fr 1fr; }
+  }
   @media (max-width: 560px) {
-    .atracciones, .pases { grid-template-columns: 1fr; }
-    .hero { padding: 32px 24px; } .hero h1 { font-size: 2rem; }
+    .hero { padding: 30px 22px; border-radius: 14px; margin-bottom: 34px; }
+    .hero h1 { font-size: 1.95rem; }
+    .hero .boton { display: block; }
+    .alimentacion { grid-template-columns: 1fr; }
+    .alimentacion div { border-right: 0; border-bottom: 1px solid var(--borde); display: grid; grid-template-columns: 70px 1fr; column-gap: 12px; }
+    .alimentacion div:last-child { border-bottom: 0; }
+    .alimentacion .hora { grid-row: span 2; font-size: 1.35rem; }
+    .pases { grid-template-columns: 1fr; }
   }
 </style>
 {% endblock %}
 {% block contenido %}
 <section class="hero">
   <svg class="deco" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-    <circle cx="50" cy="46" r="38" stroke="#fbf6ee" stroke-width="3"/>
-    <circle cx="50" cy="46" r="6" fill="#fbf6ee"/>
-    <path d="M50 8v76M12 46h76M23 19l54 54M77 19 23 73" stroke="#fbf6ee" stroke-width="1.5"/>
-    <circle cx="50" cy="8" r="6" fill="#e4572e"/><circle cx="88" cy="46" r="6" fill="#f3b23a"/>
-    <circle cx="50" cy="84" r="6" fill="#e4572e"/><circle cx="12" cy="46" r="6" fill="#f3b23a"/>
-    <circle cx="77" cy="19" r="5" fill="#fbf6ee"/><circle cx="77" cy="73" r="5" fill="#fbf6ee"/>
-    <circle cx="23" cy="73" r="5" fill="#fbf6ee"/><circle cx="23" cy="19" r="5" fill="#fbf6ee"/>
+    <path d="M50 8c22 10 30 36 15 58-5 7-10 11-15 13-5-2-10-6-15-13C20 44 28 18 50 8Z" fill="#f6f2e8"/>
+    <path d="M50 18v66M50 38l12-9M50 52l-13-10M50 64l11-8" stroke="#1e3a2b" stroke-width="3" stroke-linecap="round"/>
   </svg>
-  <h1>Un día entero de <em>vueltas, gritos y risas</em>.</h1>
-  <p>Seis atracciones para todas las edades, de la calesita a la montaña rusa. Comprá tus entradas online y pagá con tarjeta por Mercado Pago o en efectivo en boletería.</p>
+  <p class="sobre">Bioparque</p>
+  <h1>Conocé la fauna de cerca, a tu ritmo.</h1>
+  <p>EcoHarmony Park es un bioparque con senderos, exhibiciones y tres sectores para recorrer: terrestre, acuático y aéreo. Comprá tus entradas online y pagá con tarjeta por Mercado Pago o en efectivo en boletería.</p>
   <a class="boton" href="{{ url_for('comprar') }}">Comprar entradas</a>
 </section>
 
 <section class="seccion">
-  <h2>Atracciones</h2>
-  <p class="bajada">Todas incluidas en cualquiera de los dos pases.</p>
-  <div class="atracciones">
-    {% for a in atracciones %}
-    <div class="tarjeta atraccion">
-      <span class="etiqueta">{{ a.tipo }}</span>
-      <h3>{{ a.nombre }}</h3>
-      <p>{{ a.descripcion }}</p>
+  <h2>Los tres sectores</h2>
+  <p class="bajada">Todos incluidos con cualquiera de los dos pases.</p>
+  <div class="sectores">
+    {% for s in sectores %}
+    <div class="tarjeta sector">
+      {% if s.clave == "terrestre" %}
+      <svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><circle cx="20" cy="20" r="20" fill="#e7eedf"/><ellipse cx="20" cy="24.5" rx="6" ry="5" fill="#3d6b4f"/><circle cx="12.5" cy="17" r="2.6" fill="#3d6b4f"/><circle cx="17" cy="12.5" r="2.6" fill="#3d6b4f"/><circle cx="23" cy="12.5" r="2.6" fill="#3d6b4f"/><circle cx="27.5" cy="17" r="2.6" fill="#3d6b4f"/></svg>
+      {% elif s.clave == "acuatico" %}
+      <svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><circle cx="20" cy="20" r="20" fill="#e7eedf"/><path d="M9 16c2.8-2.4 5.6-2.4 8.4 0s5.6 2.4 8.4 0 3.9-1.6 5.2-.6M9 22c2.8-2.4 5.6-2.4 8.4 0s5.6 2.4 8.4 0 3.9-1.6 5.2-.6M9 28c2.8-2.4 5.6-2.4 8.4 0s5.6 2.4 8.4 0 3.9-1.6 5.2-.6" stroke="#3d6b4f" stroke-width="2" stroke-linecap="round"/></svg>
+      {% else %}
+      <svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><circle cx="20" cy="20" r="20" fill="#e7eedf"/><path d="M28 9c-9 1-15 8-15 18l-2 4M28 9c1 9-5 16-15 18M15 24l6-6M18 20.5l6-1.5M14.5 17l3 2.5" stroke="#3d6b4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      {% endif %}
+      <h3>Sector {{ s.nombre }}</h3>
+      <p>{{ s.descripcion }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="seccion">
+  <h2>Horarios de alimentación</h2>
+  <p class="bajada">Acercate unos minutos antes para ver a los cuidadores en acción.</p>
+  <div class="tarjeta alimentacion">
+    {% for h in horarios_alimentacion %}
+    <div>
+      <span class="hora">{{ h.hora }}</span>
+      <strong>Sector {{ h.sector }}</strong>
+      <span class="detalle">{{ h.detalle }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="nota">Los horarios pueden cambiar según el bienestar de los animales.</p>
+</section>
+
+<section class="seccion">
+  <h2>Actividades</h2>
+  <p class="bajada">La inscripción es aparte y se hace en el parque: las actividades no están incluidas en el pase ni se venden con la entrada.</p>
+  <div class="actividades">
+    {% for a in actividades %}
+    <div class="actividad">
+      <strong>{{ a.nombre }}</strong>
+      <span>{{ a.descripcion }}</span>
     </div>
     {% endfor %}
   </div>
@@ -68,7 +112,7 @@
 
 <section class="seccion">
   <h2>Pases</h2>
-  <p class="bajada">{{ horario }}. Hasta 10 entradas por compra.</p>
+  <p class="bajada">{{ horario }}. Hasta {{ maximo_entradas }} entradas por compra.</p>
   <div class="pases">
     <div class="tarjeta">
       <h3>Pase {{ pases["REGULAR"].nombre }}</h3>
