@@ -27,7 +27,7 @@ def repo(request):
         pytest.skip("Definí TEST_DATABASE_URL para probar contra Postgres")
     repo = RepositorioPostgres(TEST_DATABASE_URL)
     repo.crear_tablas()
-    repo._conexion().execute("truncate mails, compras, pagos, usuarios")
+    repo._conexion().execute("truncate entradas, mails, compras, pagos, usuarios")
     return repo
 
 
@@ -277,6 +277,7 @@ class TestBioparque:
 
 
 BASE_URL_APP = "https://ecoharmony.test"
+QR = 'class="qr"'  # el <svg> que genera web.entradas.qr_svg
 
 
 def comprar_en_efectivo(cliente, **cambios):
@@ -318,7 +319,7 @@ class TestEntradasConQR:
         entrada = entradas_de(repo, compra_id)[0]
         html = cliente_mp.get(f"/entradas/{entrada.codigo}").get_data(as_text=True)
         assert "Esperando confirmación del pago" in html
-        assert '<svg class="qr"' not in html
+        assert QR not in html
 
     def test_web_entrada_con_tarjeta_aprobada_por_el_webhook_tiene_qr(self, cliente_mp, pasarela_mp, repo):
         compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
@@ -326,7 +327,7 @@ class TestEntradasConQR:
         notificar_pago(cliente_mp)
         entrada = entradas_de(repo, compra_id)[0]
         html = cliente_mp.get(f"/entradas/{entrada.codigo}").get_data(as_text=True)
-        assert '<svg class="qr"' in html
+        assert QR in html
         assert "Esperando confirmación del pago" not in html
 
     def test_web_entrada_inexistente_da_404(self, cliente):

@@ -32,6 +32,16 @@ create table if not exists compras (
   creado        timestamptz not null default now()
 );
 
+-- Una fila por entrada individual de la compra. El código es el que va en el
+-- QR (secrets.token_urlsafe): no se puede adivinar.
+create table if not exists entradas (
+  codigo     text primary key,
+  compra_id  text not null references compras(id),
+  numero     integer not null check (numero between 1 and 10),
+  edad       integer not null check (edad between 0 and 150),
+  unique (compra_id, numero)
+);
+
 create table if not exists mails (
   id       bigint generated always as identity primary key,
   para     text not null,
@@ -46,4 +56,5 @@ create table if not exists mails (
 alter table usuarios enable row level security;
 alter table pagos    enable row level security;
 alter table compras  enable row level security;
+alter table entradas enable row level security;
 alter table mails    enable row level security;

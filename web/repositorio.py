@@ -9,10 +9,10 @@ Ambos exponen la misma interfaz, así que el resto de la app no sabe cuál usa.
 import os
 from datetime import date, datetime
 
-from parque.compra import FormaPago, ResultadoCompra, TipoPase
+from parque.compra import Entrada, FormaPago, ResultadoCompra, TipoPase
 
 
-def _armar_compra(fila: dict) -> dict:
+def _armar_compra(fila: dict, entradas=()) -> dict:
     return {
         "id": fila["id"],
         "email": fila["email"],
@@ -25,6 +25,10 @@ def _armar_compra(fila: dict) -> dict:
             monto=fila["monto"],
             tipo_pase=TipoPase(fila["tipo_pase"]),
             forma_pago=FormaPago(fila["forma_pago"]),
+            entradas=[
+                Entrada(numero=e["numero"], edad=e["edad"], codigo=e["codigo"])
+                for e in sorted(entradas, key=lambda e: e["numero"])
+            ],
         ),
     }
 
@@ -32,6 +36,7 @@ def _armar_compra(fila: dict) -> dict:
 class RepositorioMemoria:
     def __init__(self):
         self._usuarios, self._pagos, self._compras, self._mails = {}, {}, {}, []
+        self._entradas = {}  # codigo -> fila
 
     # Usuarios
     def crear_usuario(self, nombre, email, password_hash):
@@ -63,10 +68,23 @@ class RepositorioMemoria:
             "tipo_pase": resultado.tipo_pase.value, "forma_pago": resultado.forma_pago.value,
             "edades": list(edades),
         }
+        for e in resultado.entradas:
+            self._entradas[e.codigo] = {
+                "codigo": e.codigo, "compra_id": compra_id, "numero": e.numero, "edad": e.edad,
+            }
 
     def obtener_compra(self, compra_id):
         fila = self._compras.get(compra_id)
-        return _armar_compra(fila) if fila else None
+        if not fila:
+            return None
+        return _armar_compra(fila, [e for e in self._entradas.values() if e["compra_id"] == compra_id])
+
+    def obtener_entrada(self, codigo):
+        fila = self._entradas.get(codigo)
+        if not fila:
+            return None
+        return {"numero": fila["numero"], "edad": fila["edad"], "codigo": codigo,
+                "compra": self.obtener_compra(fila["compra_id"])}
 
     def marcar_compra_pagada(self, compra_id):
         if compra_id in self._compras:
@@ -123,6 +141,19 @@ class RepositorioPostgres:
                 if intento == 1:
                     raise
 
+    def _en_transaccion(self, pasos):
+        """Corre pasos(cursor) en una transacción, con el mismo reintento que _ejecutar.
+        Si algo falla, la transacción se deshace entera, así que reintentar es seguro."""
+        for intento in range(2):
+            try:
+                con = self._conexion()
+                with con.transaction(), con.cursor() as cur:
+                    return pasos(cur)
+            except self._psycopg.OperationalError:
+                self._con = None
+                if intento == 1:
+                    raise
+
     def crear_tablas(self):
         ruta = os.path.join(os.path.dirname(__file__), "..", "supabase", "schema.sql")
         with open(ruta, encoding="utf-8") as f:
@@ -160,19 +191,40 @@ class RepositorioPostgres:
 
     # Compras
     def guardar_compra(self, compra_id, email, resultado: ResultadoCompra, edades, pago_id=None):
-        self._ejecutar(
-            "insert into compras (id, email, fecha_visita, cantidad, edades, tipo_pase, forma_pago, "
-            "monto, url_pago, pago_id) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (
-                compra_id, email, resultado.fecha_visita, resultado.cantidad, list(edades),
-                resultado.tipo_pase.value, resultado.forma_pago.value, resultado.monto,
-                resultado.url_pago, pago_id,
-            ),
-        )
+        # La compra y sus entradas se guardan juntas o no se guarda nada.
+        def pasos(cur):
+            cur.execute(
+                "insert into compras (id, email, fecha_visita, cantidad, edades, tipo_pase, forma_pago, "
+                "monto, url_pago, pago_id) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                (
+                    compra_id, email, resultado.fecha_visita, resultado.cantidad, list(edades),
+                    resultado.tipo_pase.value, resultado.forma_pago.value, resultado.monto,
+                    resultado.url_pago, pago_id,
+                ),
+            )
+            cur.executemany(
+                "insert into entradas (codigo, compra_id, numero, edad) values (%s, %s, %s, %s)",
+                [(e.codigo, compra_id, e.numero, e.edad) for e in resultado.entradas],
+            )
+        self._en_transaccion(pasos)
 
     def obtener_compra(self, compra_id):
         fila = self._ejecutar("select * from compras where id = %s", (compra_id,), uno=True)
-        return _armar_compra(dict(fila)) if fila else None
+        if not fila:
+            return None
+        entradas = self._ejecutar(
+            "select codigo, numero, edad from entradas where compra_id = %s", (compra_id,), todos=True
+        )
+        return _armar_compra(dict(fila), [dict(e) for e in entradas])
+
+    def obtener_entrada(self, codigo):
+        fila = self._ejecutar(
+            "select codigo, compra_id, numero, edad from entradas where codigo = %s", (codigo,), uno=True
+        )
+        if not fila:
+            return None
+        return {"numero": fila["numero"], "edad": fila["edad"], "codigo": codigo,
+                "compra": self.obtener_compra(fila["compra_id"])}
 
     def marcar_compra_pagada(self, compra_id):
         self._ejecutar("update compras set pagada = true where id = %s", (compra_id,))

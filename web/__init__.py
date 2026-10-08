@@ -30,6 +30,7 @@ from web.contenido import (
     horario,
     pesos,
 )
+from web.entradas import estado_de, qr_svg, url_entrada
 from web.repositorio import crear_repositorio
 from web.servicios import (
     CalendarioEcoHarmony,
@@ -114,6 +115,18 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
             "usuario": usuario_actual(), "precios": PRECIOS, "pases": PASES,
             "dia_cierre": dia_de_cierre(), "horario": horario(),
         }
+
+    def base_url():
+        """URL pública de la app: la que va en los QR."""
+        return os.environ.get("APP_BASE_URL") or request.url_root
+
+    def tickets(compra):
+        """Las entradas de la compra listas para mostrar, con QR solo si son válidas."""
+        valida = estado_de(compra).valida
+        return [
+            {"entrada": e, "qr": qr_svg(url_entrada(base_url(), e.codigo)) if valida else None}
+            for e in compra["resultado"].entradas
+        ]
 
     def login_requerido(vista):
         @wraps(vista)
@@ -218,6 +231,19 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
         # mostramos, nunca el estado del pago (eso lo decide el webhook).
         return render_template(
             "confirmacion.html", compra=compra, r=compra["resultado"], vuelta_mp=request.args.get("mp")
+        )
+
+    @app.get("/entradas/<codigo>")
+    def entrada(codigo):
+        """Página pública de una entrada: es a donde apunta su QR. El código no se
+        puede adivinar, así que no pide sesión (se escanea en el ingreso)."""
+        encontrada = repo.obtener_entrada(codigo)
+        if not encontrada:
+            abort(404)
+        compra = encontrada["compra"]
+        t = next(t for t in tickets(compra) if t["entrada"].codigo == codigo)
+        return render_template(
+            "entrada.html", r=compra["resultado"], t=t, estado=estado_de(compra)
         )
 
     # ---------- Mercado Pago ----------
