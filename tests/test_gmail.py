@@ -8,6 +8,7 @@ import pytest
 
 from parque.compra import FormaPago, ResultadoCompra, ServicioCompraEntradas, TipoPase, Usuario
 from tests.conftest import HOY, CalendarioFake
+from tests.test_web import sin_terminos_de_parque_de_diversiones
 from web import create_app
 from web.repositorio import RepositorioMemoria
 from web.servicios import NotificadorGmail, NotificadorMailSimulado, crear_notificador
@@ -96,6 +97,15 @@ class TestEnvio:
         enviar(notificador)
         repo.guardar_mail.assert_called_once()
         assert repo.guardar_mail.call_args.args[0] == "ana@mail.com"
+
+
+class TestContenidoBioparque:
+    @pytest.mark.parametrize("forma_pago", [FormaPago.TARJETA, FormaPago.EFECTIVO])
+    def test_mail_sin_terminos_de_parque_de_diversiones(self, smtp, notificador, forma_pago):
+        enviar(notificador, resultado(forma_pago))
+        texto, html = texto_y_html(mail_enviado(smtp))
+        sin_terminos_de_parque_de_diversiones(texto, "el mail (texto)")
+        sin_terminos_de_parque_de_diversiones(html, "el mail (HTML)")
 
 
 class TestFallas:

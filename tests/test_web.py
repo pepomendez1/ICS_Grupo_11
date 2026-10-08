@@ -222,3 +222,55 @@ class TestSinUsuarioDemo:
         html = cliente.get("/login").get_data(as_text=True)
         assert "demo@ecoharmony.com" not in html
         assert "demo123" not in html
+
+
+SECTORES = ["Terrestre", "Acuático", "Aéreo"]
+ACTIVIDADES = ["Tirolesa", "Safari", "Palestra", "Jardinería"]
+TERMINOS_DE_PARQUE_DE_DIVERSIONES = [
+    "calesita", "montaña rusa", "rueda de la fortuna", "casa del terror", "autitos",
+    "chocadores", "hamacas", "diversiones", "fila rápida", "vueltas ilimitadas",
+    "atracciones", "atracción", "adrenalina", "juegos mecánicos",
+]
+
+
+def sin_terminos_de_parque_de_diversiones(html, donde):
+    html = html.lower()
+    for termino in TERMINOS_DE_PARQUE_DE_DIVERSIONES:
+        assert termino not in html, f"'{termino}' aparece en {donde}"
+
+
+class TestBioparque:
+    """EcoHarmony Park es un bioparque, no un parque de diversiones."""
+
+    def test_web_inicio_presenta_el_bioparque_y_sus_tres_sectores(self, cliente):
+        html = cliente.get("/").get_data(as_text=True)
+        assert "bioparque" in html.lower()
+        for sector in SECTORES:
+            assert f"Sector {sector}" in html
+        assert "Horarios de alimentación" in html
+
+    def test_web_inicio_menciona_actividades_con_inscripcion_aparte(self, cliente):
+        html = cliente.get("/").get_data(as_text=True)
+        for actividad in ACTIVIDADES:
+            assert actividad in html
+        assert "La inscripción es aparte" in html
+        assert "no están incluidas en el pase" in html
+
+    def test_web_las_actividades_no_se_venden_en_la_compra(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        for actividad in ACTIVIDADES:
+            assert actividad not in html
+
+    def test_web_inicio_describe_los_pases(self, cliente):
+        html = cliente.get("/").get_data(as_text=True)
+        assert "Acceso al parque, senderos y exhibiciones." in html
+        assert "fila preferencial" in html
+
+    @pytest.mark.parametrize("ruta", ["/", "/comprar", "/login", "/registro", "/mails"])
+    def test_web_paginas_sin_terminos_de_parque_de_diversiones(self, cliente_logueado, ruta):
+        cliente_logueado.post("/comprar", data=datos_compra())  # para que haya un mail en /mails
+        sin_terminos_de_parque_de_diversiones(cliente_logueado.get(ruta).get_data(as_text=True), ruta)
+
+    def test_web_confirmacion_sin_terminos_de_parque_de_diversiones(self, cliente_logueado):
+        respuesta = cliente_logueado.post("/comprar", data=datos_compra(), follow_redirects=True)
+        sin_terminos_de_parque_de_diversiones(respuesta.get_data(as_text=True), "la confirmación")
