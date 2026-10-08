@@ -348,7 +348,7 @@ class TestEntradasConQR:
 
     def test_web_confirmacion_con_tarjeta_pendiente_muestra_las_entradas_sin_qr(self, cliente_mp, pasarela_mp):
         compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
-        html = cliente_mp.get(f"/compras/{compra_id}?mp=success").get_data(as_text=True)
+        html = cliente_mp.get(f"/compras/{compra_id}?mp=pending").get_data(as_text=True)
         assert QR not in html
         assert "Entrada 2 de 2" in html
         assert "Esperando confirmación del pago" in html
@@ -440,8 +440,8 @@ class TestBandejaSimulada:
 
     def test_web_con_gmail_con_tarjeta_pendiente_avisa_que_las_mandamos_al_aprobarse(self, cliente_gmail, pasarela_mp):
         compra_id = comprar_con_tarjeta(cliente_gmail, pasarela_mp)
-        html = cliente_gmail.get(f"/compras/{compra_id}?mp=success").get_data(as_text=True)
-        assert f"Cuando se apruebe el pago te mandamos las entradas a <strong>{EMAIL_VISITANTE}</strong>" in html
+        html = cliente_gmail.get(f"/compras/{compra_id}?mp=pending").get_data(as_text=True)
+        assert f"Cuando se apruebe te mandamos las entradas a <strong>{EMAIL_VISITANTE}</strong>" in html
 
     def test_web_con_gmail_comprar_mas_entradas_es_el_boton_principal(self, cliente_gmail):
         compra_id = comprar_en_efectivo(cliente_gmail)
@@ -558,3 +558,51 @@ class TestReintentoDeCompraRechazada:
         otro = app.test_client()
         registrar(otro, "otra.persona@mail.com")
         assert otro.get(f"/comprar?reintentar={compra_id}").status_code == 404
+
+
+class TestConfirmandoPago:
+    """Volvió aprobado pero el webhook todavía no llegó: la página consulta el estado."""
+
+    def test_web_estado_de_la_compra_devuelve_json_con_el_estado(self, cliente_mp, pasarela_mp):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        respuesta = cliente_mp.get(f"/compras/{compra_id}/estado")
+        assert respuesta.status_code == 200
+        assert respuesta.get_json() == {"pagada": False, "estado": "activa"}
+        assert respuesta.headers["Cache-Control"] == "no-store"
+        aprobar_por_webhook(cliente_mp, pasarela_mp, compra_id)
+        assert cliente_mp.get(f"/compras/{compra_id}/estado").get_json() == {"pagada": True, "estado": "activa"}
+
+    def test_web_estado_de_una_compra_rechazada(self, cliente_mp, pasarela_mp):
+        compra_id = compra_rechazada(cliente_mp, pasarela_mp)
+        assert cliente_mp.get(f"/compras/{compra_id}/estado").get_json() == {"pagada": False, "estado": "rechazada"}
+
+    def test_web_estado_de_la_compra_de_otro_visitante_da_404(self, cliente_mp, pasarela_mp, app, registrar):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        otro = app.test_client()
+        registrar(otro, "otra.persona@mail.com")
+        assert otro.get(f"/compras/{compra_id}/estado").status_code == 404
+
+    def test_web_estado_sin_sesion_da_401(self, cliente_mp, pasarela_mp, app):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        assert app.test_client().get(f"/compras/{compra_id}/estado").status_code == 401
+
+    @pytest.mark.parametrize("vuelta", ["approved", "success"])
+    def test_web_aprobado_sin_webhook_muestra_confirmando_sin_qr(self, cliente_mp, pasarela_mp, vuelta):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        html = volver_de_mp(cliente_mp, compra_id, vuelta)
+        assert "Estamos confirmando tu pago…" in html
+        assert 'class="cargando"' in html
+        assert QR not in html
+        assert "Entrada 1 de 2" not in html  # nada de entradas vacías
+        assert f'data-estado-url="/compras/{compra_id}/estado"' in html
+        assert 'data-intervalo-ms="3000"' in html
+        assert 'data-limite-ms="60000"' in html
+        assert ("Tu pago se está procesando. Cuando se confirme te mandamos las entradas a "
+                f"<strong>{EMAIL_VISITANTE}</strong>.") in html
+
+    def test_web_aprobado_con_webhook_ya_recibido_muestra_los_qr(self, cliente_mp, pasarela_mp):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        aprobar_por_webhook(cliente_mp, pasarela_mp, compra_id)
+        html = volver_de_mp(cliente_mp, compra_id, "approved")
+        assert "Estamos confirmando tu pago…" not in html
+        assert QR in html
