@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from parque.compra import FormaPago, ResultadoCompra, ServicioCompraEntradas, TipoPase, Usuario
+from parque.compra import Entrada, FormaPago, ResultadoCompra, ServicioCompraEntradas, TipoPase, Usuario
 from tests.conftest import HOY, CalendarioFake
 from tests.test_web import sin_terminos_de_parque_de_diversiones
 from web import create_app
@@ -15,6 +15,8 @@ from web.servicios import NotificadorGmail, NotificadorMailSimulado, crear_notif
 
 USUARIO_GMAIL = "ecoharmony.park@gmail.com"
 APP_PASSWORD = "abcd efgh ijkl mnop"
+BASE_URL = "https://ecoharmony.test"
+ENTRADAS = [Entrada(1, 38, "cod-uno"), Entrada(2, 36, "cod-dos"), Entrada(3, 7, "cod-tres")]
 
 
 @pytest.fixture
@@ -34,11 +36,21 @@ def notificador(repo):
     return NotificadorGmail(USUARIO_GMAIL, APP_PASSWORD, repo)
 
 
+@pytest.fixture
+def notificador_qr(repo):
+    """Notificador que conoce la URL pública de la app (la que va en los QR)."""
+    return NotificadorGmail(USUARIO_GMAIL, APP_PASSWORD, repo, base_url=BASE_URL)
+
+
 def resultado(forma_pago=FormaPago.TARJETA):
     return ResultadoCompra(
         cantidad=3, fecha_visita=date(2026, 10, 8), monto=45000,
-        tipo_pase=TipoPase.VIP, forma_pago=forma_pago,
+        tipo_pase=TipoPase.VIP, forma_pago=forma_pago, entradas=list(ENTRADAS),
     )
+
+
+def imagenes(mail):
+    return [p for p in mail.walk() if p.get_content_maintype() == "image"]
 
 
 def enviar(notificador, r=None):
@@ -99,6 +111,65 @@ class TestEnvio:
         assert repo.guardar_mail.call_args.args[0] == "ana@mail.com"
 
 
+class TestEntradasEnElMail:
+    """Los QR van como imágenes inline (Content-ID), nunca como data: URI."""
+
+    def test_remitente_es_ecoharmony_park_con_la_cuenta_de_gmail(self, smtp, notificador_qr):
+        enviar(notificador_qr)
+        assert mail_enviado(smtp)["From"] == f"EcoHarmony Park <{USUARIO_GMAIL}>"
+
+    def test_en_efectivo_el_mail_de_confirmacion_incluye_un_qr_por_entrada(self, smtp, notificador_qr):
+        enviar(notificador_qr, resultado(FormaPago.EFECTIVO))
+        mail = mail_enviado(smtp)
+        assert len(imagenes(mail)) == 3
+
+    def test_los_qr_van_inline_con_content_id_y_no_como_data_uri(self, smtp, notificador_qr):
+        enviar(notificador_qr, resultado(FormaPago.EFECTIVO))
+        mail = mail_enviado(smtp)
+        _, html = texto_y_html(mail)
+        assert "data:" not in html
+        for imagen in imagenes(mail):
+            assert imagen.get_content_type() == "image/png"
+            assert imagen["Content-Disposition"].startswith("inline")
+            cid = imagen["Content-ID"].strip("<>")
+            assert f'src="cid:{cid}"' in html
+
+    def test_cada_qr_codifica_la_url_de_su_entrada(self, smtp, notificador_qr):
+        from web.entradas import qr_png
+        enviar(notificador_qr, resultado(FormaPago.EFECTIVO))
+        pngs = [i.get_content() for i in imagenes(mail_enviado(smtp))]
+        assert pngs == [qr_png(f"{BASE_URL}/entradas/{e.codigo}") for e in ENTRADAS]
+
+    def test_en_efectivo_el_texto_plano_tiene_el_link_de_cada_entrada(self, smtp, notificador_qr):
+        enviar(notificador_qr, resultado(FormaPago.EFECTIVO))
+        texto, _ = texto_y_html(mail_enviado(smtp))
+        for e in ENTRADAS:
+            assert f"{BASE_URL}/entradas/{e.codigo}" in texto
+        assert "Pagar en boletería" in texto
+
+    def test_con_tarjeta_el_mail_dice_pago_pendiente_y_no_lleva_qr(self, smtp, notificador_qr):
+        enviar(notificador_qr, resultado(FormaPago.TARJETA))
+        mail = mail_enviado(smtp)
+        texto, html = texto_y_html(mail)
+        assert "pago pendiente de confirmación" in texto.lower()
+        assert "pago pendiente de confirmación" in html.lower()
+        assert imagenes(mail) == []
+
+    def test_mail_tus_entradas_lleva_un_qr_por_entrada(self, smtp, notificador_qr, repo):
+        notificador_qr.enviar_entradas("ana@mail.com", resultado(FormaPago.TARJETA))
+        mail = mail_enviado(smtp)
+        assert mail["Subject"] == "EcoHarmony Park — Tus entradas"
+        assert mail["From"] == f"EcoHarmony Park <{USUARIO_GMAIL}>"
+        assert mail["To"] == "ana@mail.com"
+        assert len(imagenes(mail)) == 3
+        repo.guardar_mail.assert_called_once()
+
+    def test_si_falla_el_mail_tus_entradas_se_loguea_sin_lanzar(self, smtp, notificador_qr, caplog):
+        smtp.side_effect = OSError("sin red")
+        notificador_qr.enviar_entradas("ana@mail.com", resultado())
+        assert "No se pudo enviar el mail de entradas a ana@mail.com" in caplog.text
+
+
 class TestContenidoBioparque:
     @pytest.mark.parametrize("forma_pago", [FormaPago.TARJETA, FormaPago.EFECTIVO])
     def test_mail_sin_terminos_de_parque_de_diversiones(self, smtp, notificador, forma_pago):
@@ -143,6 +214,12 @@ class TestElegirNotificador:
     def test_con_las_dos_variables_usa_gmail(self):
         entorno = {"GMAIL_USER": USUARIO_GMAIL, "GMAIL_APP_PASSWORD": APP_PASSWORD}
         assert isinstance(crear_notificador(RepositorioMemoria(), entorno), NotificadorGmail)
+
+    def test_los_qr_del_mail_usan_app_base_url(self, smtp):
+        entorno = {"GMAIL_USER": USUARIO_GMAIL, "GMAIL_APP_PASSWORD": APP_PASSWORD, "APP_BASE_URL": BASE_URL}
+        enviar(crear_notificador(Mock(), entorno), resultado(FormaPago.EFECTIVO))
+        texto, _ = texto_y_html(mail_enviado(smtp))
+        assert f"{BASE_URL}/entradas/cod-uno" in texto
 
     def test_la_app_manda_por_gmail_si_estan_las_variables(self, smtp, monkeypatch, registrar):
         monkeypatch.setenv("GMAIL_USER", USUARIO_GMAIL)
