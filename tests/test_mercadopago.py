@@ -111,11 +111,11 @@ class TestElegirPasarela:
         with pytest.raises(ValueError, match="APP_BASE_URL"):
             crear_pasarela(RepositorioMemoria(), {"MP_ACCESS_TOKEN": "TEST-token"})
 
-    def test_la_app_usa_mercado_pago_si_hay_access_token(self, sdk, monkeypatch):
+    def test_la_app_usa_mercado_pago_si_hay_access_token(self, sdk, monkeypatch, registrar):
         monkeypatch.setenv("MP_ACCESS_TOKEN", "TEST-token")
         monkeypatch.setenv("APP_BASE_URL", BASE_URL)
         cliente = create_app(testing=True, repo=RepositorioMemoria()).test_client()
-        cliente.post("/login", data={"email": "demo@ecoharmony.com", "password": "demo123"})
+        registrar(cliente)
         cliente.post("/comprar", data={
             "fecha_visita": "2099-01-01", "cantidad": "1", "edades": ["30"],  # jueves
             "tipo_pase": "VIP", "forma_pago": "TARJETA",

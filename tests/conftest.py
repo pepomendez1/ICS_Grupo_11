@@ -15,6 +15,7 @@ from parque.compra import (
 HOY = date(2026, 10, 6)          # martes
 DIA_CERRADO = date(2026, 10, 12)  # lunes: el parque cierra los lunes
 URL_MP = "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=123"
+EMAIL_VISITANTE = "visitante.web@mail.com"
 
 
 @pytest.fixture(autouse=True)
@@ -69,3 +70,15 @@ def solicitud_valida():
         tipo_pase=TipoPase.REGULAR,
         forma_pago=FormaPago.TARJETA,
     )
+
+
+@pytest.fixture
+def registrar():
+    """Registra (y deja logueado) un visitante propio del test en el cliente web."""
+    def registrar(cliente, email=EMAIL_VISITANTE):
+        respuesta = cliente.post(
+            "/registro", data={"nombre": "Visitante", "email": email, "password": "secreta1"}
+        )
+        assert respuesta.status_code == 302, "no se pudo registrar el visitante de prueba"
+        return email
+    return registrar

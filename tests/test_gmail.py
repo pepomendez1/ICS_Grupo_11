@@ -134,13 +134,13 @@ class TestElegirNotificador:
         entorno = {"GMAIL_USER": USUARIO_GMAIL, "GMAIL_APP_PASSWORD": APP_PASSWORD}
         assert isinstance(crear_notificador(RepositorioMemoria(), entorno), NotificadorGmail)
 
-    def test_la_app_manda_por_gmail_si_estan_las_variables(self, smtp, monkeypatch):
+    def test_la_app_manda_por_gmail_si_estan_las_variables(self, smtp, monkeypatch, registrar):
         monkeypatch.setenv("GMAIL_USER", USUARIO_GMAIL)
         monkeypatch.setenv("GMAIL_APP_PASSWORD", APP_PASSWORD)
         cliente = create_app(hoy=lambda: HOY, testing=True, repo=RepositorioMemoria()).test_client()
-        cliente.post("/login", data={"email": "demo@ecoharmony.com", "password": "demo123"})
+        email = registrar(cliente)
         cliente.post("/comprar", data={
             "fecha_visita": "2026-10-08", "cantidad": "1", "edades": ["30"],
             "tipo_pase": "REGULAR", "forma_pago": "EFECTIVO",
         })
-        assert mail_enviado(smtp)["To"] == "demo@ecoharmony.com"
+        assert mail_enviado(smtp)["To"] == email

@@ -9,6 +9,7 @@ from parque.compra import PRECIOS
 from web import create_app
 from web.repositorio import RepositorioMemoria, RepositorioPostgres
 from web.servicios import EstadoPago, PagoNoDisponibleError
+from tests.conftest import EMAIL_VISITANTE
 
 TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
 
@@ -41,8 +42,8 @@ def cliente(app):
 
 
 @pytest.fixture
-def cliente_logueado(cliente):
-    cliente.post("/login", data={"email": "demo@ecoharmony.com", "password": "demo123"})
+def cliente_logueado(cliente, registrar):
+    registrar(cliente)
     return cliente
 
 
@@ -84,7 +85,7 @@ class TestWeb:
         cliente_logueado.post("/comprar", data=datos_compra())
         mails = app.extensions["ecoharmony"]["repo"].todos_los_mails()
         assert len(mails) == 1
-        assert mails[0]["para"] == "demo@ecoharmony.com"
+        assert mails[0]["para"] == EMAIL_VISITANTE
 
     def test_web_compra_parque_cerrado_muestra_error(self, cliente_logueado):
         respuesta = cliente_logueado.post("/comprar", data=datos_compra(fecha_visita=LUNES))
@@ -128,9 +129,9 @@ def pasarela_mp():
 
 
 @pytest.fixture
-def cliente_mp(repo, pasarela_mp):
+def cliente_mp(repo, pasarela_mp, registrar):
     cliente = create_app(hoy=lambda: HOY, testing=True, repo=repo, pasarela=pasarela_mp).test_client()
-    cliente.post("/login", data={"email": "demo@ecoharmony.com", "password": "demo123"})
+    registrar(cliente)
     return cliente
 
 
