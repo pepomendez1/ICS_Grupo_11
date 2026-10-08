@@ -109,6 +109,26 @@ class TestDatosVisitantes:
         resultado = servicio.comprar(usuario_registrado, solicitud_valida)
         assert resultado.cantidad == 3
 
+    def test_comprar_entrada_edad_negativa_falla(self, servicio, usuario_registrado, solicitud_valida):
+        solicitud_valida.edades = [35, -1, 8]
+        with pytest.raises(EdadesInvalidasError):
+            servicio.comprar(usuario_registrado, solicitud_valida)
+
+    def test_comprar_entrada_edad_cero_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        solicitud_valida.edades = [35, 33, 0]
+        resultado = servicio.comprar(usuario_registrado, solicitud_valida)
+        assert resultado.cantidad == 3
+
+    def test_comprar_entrada_edad_150_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        solicitud_valida.edades = [35, 33, 150]
+        resultado = servicio.comprar(usuario_registrado, solicitud_valida)
+        assert resultado.cantidad == 3
+
+    def test_comprar_entrada_edad_151_falla(self, servicio, usuario_registrado, solicitud_valida):
+        solicitud_valida.edades = [35, 33, 151]
+        with pytest.raises(EdadesInvalidasError, match="entre 0 y 150"):
+            servicio.comprar(usuario_registrado, solicitud_valida)
+
 
 class TestTipoPase:
     """Debe indicar el tipo de pase (VIP o regular)."""

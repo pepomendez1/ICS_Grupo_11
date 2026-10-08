@@ -98,6 +98,17 @@ class TestWeb:
         assert respuesta.status_code == 400
         assert "entre 1 y 10" in respuesta.get_data(as_text=True)
 
+    def test_web_backend_rechaza_edad_151_aunque_se_saltee_el_html(self, cliente_logueado):
+        # Un POST directo no pasa por los min/max del formulario.
+        respuesta = cliente_logueado.post("/comprar", data=datos_compra(edades=["30", "151"]))
+        assert respuesta.status_code == 400
+        assert "entre 0 y 150" in respuesta.get_data(as_text=True)
+
+    def test_web_inputs_de_edad_limitan_entre_0_y_150(self, cliente_logueado):
+        html = cliente_logueado.post("/comprar", data=datos_compra(edades=["30", "151"])).get_data(as_text=True)
+        assert html.count('min="0" max="150" step="1"') == 2  # los 2 inputs re-renderizados
+        assert 'input.max = "150"' in html  # los que crea el JavaScript
+
     def test_web_registro_permite_comprar(self, cliente):
         cliente.post("/registro", data={"nombre": "Ana", "email": "ana@mail.com", "password": "secreta1"})
         respuesta = cliente.post("/comprar", data=datos_compra(), follow_redirects=True)
