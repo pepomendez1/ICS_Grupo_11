@@ -6,6 +6,7 @@ Las dependencias externas (calendario del parque, Mercado Pago, envío de mail
 y fecha actual) se inyectan para poder reemplazarlas por dobles en los tests.
 """
 import calendar
+import secrets
 from dataclasses import dataclass, field
 from datetime import date
 from enum import Enum
@@ -89,6 +90,14 @@ class SolicitudCompra:
 
 
 @dataclass
+class Entrada:
+    """Una entrada individual: una por visitante, con su propio código."""
+    numero: int   # 1..cantidad
+    edad: int
+    codigo: str   # secrets.token_urlsafe: no se puede adivinar ni enumerar
+
+
+@dataclass
 class ResultadoCompra:
     cantidad: int
     fecha_visita: date
@@ -96,6 +105,7 @@ class ResultadoCompra:
     monto: int = 0
     tipo_pase: Optional["TipoPase"] = None
     forma_pago: Optional["FormaPago"] = None
+    entradas: list = field(default_factory=list)
 
     @property
     def mensaje(self) -> str:
@@ -148,6 +158,11 @@ class ServicioCompraEntradas:
                 monto, usuario.email, referencia=solicitud.referencia
             )
 
+        entradas = [
+            Entrada(numero=i, edad=edad, codigo=secrets.token_urlsafe(16))
+            for i, edad in enumerate(solicitud.edades, start=1)
+        ]
+
         resultado = ResultadoCompra(
             cantidad=solicitud.cantidad,
             fecha_visita=solicitud.fecha_visita,
@@ -155,6 +170,7 @@ class ServicioCompraEntradas:
             monto=monto,
             tipo_pase=solicitud.tipo_pase,
             forma_pago=solicitud.forma_pago,
+            entradas=entradas,
         )
         self._notificador.enviar_confirmacion(usuario.email, resultado.mensaje, resultado=resultado)
         return resultado
