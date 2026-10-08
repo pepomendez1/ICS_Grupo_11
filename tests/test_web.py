@@ -337,3 +337,23 @@ class TestEntradasConQR:
         entrada = entradas_de(repo, comprar_en_efectivo(cliente_logueado))[0]
         html = cliente_logueado.get(f"/entradas/{entrada.codigo}").get_data(as_text=True)
         sin_terminos_de_parque_de_diversiones(html, "la página de la entrada")
+
+    def test_web_confirmacion_en_efectivo_muestra_cada_entrada_con_su_qr(self, cliente_logueado):
+        compra_id = comprar_en_efectivo(cliente_logueado)
+        html = cliente_logueado.get(f"/compras/{compra_id}").get_data(as_text=True)
+        assert html.count(QR) == 2
+        assert "Entrada 1 de 2" in html and "Entrada 2 de 2" in html
+        assert "Pagar en boletería" in html
+
+    def test_web_confirmacion_con_tarjeta_pendiente_muestra_las_entradas_sin_qr(self, cliente_mp, pasarela_mp):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        html = cliente_mp.get(f"/compras/{compra_id}?mp=success").get_data(as_text=True)
+        assert QR not in html
+        assert "Entrada 2 de 2" in html
+        assert "Esperando confirmación del pago" in html
+
+    def test_web_confirmacion_se_puede_imprimir(self, cliente_logueado):
+        compra_id = comprar_en_efectivo(cliente_logueado)
+        html = cliente_logueado.get(f"/compras/{compra_id}").get_data(as_text=True)
+        assert "@media print" in html
+        assert "window.print()" in html
