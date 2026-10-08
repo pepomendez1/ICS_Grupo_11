@@ -1,5 +1,6 @@
 """Tests de integración de la app web: recorren el flujo completo por HTTP."""
 import os
+import re
 from datetime import date, timedelta
 from unittest.mock import Mock, patch
 
@@ -519,3 +520,41 @@ class TestVueltaDeMercadoPago:
         assert QR in volver_de_mp(cliente_mp, compra_id)
         entrada = entradas_de(repo, compra_id)[0]
         assert QR in cliente_mp.get(f"/entradas/{entrada.codigo}").get_data(as_text=True)
+
+
+def compra_rechazada(cliente, pasarela, **datos):
+    """Compra con tarjeta que vuelve de MP con failure. Devuelve su id."""
+    cliente.post("/comprar", data=datos_compra(forma_pago="TARJETA", **datos))
+    compra_id = pasarela.crear_pago.call_args.kwargs["referencia"]
+    volver_de_mp(cliente, compra_id, "failure")
+    return compra_id
+
+
+class TestReintentoDeCompraRechazada:
+    """"Volver e intentar de nuevo" precarga la compra rechazada en el formulario."""
+
+    def test_web_reintento_precarga_todos_los_campos_incluidas_las_edades(self, cliente_mp, pasarela_mp):
+        compra_id = compra_rechazada(
+            cliente_mp, pasarela_mp, fecha_visita="2026-10-09", cantidad="3",
+            edades=["41", "12", "0"], tipo_pase="VIP",
+        )
+        html = cliente_mp.get(f"/comprar?reintentar={compra_id}").get_data(as_text=True)
+        assert re.search(r'name="fecha_visita"[^>]*value="2026-10-09"', html)
+        assert re.search(r'name="cantidad"[^>]*value="3"', html)
+        assert re.findall(r'<input name="edades"[^>]*value="(\d+)"', html) == ["41", "12", "0"]
+        assert 'name="tipo_pase" value="VIP" checked' in html
+        assert 'name="forma_pago" value="TARJETA" checked' in html
+
+    def test_web_reintento_crea_una_compra_nueva_y_la_rechazada_no_se_reutiliza(self, cliente_mp, pasarela_mp, repo):
+        rechazada = compra_rechazada(cliente_mp, pasarela_mp)
+        respuesta = cliente_mp.post("/comprar", data=datos_compra(forma_pago="EFECTIVO"))
+        nueva = respuesta.headers["Location"].rsplit("/", 1)[-1]
+        assert nueva != rechazada
+        assert repo.obtener_compra(rechazada)["estado"] == "rechazada"
+        assert repo.obtener_compra(nueva)["estado"] == "activa"
+
+    def test_web_no_se_puede_reintentar_la_compra_de_otro_visitante(self, cliente_mp, pasarela_mp, app, registrar):
+        compra_id = compra_rechazada(cliente_mp, pasarela_mp)
+        otro = app.test_client()
+        registrar(otro, "otra.persona@mail.com")
+        assert otro.get(f"/comprar?reintentar={compra_id}").status_code == 404
