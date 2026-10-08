@@ -212,6 +212,24 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
             "edades": [],
         }
         if request.method == "GET":
+            reintentar = request.args.get("reintentar")
+            if reintentar:
+                # "Volver e intentar de nuevo": precarga la compra anterior. Al
+                # confirmar se crea una compra nueva; la anterior no se reutiliza.
+                anterior = repo.obtener_compra(reintentar)
+                if not anterior or anterior["email"] != usuario_actual()["email"]:
+                    abort(404)
+                r = anterior["resultado"]
+                contexto.update(
+                    form={
+                        "fecha_visita": r.fecha_visita.isoformat(),
+                        "cantidad": str(r.cantidad),
+                        "tipo_pase": r.tipo_pase.value,
+                        "forma_pago": r.forma_pago.value,
+                    },
+                    edades=[str(e) for e in anterior["edades"]],
+                    reintento=True,
+                )
             return render_template("comprar.html", **contexto)
 
         compra_id = uuid.uuid4().hex[:10]

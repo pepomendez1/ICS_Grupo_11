@@ -18,6 +18,7 @@ def _armar_compra(fila: dict, entradas=()) -> dict:
         "email": fila["email"],
         "pagada": fila["pagada"],
         "estado": fila.get("estado") or "activa",  # "activa" | "rechazada"
+        "edades": list(fila.get("edades") or []),
         "pago_id": fila.get("pago_id"),
         "resultado": ResultadoCompra(
             cantidad=fila["cantidad"],
