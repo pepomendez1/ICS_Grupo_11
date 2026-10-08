@@ -132,7 +132,7 @@
       <nav>
         {% if usuario %}
           <a href="{{ url_for('comprar') }}">Comprar entradas</a>
-          <a href="{{ url_for('mails') }}">Mis mails</a>
+          {% if bandeja_simulada %}<a href="{{ url_for('mails') }}">Mis mails</a>{% endif %}
           <form method="post" action="{{ url_for('logout') }}" style="margin:0">
             <button type="submit">Salir ({{ usuario.nombre }})</button>
           </form>

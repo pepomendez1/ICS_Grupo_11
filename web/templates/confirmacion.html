@@ -4,6 +4,8 @@
 <style>
   .confirmacion { max-width: 720px; margin: 0 auto; }
   .confirmacion h2 { margin: 32px 0 6px; font-size: 1.45rem; }
+  .acciones { margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; }
+  @media (max-width: 560px) { .acciones .boton { width: 100%; } }
   @media print {
     .confirmacion > .aviso, .confirmacion > h1, .confirmacion > .bajada, .resumen { display: none; }
     .confirmacion h2 { margin-top: 0; }
@@ -20,7 +22,15 @@
     <div class="aviso ok" role="status">{{ r.mensaje }}</div>
     <h1>¡Listo, te esperamos!</h1>
   {% endif %}
-  <p class="bajada">Te mandamos un mail de confirmación a <strong>{{ compra.email }}</strong>.</p>
+  <p class="bajada">
+    {% if bandeja_simulada %}
+      Te mandamos un mail de confirmación a <strong>{{ compra.email }}</strong>.
+    {% elif falta_pagar %}
+      Cuando se apruebe el pago te mandamos las entradas a <strong>{{ compra.email }}</strong>.
+    {% else %}
+      Te mandamos un mail con tus entradas a <strong>{{ compra.email }}</strong>.
+    {% endif %}
+  </p>
 
   <div class="tarjeta resumen">
     <dl class="detalle">
@@ -52,10 +62,10 @@
     {% endfor %}
   </div>
 
-  <p class="no-imprimir" style="margin-top:24px; display:flex; gap:12px; flex-wrap:wrap">
-    <a class="boton" href="{{ url_for('mails') }}">Ver mail de confirmación</a>
-    <a class="boton secundario" href="{{ url_for('comprar') }}">Comprar más entradas</a>
+  <p class="acciones no-imprimir">
+    <a class="boton" href="{{ url_for('comprar') }}">Comprar más entradas</a>
     {% if estado.valida %}<button class="boton secundario" type="button" onclick="window.print()">Imprimir entradas</button>{% endif %}
+    {% if bandeja_simulada %}<a class="boton secundario" href="{{ url_for('mails') }}">Ver mail de confirmación</a>{% endif %}
   </p>
 </div>
 {% endblock %}
