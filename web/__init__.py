@@ -8,7 +8,7 @@ from functools import wraps
 
 import logging
 
-from flask import Flask, abort, flash, g, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
 
 from parque.compra import (
     CANTIDAD_MAXIMA_ENTRADAS,
@@ -85,8 +85,8 @@ def resultado_del_pago(compra, vuelta_mp):
         return "aprobado"
     if compra["estado"] == "rechazada":
         return "rechazado"
-    if vuelta_mp == "success":
-        return "acreditando"  # MP dice que aprobó, falta que llegue el webhook
+    if vuelta_mp in ("success", "approved"):
+        return "confirmando"  # MP dice que aprobó, falta que llegue el webhook
     return "pendiente"
 
 
@@ -297,6 +297,20 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
         return render_template(
             "entrada.html", r=compra["resultado"], t=t, estado=estado_de(compra)
         )
+
+    @app.get("/compras/<compra_id>/estado")
+    def estado_compra(compra_id):
+        """Estado liviano de la compra para el polling de "Estamos confirmando
+        tu pago…". Solo para el dueño; JSON también en los errores."""
+        usuario = usuario_actual()
+        if not usuario:
+            return jsonify(error="Tenés que iniciar sesión"), 401
+        compra = repo.obtener_compra(compra_id)
+        if not compra or compra["email"] != usuario["email"]:
+            return jsonify(error="No existe la compra"), 404
+        respuesta = jsonify(pagada=compra["pagada"], estado=compra["estado"])
+        respuesta.headers["Cache-Control"] = "no-store"
+        return respuesta
 
     # ---------- Mercado Pago ----------
 
