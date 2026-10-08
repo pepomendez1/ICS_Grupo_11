@@ -1,7 +1,7 @@
 """Tests de integración de la app web: recorren el flujo completo por HTTP."""
 import os
 from datetime import date, timedelta
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -398,3 +398,58 @@ class TestMailTusEntradas:
     def test_web_compra_en_efectivo_no_manda_tus_entradas(self, cliente_logueado, repo):
         comprar_en_efectivo(cliente_logueado)  # los QR ya van en el mail de confirmación
         assert mails_tus_entradas(repo) == []
+
+
+BOTON_COMPRAR_MAS = '<a class="boton" href="/comprar">Comprar más entradas</a>'
+
+
+@pytest.fixture
+def con_gmail(monkeypatch):
+    """Gmail real configurado (con smtplib mockeado: no sale ningún mail)."""
+    monkeypatch.setenv("GMAIL_USER", "ecoharmony.park@gmail.com")
+    monkeypatch.setenv("GMAIL_APP_PASSWORD", "abcd efgh ijkl mnop")
+    with patch("web.servicios.smtplib.SMTP"):
+        yield
+
+
+@pytest.fixture
+def cliente_gmail(con_gmail, repo, pasarela_mp, registrar):
+    cliente = create_app(hoy=lambda: HOY, testing=True, repo=repo, pasarela=pasarela_mp).test_client()
+    registrar(cliente)
+    return cliente
+
+
+class TestBandejaSimulada:
+    """"Mis mails" existe solo mientras no hay Gmail real configurado."""
+
+    def test_web_con_gmail_la_confirmacion_no_tiene_boton_ni_link_a_mis_mails(self, cliente_gmail):
+        compra_id = comprar_en_efectivo(cliente_gmail)
+        html = cliente_gmail.get(f"/compras/{compra_id}").get_data(as_text=True)
+        assert "Ver mail de confirmación" not in html
+        assert 'href="/mails"' not in html
+        assert "Mis mails" not in html
+
+    def test_web_con_gmail_mis_mails_da_404(self, cliente_gmail):
+        assert cliente_gmail.get("/mails").status_code == 404
+
+    def test_web_con_gmail_en_efectivo_avisa_que_mandamos_las_entradas(self, cliente_gmail):
+        compra_id = comprar_en_efectivo(cliente_gmail)
+        html = cliente_gmail.get(f"/compras/{compra_id}").get_data(as_text=True)
+        assert f"Te mandamos un mail con tus entradas a <strong>{EMAIL_VISITANTE}</strong>" in html
+
+    def test_web_con_gmail_con_tarjeta_pendiente_avisa_que_las_mandamos_al_aprobarse(self, cliente_gmail, pasarela_mp):
+        compra_id = comprar_con_tarjeta(cliente_gmail, pasarela_mp)
+        html = cliente_gmail.get(f"/compras/{compra_id}?mp=success").get_data(as_text=True)
+        assert f"Cuando se apruebe el pago te mandamos las entradas a <strong>{EMAIL_VISITANTE}</strong>" in html
+
+    def test_web_con_gmail_comprar_mas_entradas_es_el_boton_principal(self, cliente_gmail):
+        compra_id = comprar_en_efectivo(cliente_gmail)
+        assert BOTON_COMPRAR_MAS in cliente_gmail.get(f"/compras/{compra_id}").get_data(as_text=True)
+
+    def test_web_sin_gmail_sigue_la_bandeja_y_comprar_mas_es_el_boton_principal(self, cliente_logueado):
+        compra_id = comprar_en_efectivo(cliente_logueado)
+        html = cliente_logueado.get(f"/compras/{compra_id}").get_data(as_text=True)
+        assert "Ver mail de confirmación" in html
+        assert 'href="/mails"' in html
+        assert BOTON_COMPRAR_MAS in html
+        assert cliente_logueado.get("/mails").status_code == 200
