@@ -8,5 +8,5 @@ app = create_app()
 
 if __name__ == "__main__":
     print("EcoHarmony Park corriendo en http://localhost:5001")
-    print("Usuario de prueba: demo@ecoharmony.com / demo123")
+    print("Para comprar, creá una cuenta en /registro")
     app.run(debug=True, port=5001)

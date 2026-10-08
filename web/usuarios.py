@@ -18,12 +18,6 @@ class RepositorioUsuarios:
         if not self._repo.crear_usuario(nombre.strip(), email, generate_password_hash(password)):
             raise ValueError("Ya existe un usuario con ese email")
 
-    def asegurar_usuario_demo(self) -> None:
-        if not self._repo.obtener_usuario("demo@ecoharmony.com"):
-            self._repo.crear_usuario(
-                "Visitante Demo", "demo@ecoharmony.com", generate_password_hash("demo123")
-            )
-
     def autenticar(self, email: str, password: str):
         usuario = self._repo.obtener_usuario(email.strip().lower())
         if usuario and check_password_hash(usuario["password"], password):

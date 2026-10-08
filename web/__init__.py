@@ -74,7 +74,6 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
 
     repo = repo or crear_repositorio()
     usuarios = RepositorioUsuarios(repo)
-    usuarios.asegurar_usuario_demo()
 
     pasarela = pasarela or crear_pasarela(repo, os.environ)
     notificador = notificador or crear_notificador(repo, os.environ)
