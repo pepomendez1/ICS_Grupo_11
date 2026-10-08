@@ -118,6 +118,7 @@ el tipo de pase, la edad, el número de entrada (por ejemplo, 1 de 3) y el estad
 | Efectivo | Válida · Pagar en boletería | Sí |
 | Tarjeta, pago pendiente | Esperando confirmación del pago | No |
 | Tarjeta, aprobada por el webhook | Válida · Pagada con Mercado Pago | Sí |
+| Tarjeta, rechazada o cancelada | Compra cancelada · Entrada no válida | No |
 
 La confirmación de la compra muestra las entradas como tickets con talón y se
 pueden imprimir. Los QR se generan con `segno` (Python puro, sin Pillow).
@@ -139,10 +140,22 @@ Pago. Con el token usa `PasarelaMercadoPago` (SDK oficial `mercadopago`):
 1. La compra con tarjeta crea una **preferencia** con `external_reference` = id
    de la compra, `back_urls` a `/compras/<id>?mp=success|failure|pending`,
    `auto_return=approved` y `notification_url` = `/mercadopago/webhook`.
-2. El visitante paga en Mercado Pago y vuelve a la confirmación. Los query
-   params de esa vuelta **no** marcan nada: solo cambian el aviso que se muestra.
+2. El visitante paga en Mercado Pago y vuelve a la confirmación. Esa vuelta
+   (`?mp=...`) **nunca** marca la compra como pagada; solo decide qué se muestra:
+
+   | Vuelta | Pantalla |
+   |---|---|
+   | `success` | "¡Listo, te esperamos!"; los QR aparecen cuando llega el webhook. |
+   | `pending` | "Tu pago está pendiente": sin error ni QR; las entradas llegan por mail al aprobarse. |
+   | `failure` (rechazado o volvió sin pagar) | "No se pudo completar el pago". La compra queda `rechazada` (columna `compras.estado`), sus entradas no son válidas y el botón **Volver e intentar de nuevo** abre `/comprar` precargado. Al confirmar se crea una compra nueva. |
+
+   Lo guardado manda sobre el query param: si el webhook ya aprobó el pago, se
+   muestra aprobada aunque la vuelta diga `failure`.
 3. Mercado Pago llama al **webhook**, que consulta el pago a la API y marca la
-   compra como pagada solo si el estado es `approved` y el monto coincide.
+   compra como pagada solo si el estado es `approved` y el monto coincide. Si
+   MP termina cobrando una compra que había quedado rechazada (por ejemplo, un
+   medio de pago que se acredita tarde), el cobro manda: la compra vuelve a ser
+   válida y se mandan las entradas.
 
 ### Cómo obtener las credenciales
 
