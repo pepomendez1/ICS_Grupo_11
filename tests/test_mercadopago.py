@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from parque.compra import PRECIOS, CompraError
+from tests.conftest import HOY
 from web import create_app
 from web.repositorio import RepositorioMemoria
 from web.servicios import (
@@ -114,10 +115,10 @@ class TestElegirPasarela:
     def test_la_app_usa_mercado_pago_si_hay_access_token(self, sdk, monkeypatch, registrar):
         monkeypatch.setenv("MP_ACCESS_TOKEN", "TEST-token")
         monkeypatch.setenv("APP_BASE_URL", BASE_URL)
-        cliente = create_app(testing=True, repo=RepositorioMemoria()).test_client()
+        cliente = create_app(reloj=lambda: HOY, testing=True, repo=RepositorioMemoria()).test_client()
         registrar(cliente)
         cliente.post("/comprar", data={
-            "fecha_visita": "2099-01-08", "cantidad": "1", "edades": ["30"],  # jueves (el 1/1 cierra)
+            "fecha_visita": "2026-10-08", "cantidad": "1", "edades": ["30"],  # jueves, dentro del mes
             "tipo_pase": "VIP", "forma_pago": "TARJETA",
         })
         assert preferencia_enviada(sdk)["items"][0]["unit_price"] == PRECIOS["VIP"]

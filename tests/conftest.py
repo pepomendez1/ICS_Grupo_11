@@ -57,6 +57,19 @@ def servicio(pasarela_mp, notificador):
 
 
 @pytest.fixture
+def servicio_con_reloj(pasarela_mp, notificador):
+    """El mismo servicio, pero con el reloj en otro momento (para la FAQ 26)."""
+    def crear(ahora):
+        return ServicioCompraEntradas(
+            calendario=CalendarioFake(),
+            pasarela_pago=pasarela_mp,
+            notificador=notificador,
+            reloj=lambda: ahora,
+        )
+    return crear
+
+
+@pytest.fixture
 def usuario_registrado():
     return Usuario(email="visitante@mail.com", registrado=True)
 

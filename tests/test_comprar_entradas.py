@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -88,6 +88,37 @@ class TestFechaVisita:
         solicitud_valida.fecha_visita = DIA_CERRADO
         with pytest.raises(ParqueCerradoError):
             servicio.comprar(usuario_registrado, solicitud_valida)
+
+    # FAQ 25: se puede comprar hasta 1 mes calendario desde hoy (06/10 -> 06/11 inclusive).
+    def test_comprar_entrada_fecha_a_un_mes_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        solicitud_valida.fecha_visita = date(2026, 11, 6)  # viernes
+        resultado = servicio.comprar(usuario_registrado, solicitud_valida)
+        assert resultado.fecha_visita == date(2026, 11, 6)
+
+    def test_comprar_entrada_fecha_a_un_mes_y_un_dia_falla(self, servicio, usuario_registrado, solicitud_valida):
+        solicitud_valida.fecha_visita = date(2026, 11, 7)  # sábado, abierto pero fuera del horizonte
+        with pytest.raises(FechaInvalidaError, match="06/11/2026"):
+            servicio.comprar(usuario_registrado, solicitud_valida)
+
+    # FAQ 26: para el mismo día se puede comprar hasta las 17:30 inclusive (hora de Córdoba).
+    def test_comprar_entrada_para_hoy_a_las_17_30_pasa(self, servicio_con_reloj, usuario_registrado, solicitud_valida):
+        servicio = servicio_con_reloj(HOY.replace(hour=17, minute=30))
+        solicitud_valida.fecha_visita = HOY.date()
+        resultado = servicio.comprar(usuario_registrado, solicitud_valida)
+        assert resultado.fecha_visita == HOY.date()
+
+    def test_comprar_entrada_para_hoy_a_las_17_31_falla(self, servicio_con_reloj, usuario_registrado, solicitud_valida):
+        servicio = servicio_con_reloj(HOY.replace(hour=17, minute=31))
+        solicitud_valida.fecha_visita = HOY.date()
+        with pytest.raises(FechaInvalidaError, match="17:30"):
+            servicio.comprar(usuario_registrado, solicitud_valida)
+
+    def test_comprar_entrada_para_manana_a_las_18_pasa(self, servicio_con_reloj, usuario_registrado, solicitud_valida):
+        servicio = servicio_con_reloj(HOY.replace(hour=18, minute=0))
+        manana = HOY.date() + timedelta(days=1)  # miércoles
+        solicitud_valida.fecha_visita = manana
+        resultado = servicio.comprar(usuario_registrado, solicitud_valida)
+        assert resultado.fecha_visita == manana
 
 
 class TestDatosVisitantes:
