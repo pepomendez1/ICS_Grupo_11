@@ -75,10 +75,19 @@ class MotivoSinVenta:
 
 def motivo_sin_venta(fecha: date, ahora: datetime, calendario) -> Optional[MotivoSinVenta]:
     """La única fuente de verdad sobre qué días se venden: la usan la validación
-    del servicio y el calendario de la web. None si se puede comprar."""
+    del servicio y el calendario de la web. None si se puede comprar.
+
+    Si hay varios motivos se informa el principal: un día pasado, después que el
+    parque está cerrado (FAQ 1), y recién ahí el horizonte (FAQ 25) y el
+    horario de venta para hoy (FAQ 26).
+    """
     hoy = ahora.date()
     if fecha < hoy:
         return MotivoSinVenta("pasado", "La fecha de visita debe ser hoy o una fecha futura", "ya pasó")
+    if not calendario.esta_abierto(fecha):  # FAQ 1
+        detalle = calendario.motivo_cierre(fecha) if hasattr(calendario, "motivo_cierre") else None
+        corto = (detalle or "el parque está cerrado")
+        return MotivoSinVenta("cerrado", "El parque está cerrado en la fecha elegida", corto[0].lower() + corto[1:])
     maxima = fecha_maxima_de_compra(hoy)
     if fecha > maxima:  # FAQ 25
         return MotivoSinVenta(
@@ -93,10 +102,6 @@ def motivo_sin_venta(fecha: date, ahora: datetime, calendario) -> Optional[Motiv
             f"Para hoy se pueden comprar entradas hasta las {limite}. Elegí otra fecha.",
             f"para hoy se vende hasta las {limite}",
         )
-    if not calendario.esta_abierto(fecha):  # FAQ 1
-        detalle = calendario.motivo_cierre(fecha) if hasattr(calendario, "motivo_cierre") else None
-        corto = (detalle or "el parque está cerrado")
-        return MotivoSinVenta("cerrado", "El parque está cerrado en la fecha elegida", corto[0].lower() + corto[1:])
     return None
 
 
