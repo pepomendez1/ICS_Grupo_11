@@ -876,3 +876,26 @@ class TestAprobacionTardia:
         aprobar_por_webhook(cliente_reloj, pasarela_mp, compra_id)
         assert repo.obtener_compra(compra_id)["pagada"] is True
         assert "vencida" in caplog.text and compra_id in caplog.text
+
+
+
+class TestBandejaConAdjunto:
+    """Sin Gmail, "Mis mails" muestra el PDF adjunto y deja descargarlo (solo al dueño)."""
+
+    def test_mis_mails_muestra_el_adjunto_y_permite_descargarlo(self, cliente_logueado):
+        comprar_en_efectivo(cliente_logueado)
+        html = cliente_logueado.get("/mails").get_data(as_text=True)
+        enlace = re.search(r'href="(/mails/\d+/adjunto)"', html)
+        assert enlace, "no hay link al adjunto en Mis mails"
+        assert ".pdf" in html
+        respuesta = cliente_logueado.get(enlace.group(1))
+        assert respuesta.status_code == 200
+        assert respuesta.mimetype == "application/pdf"
+        assert respuesta.get_data().startswith(b"%PDF")
+
+    def test_el_adjunto_de_otro_visitante_da_404(self, cliente_logueado, app, registrar):
+        comprar_en_efectivo(cliente_logueado)
+        enlace = re.search(r'href="(/mails/\d+/adjunto)"', cliente_logueado.get("/mails").get_data(as_text=True))
+        otro = app.test_client()
+        registrar(otro, "otra.persona@mail.com")
+        assert otro.get(enlace.group(1)).status_code == 404
