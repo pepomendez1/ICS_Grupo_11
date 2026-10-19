@@ -95,8 +95,42 @@ class TestPreferenciaConVencimiento:
         PasarelaMercadoPago("APP_USR-token", BASE_URL, reloj=lambda: HOY).crear_pago(10_000, "ana@mail.com", referencia="c1")
         pref = preferencia_enviada(sdk)
         assert pref["expires"] is True
-        assert pref["expiration_date_from"] == "2026-10-06T10:00:00.000-03:00"
+        # vigente desde 5 min antes (tolerancia al reloj de MP); vence 30 min después de ahora
+        assert pref["expiration_date_from"] == "2026-10-06T09:55:00.000-03:00"
         assert pref["expiration_date_to"] == "2026-10-06T10:30:00.000-03:00"
+
+
+class TestPreferenciaVigente:
+    """La preferencia tiene que poder pagarse apenas se crea, con el reloj real."""
+
+    FORMATO = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}$"  # ISO 8601 con offset
+
+    def preferencia_real(self, sdk):
+        PasarelaMercadoPago("APP_USR-token", BASE_URL).crear_pago(10_000, "ana@mail.com", referencia="c1")
+        return preferencia_enviada(sdk)
+
+    def test_las_fechas_van_en_iso_8601_con_offset(self, sdk):
+        import re
+        pref = self.preferencia_real(sdk)
+        assert re.match(self.FORMATO, pref["expiration_date_from"])
+        assert re.match(self.FORMATO, pref["expiration_date_to"])
+
+    def test_vence_30_minutos_despues_de_ahora_y_en_el_futuro(self, sdk):
+        from datetime import datetime, timedelta, timezone
+        antes = datetime.now(timezone.utc)
+        antes = antes.replace(microsecond=antes.microsecond // 1000 * 1000)  # el formato lleva milisegundos
+        hasta = datetime.fromisoformat(self.preferencia_real(sdk)["expiration_date_to"])
+        despues = datetime.now(timezone.utc)
+        assert antes + timedelta(minutes=30) <= hasta <= despues + timedelta(minutes=30)
+
+    def test_ya_esta_vigente_aunque_el_reloj_de_mp_este_atrasado(self, sdk):
+        from datetime import datetime, timedelta, timezone
+        desde = datetime.fromisoformat(self.preferencia_real(sdk)["expiration_date_from"])
+        assert desde <= datetime.now(timezone.utc) - timedelta(minutes=1)
+
+    def test_no_excluye_tarjetas_de_credito_ni_de_debito(self, sdk):
+        excluidos = {t["id"] for t in self.preferencia_real(sdk)["payment_methods"]["excluded_payment_types"]}
+        assert not excluidos & {"credit_card", "debit_card", "prepaid_card"}
 
 
 class TestConsultarPago:
