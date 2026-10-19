@@ -1,8 +1,9 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from unittest.mock import Mock
 
 import pytest
 
+from parque.config import ZONA_HORARIA
 from parque.compra import (
     DIA_CIERRE,
     FormaPago,
@@ -12,7 +13,7 @@ from parque.compra import (
     Usuario,
 )
 
-HOY = date(2026, 10, 6)          # martes
+HOY = datetime(2026, 10, 6, 10, 0, tzinfo=ZONA_HORARIA)  # martes a las 10:00 (hora de Córdoba)
 DIA_CERRADO = date(2026, 10, 12)  # lunes: el parque cierra los lunes
 URL_MP = "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=123"
 EMAIL_VISITANTE = "visitante.web@mail.com"
@@ -51,7 +52,7 @@ def servicio(pasarela_mp, notificador):
         calendario=CalendarioFake(),
         pasarela_pago=pasarela_mp,
         notificador=notificador,
-        hoy=lambda: HOY,
+        reloj=lambda: HOY,
     )
 
 

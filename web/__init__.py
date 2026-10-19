@@ -2,14 +2,15 @@
 import os
 import secrets
 import uuid
-from datetime import date, datetime, timezone
-from zoneinfo import ZoneInfo
+from datetime import date, timezone
 from functools import wraps
 
 import logging
 
 from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
 
+from parque import config
+from parque.calendario import ahora_en_el_parque
 from parque.compra import (
     CANTIDAD_MAXIMA_ENTRADAS,
     EDAD_MAXIMA,
@@ -67,12 +68,7 @@ def _parse_enum(enum_cls, valor):
         return None
 
 
-ZONA_PARQUE = ZoneInfo("America/Argentina/Cordoba")
-
-
-def hoy_en_el_parque() -> date:
-    # Vercel corre en UTC: sin esto, después de las 21 h "hoy" sería mañana.
-    return datetime.now(ZONA_PARQUE).date()
+ZONA_PARQUE = config.ZONA_HORARIA
 
 
 def resultado_del_pago(compra, vuelta_mp):
@@ -90,7 +86,7 @@ def resultado_del_pago(compra, vuelta_mp):
     return "pendiente"
 
 
-def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, notificador=None):
+def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None, notificador=None):
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(16)
     app.config["TESTING"] = testing
@@ -104,7 +100,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
         calendario=CalendarioEcoHarmony(),
         pasarela_pago=pasarela,
         notificador=notificador,
-        hoy=hoy,
+        reloj=reloj,
     )
     app.extensions["ecoharmony"] = {"repo": repo}
     # "Mis mails" es la bandeja del notificador simulado: con Gmail real no existe.
@@ -203,7 +199,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
     @login_requerido
     def comprar():
         contexto = {
-            "hoy": hoy().isoformat(),
+            "hoy": reloj().date().isoformat(),
             "maximo": CANTIDAD_MAXIMA_ENTRADAS,
             "edad_maxima": EDAD_MAXIMA,
             "form": {},

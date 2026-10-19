@@ -1,12 +1,13 @@
 """Tests de integración de la app web: recorren el flujo completo por HTTP."""
 import os
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from unittest.mock import Mock, patch
 
 import pytest
 
 from parque.compra import PRECIOS
+from parque.config import ZONA_HORARIA
 from web import create_app
 from web.repositorio import RepositorioMemoria, RepositorioPostgres
 from web.servicios import EstadoPago, PagoNoDisponibleError
@@ -14,8 +15,8 @@ from tests.conftest import EMAIL_VISITANTE
 
 TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
 
-HOY = date(2026, 10, 6)  # martes
-JUEVES = (HOY + timedelta(days=2)).isoformat()
+HOY = datetime(2026, 10, 6, 10, 0, tzinfo=ZONA_HORARIA)  # martes a las 10:00 (hora de Córdoba)
+JUEVES = (HOY.date() + timedelta(days=2)).isoformat()
 LUNES = date(2026, 10, 12).isoformat()
 
 
@@ -34,7 +35,7 @@ def repo(request):
 
 @pytest.fixture
 def app(repo):
-    return create_app(hoy=lambda: HOY, testing=True, repo=repo)
+    return create_app(reloj=lambda: HOY, testing=True, repo=repo)
 
 
 @pytest.fixture
@@ -131,7 +132,7 @@ def pasarela_mp():
 
 @pytest.fixture
 def cliente_mp(repo, pasarela_mp, registrar):
-    cliente = create_app(hoy=lambda: HOY, testing=True, repo=repo, pasarela=pasarela_mp).test_client()
+    cliente = create_app(reloj=lambda: HOY, testing=True, repo=repo, pasarela=pasarela_mp).test_client()
     registrar(cliente)
     return cliente
 
@@ -415,7 +416,7 @@ def con_gmail(monkeypatch):
 
 @pytest.fixture
 def cliente_gmail(con_gmail, repo, pasarela_mp, registrar):
-    cliente = create_app(hoy=lambda: HOY, testing=True, repo=repo, pasarela=pasarela_mp).test_client()
+    cliente = create_app(reloj=lambda: HOY, testing=True, repo=repo, pasarela=pasarela_mp).test_client()
     registrar(cliente)
     return cliente
 

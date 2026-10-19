@@ -194,7 +194,7 @@ class TestFallas:
     def test_si_gmail_falla_la_compra_se_completa_igual(self, smtp, notificador, solicitud_valida):
         smtp.side_effect = OSError("sin red")
         servicio = ServicioCompraEntradas(
-            calendario=CalendarioFake(), pasarela_pago=Mock(), notificador=notificador, hoy=lambda: HOY,
+            calendario=CalendarioFake(), pasarela_pago=Mock(), notificador=notificador, reloj=lambda: HOY,
         )
         r = servicio.comprar(Usuario(email="ana@mail.com", registrado=True), solicitud_valida)
         assert r.cantidad == solicitud_valida.cantidad
@@ -224,7 +224,7 @@ class TestElegirNotificador:
     def test_la_app_manda_por_gmail_si_estan_las_variables(self, smtp, monkeypatch, registrar):
         monkeypatch.setenv("GMAIL_USER", USUARIO_GMAIL)
         monkeypatch.setenv("GMAIL_APP_PASSWORD", APP_PASSWORD)
-        cliente = create_app(hoy=lambda: HOY, testing=True, repo=RepositorioMemoria()).test_client()
+        cliente = create_app(reloj=lambda: HOY, testing=True, repo=RepositorioMemoria()).test_client()
         email = registrar(cliente)
         cliente.post("/comprar", data={
             "fecha_visita": "2026-10-08", "cantidad": "1", "edades": ["30"],

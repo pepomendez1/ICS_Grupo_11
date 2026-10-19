@@ -3,13 +3,15 @@
 COMO visitante QUIERO comprar una entrada PARA asegurar mi visita al parque.
 
 Las dependencias externas (calendario del parque, Mercado Pago, envío de mail
-y fecha actual) se inyectan para poder reemplazarlas por dobles en los tests.
+y el reloj) se inyectan para poder reemplazarlas por dobles en los tests.
 """
 import secrets
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 from typing import Callable, Optional, Protocol
+
+from parque.calendario import ahora_en_el_parque
 
 from parque.config import (  # noqa: F401  (se re-exportan para la web y los tests)
     CANTIDAD_MAXIMA_ENTRADAS,
@@ -126,18 +128,24 @@ class Notificador(Protocol):
 
 # ---------- Servicio ----------
 
+def _como_fecha(valor) -> date:
+    """La fecha de visita es un date; si llega un datetime (por ejemplo el HOY de
+    los tests, que es un datetime de las 10:00), se toma su día."""
+    return valor.date() if isinstance(valor, datetime) else valor
+
+
 class ServicioCompraEntradas:
     def __init__(
         self,
         calendario: CalendarioParque,
         pasarela_pago: PasarelaMercadoPago,
         notificador: Notificador,
-        hoy: Callable[[], date] = date.today,
+        reloj: Callable[[], datetime] = ahora_en_el_parque,
     ):
         self._calendario = calendario
         self._pasarela_pago = pasarela_pago
         self._notificador = notificador
-        self._hoy = hoy
+        self._reloj = reloj
 
     def comprar(self, usuario: Usuario, solicitud: SolicitudCompra) -> ResultadoCompra:
         self._validar(usuario, solicitud)
@@ -178,9 +186,10 @@ class ServicioCompraEntradas:
                 f"La cantidad debe estar entre 1 y {CANTIDAD_MAXIMA_ENTRADAS}"
             )
 
-        if s.fecha_visita is None or s.fecha_visita < self._hoy():
+        ahora = self._reloj()
+        if s.fecha_visita is None or _como_fecha(s.fecha_visita) < ahora.date():
             raise FechaInvalidaError("La fecha de visita debe ser hoy o una fecha futura")
-        if not self._calendario.esta_abierto(s.fecha_visita):
+        if not self._calendario.esta_abierto(_como_fecha(s.fecha_visita)):
             raise ParqueCerradoError("El parque está cerrado en la fecha elegida")
 
         if len(s.edades) != s.cantidad:

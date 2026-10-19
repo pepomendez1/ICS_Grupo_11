@@ -5,6 +5,9 @@ código (dominio, web, mails, PDF) las lee de este módulo.
 """
 import calendar
 from datetime import time
+from zoneinfo import ZoneInfo
+
+ZONA_HORARIA = ZoneInfo("America/Argentina/Cordoba")  # la hora del parque
 
 # ---------- Calendario (FAQ 1 y 11) ----------
 

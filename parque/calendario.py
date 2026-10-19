@@ -1,10 +1,16 @@
 """Calendario del parque (FAQ 1 y 11): qué días abre y en qué horario."""
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
 from parque import config
 
 DIAS_SEMANA = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+
+
+def ahora_en_el_parque() -> datetime:
+    """El reloj real: fecha y hora de Córdoba. Vercel corre en UTC, así que sin
+    la zona horaria después de las 21 h "hoy" sería mañana."""
+    return datetime.now(config.ZONA_HORARIA)
 
 
 def nombre_del_dia(numero: int) -> str:
