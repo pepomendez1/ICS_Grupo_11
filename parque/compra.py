@@ -118,6 +118,18 @@ class ResultadoCompra:
         )
 
 
+@dataclass
+class CompraExistente:
+    """Una compra anterior del visitante, tal como la guarda la base."""
+    id: str
+    cantidad: int
+    forma_pago: FormaPago
+    pagada: bool
+    estado: str        # "activa" | "rechazada" | ...
+    monto: int
+    creado: datetime
+
+
 # ---------- Dependencias externas ----------
 
 class CalendarioParque(Protocol):
@@ -127,6 +139,18 @@ class CalendarioParque(Protocol):
 class PasarelaMercadoPago(Protocol):
     def crear_pago(self, monto: int, email: str, referencia: Optional[str] = None) -> str:
         """Devuelve la URL a la que se redirige al usuario."""
+
+
+class ComprasDelVisitante(Protocol):
+    def compras_para(self, email: str, fecha: date) -> list:
+        """Las compras (CompraExistente) de ese visitante para esa fecha de visita."""
+
+
+class SinComprasPrevias:
+    """Puerto vacío por defecto: el visitante no tiene compras anteriores."""
+
+    def compras_para(self, email: str, fecha: date) -> list:
+        return []
 
 
 class Notificador(Protocol):
@@ -150,11 +174,13 @@ class ServicioCompraEntradas:
         pasarela_pago: PasarelaMercadoPago,
         notificador: Notificador,
         reloj: Callable[[], datetime] = ahora_en_el_parque,
+        compras: Optional[ComprasDelVisitante] = None,
     ):
         self._calendario = calendario
         self._pasarela_pago = pasarela_pago
         self._notificador = notificador
         self._reloj = reloj
+        self._compras = compras or SinComprasPrevias()
 
     def comprar(self, usuario: Usuario, solicitud: SolicitudCompra) -> ResultadoCompra:
         self._validar(usuario, solicitud)
