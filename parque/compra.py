@@ -5,26 +5,18 @@ COMO visitante QUIERO comprar una entrada PARA asegurar mi visita al parque.
 Las dependencias externas (calendario del parque, Mercado Pago, envío de mail
 y fecha actual) se inyectan para poder reemplazarlas por dobles en los tests.
 """
-import calendar
 import secrets
 from dataclasses import dataclass, field
 from datetime import date
 from enum import Enum
 from typing import Callable, Optional, Protocol
 
-# ---------- Configuración del parque ----------
-# Valores a confirmar con la PO (ver README > Supuestos): se cambian solo acá.
-
-CANTIDAD_MAXIMA_ENTRADAS = 10
-
-EDAD_MAXIMA = 150  # años; la edad 0 (bebés) es válida
-
-DIA_CIERRE = calendar.MONDAY  # el parque cierra los lunes
-
-PRECIOS = {  # por entrada, en pesos
-    "REGULAR": 50_000,
-    "VIP": 75_000,
-}
+from parque.config import (  # noqa: F401  (se re-exportan para la web y los tests)
+    CANTIDAD_MAXIMA_ENTRADAS,
+    DIA_CIERRE,
+    EDAD_MAXIMA,
+    PRECIOS,
+)
 
 
 class TipoPase(Enum):

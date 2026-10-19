@@ -1,7 +1,6 @@
 """Textos del bioparque que se muestran en la web y en los mails."""
-import parque.compra
-
-DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+from parque import config
+from parque.calendario import nombre_del_dia, texto_horario
 
 SECTORES = [
     {"clave": "terrestre", "nombre": "Terrestre",
@@ -50,11 +49,12 @@ def pesos(monto: int) -> str:
 
 
 def dia_de_cierre() -> str:
-    """"lunes": sale de parque.compra.DIA_CIERRE."""
-    return DIAS[parque.compra.DIA_CIERRE]
+    """"lunes": sale de parque.config.DIA_CIERRE."""
+    return nombre_del_dia(config.DIA_CIERRE)
 
 
 def horario() -> str:
-    """"Abierto de martes a domingo": sale de parque.compra.DIA_CIERRE."""
-    cierre = parque.compra.DIA_CIERRE
-    return f"Abierto de {DIAS[(cierre + 1) % 7]} a {DIAS[(cierre - 1) % 7]}"
+    """"Abierto de martes a domingo, de 8:30 a 19:00": sale de parque.config."""
+    cierre = config.DIA_CIERRE
+    return (f"Abierto de {nombre_del_dia((cierre + 1) % 7)} a {nombre_del_dia((cierre - 1) % 7)}, "
+            f"{texto_horario()}")

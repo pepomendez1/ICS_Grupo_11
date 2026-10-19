@@ -18,7 +18,7 @@ from urllib.parse import urlsplit
 
 import mercadopago
 
-import parque.compra
+from parque.calendario import CalendarioEcoHarmony  # noqa: F401  (vive en el dominio)
 from parque.compra import CompraError, ResultadoCompra
 from web.contenido import FORMAS_DE_PAGO, PASES, horario, pesos
 from web.entradas import qr_png, url_entrada
@@ -28,19 +28,6 @@ log = logging.getLogger(__name__)
 ASUNTO_CONFIRMACION = "EcoHarmony Park — Confirmación de compra"
 ASUNTO_ENTRADAS = "EcoHarmony Park — Tus entradas"
 BASE_URL_LOCAL = "http://localhost:5001"  # si no hay APP_BASE_URL
-
-
-class CalendarioEcoHarmony:
-    """EcoHarmony Park cierra el día de la semana configurado en
-    parque.compra.DIA_CIERRE (los lunes) y en los feriados cargados acá."""
-
-    FERIADOS_CERRADO = {
-        date(2026, 12, 25),
-        date(2027, 1, 1),
-    }
-
-    def esta_abierto(self, fecha: date) -> bool:
-        return fecha.weekday() != parque.compra.DIA_CIERRE and fecha not in self.FERIADOS_CERRADO
 
 
 class PasarelaMercadoPagoSimulada:
