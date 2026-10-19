@@ -30,7 +30,7 @@
   .desglose .num { text-align: right; white-space: nowrap; }
   .desglose tfoot th, .desglose tfoot td { border-bottom: 0; padding-top: 12px; font-size: 1.05rem; }
   .desglose tfoot strong { font-size: 1.35rem; color: var(--bosque); }
-  @media (max-width: 560px) { .desglose .col-desc { display: none; } }
+  .desglose .descuento { display: block; font-size: .82rem; color: var(--suave); }
   .fecha-elegida { margin: 10px 0 0; font-weight: 600; color: var(--bosque); min-height: 1.5em; }
   @media (max-width: 560px) { .celda label { height: 44px; } }
 </style>
@@ -109,13 +109,13 @@
     <p class="desglose-titulo" id="desglose-titulo">Detalle del precio</p>
     <table>
       <thead>
-        <tr><th scope="col">Visitante</th><th scope="col">Tarifa</th><th scope="col" class="col-desc">Descuento</th><th scope="col" class="num">Subtotal</th></tr>
+        <tr><th scope="col">Visitante</th><th scope="col">Tarifa</th><th scope="col" class="num">Subtotal</th></tr>
       </thead>
       <tbody id="desglose-filas">
-        <tr><td colspan="4" class="ayuda">Completá la cantidad, la edad de cada visitante y el tipo de pase.</td></tr>
+        <tr><td colspan="3" class="ayuda">Completá la cantidad, la edad de cada visitante y el tipo de pase.</td></tr>
       </tbody>
       <tfoot>
-        <tr><th scope="row" colspan="3">Total</th><td class="num"><strong id="total" aria-live="polite">$0</strong></td></tr>
+        <tr><th scope="row" colspan="2">Total</th><td class="num"><strong id="total" aria-live="polite">$0</strong></td></tr>
       </tfoot>
     </table>
     <p class="ayuda" style="margin:8px 0 0">{{ texto_descuentos }}. El total final lo calcula el sistema al confirmar.</p>
@@ -192,7 +192,7 @@
     filas.innerHTML = "";
     if (!pase || edades.length === 0) {
       const tr = document.createElement("tr");
-      tr.appendChild(celda("Completá la cantidad, la edad de cada visitante y el tipo de pase.", "ayuda")).colSpan = 4;
+      tr.appendChild(celda("Completá la cantidad, la edad de cada visitante y el tipo de pase.", "ayuda")).colSpan = 3;
       filas.appendChild(tr);
       total.textContent = formato(0);
       return;
@@ -201,13 +201,17 @@
     edades.forEach((edad, i) => {
       const tr = document.createElement("tr");
       if (edad === null || isNaN(edad) || edad < 0) {
-        tr.append(celda("Visitante " + (i + 1)), celda("Falta la edad"), celda("", "col-desc"), celda("—", "num"));
+        tr.append(celda("Visitante " + (i + 1)), celda("Falta la edad"), celda("—", "num"));
       } else {
         const t = tarifa(edad, pase.value);
         suma += t.precio;
         const descuento = t.descuento === 100 ? "Sin cargo" : t.descuento ? t.descuento + "% off" : "—";
-        tr.append(celda("Visitante " + (i + 1) + " · " + edad + " años"), celda(t.nombre),
-                  celda(descuento, "col-desc"), celda(formato(t.precio), "num"));
+        const tarifaCelda = celda(t.nombre);
+        const detalle = document.createElement("span");
+        detalle.className = "descuento";
+        detalle.textContent = descuento === "—" ? "Precio completo" : descuento;
+        tarifaCelda.appendChild(detalle);
+        tr.append(celda("Visitante " + (i + 1) + " · " + edad + " años"), tarifaCelda, celda(formato(t.precio), "num"));
       }
       filas.appendChild(tr);
     });

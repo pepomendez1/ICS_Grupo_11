@@ -14,7 +14,7 @@
   .desglose-compra thead th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--suave); font-weight: 600; }
   .desglose-compra .num { text-align: right; white-space: nowrap; }
   .desglose-compra tfoot th, .desglose-compra tfoot td { border-bottom: 0; padding-top: 10px; }
-  @media (max-width: 560px) { .desglose-compra .col-desc { display: none; } }
+  .desglose-compra .descuento { display: block; font-size: .82rem; color: var(--suave); }
   .cancelar { margin-top: 24px; border: 1px solid var(--borde); border-radius: 12px; background: var(--papel); }
   .cancelar summary { cursor: pointer; padding: 14px 18px; font-weight: 600; color: var(--error); }
   .cancelar summary:focus-visible { outline: 3px solid var(--hoja); outline-offset: 2px; border-radius: 12px; }
@@ -112,18 +112,17 @@
     </dl>
     <table class="desglose-compra">
       <caption>Detalle del precio</caption>
-      <thead><tr><th scope="col">Visitante</th><th scope="col">Tarifa</th><th scope="col" class="col-desc">Descuento</th><th scope="col" class="num">Subtotal</th></tr></thead>
+      <thead><tr><th scope="col">Visitante</th><th scope="col">Tarifa</th><th scope="col" class="num">Subtotal</th></tr></thead>
       <tbody>
         {% for e in r.entradas %}
         <tr>
           <td>Entrada {{ e.numero }} · {{ e.edad }} años</td>
-          <td>{{ e.tarifa }}</td>
-          <td class="col-desc">{% if e.descuento == 100 %}Sin cargo{% elif e.descuento %}{{ e.descuento }}%{% else %}—{% endif %}</td>
+          <td>{{ e.tarifa }}<span class="descuento">{% if e.descuento == 100 %}Sin cargo{% elif e.descuento %}{{ e.descuento }}% off{% else %}Precio completo{% endif %}</span></td>
           <td class="num">{{ e.precio | pesos }}</td>
         </tr>
         {% endfor %}
       </tbody>
-      <tfoot><tr><th scope="row" colspan="3">Total</th><td class="num"><strong>{{ r.monto | pesos }}</strong></td></tr></tfoot>
+      <tfoot><tr><th scope="row" colspan="2">Total</th><td class="num"><strong>{{ r.monto | pesos }}</strong></td></tr></tfoot>
     </table>
   </div>
 
