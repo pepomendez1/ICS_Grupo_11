@@ -108,7 +108,7 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
     repo = repo or crear_repositorio()
     usuarios = RepositorioUsuarios(repo)
 
-    pasarela = pasarela or crear_pasarela(repo, os.environ)
+    pasarela = pasarela or crear_pasarela(repo, os.environ, reloj)
     notificador = notificador or crear_notificador(repo, os.environ)
     calendario = CalendarioEcoHarmony()
     servicio = ServicioCompraEntradas(

@@ -9,7 +9,7 @@ import smtplib
 import ssl
 import uuid
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from email.message import EmailMessage
 from email.utils import make_msgid
 from html import escape
@@ -18,7 +18,8 @@ from urllib.parse import urlsplit
 
 import mercadopago
 
-from parque.calendario import CalendarioEcoHarmony  # noqa: F401  (vive en el dominio)
+from parque import config
+from parque.calendario import CalendarioEcoHarmony, ahora_en_el_parque  # noqa: F401  (el calendario vive en el dominio)
 from parque.compra import CompraError, ResultadoCompra
 from web.contenido import FORMAS_DE_PAGO, PASES, horario, pesos
 from web.entradas import qr_png, url_entrada
@@ -71,13 +72,18 @@ class PasarelaMercadoPago:
 
     TITULO = "EcoHarmony Park · Entradas"
 
-    def __init__(self, access_token: str, base_url: str):
+    def __init__(self, access_token: str, base_url: str, reloj=ahora_en_el_parque):
         self._sdk = mercadopago.SDK(access_token)
         self._base_url = base_url.rstrip("/")
         self._sandbox = access_token.startswith("TEST-")
+        self._reloj = reloj
 
     def crear_pago(self, monto: int, email: str, referencia: Optional[str] = None) -> str:
         vuelta = f"{self._base_url}/compras/{referencia}?mp="
+        # Vence junto con la compra pendiente (config.VENCIMIENTO_PAGO_MINUTOS):
+        # pasado ese plazo la compra deja de contar para el límite de 10.
+        desde = self._reloj()
+        hasta = desde + timedelta(minutes=config.VENCIMIENTO_PAGO_MINUTOS)
         respuesta = self._sdk.preference().create({
             "items": [{
                 "title": self.TITULO,
@@ -93,6 +99,12 @@ class PasarelaMercadoPago:
             },
             "auto_return": "approved",
             "notification_url": f"{self._base_url}/mercadopago/webhook",
+            # Solo tarjetas: sin efectivo (Rapipago, Pago Fácil) ni cajero, que
+            # se acreditan después de que la compra ya venció.
+            "payment_methods": {"excluded_payment_types": [{"id": "ticket"}, {"id": "atm"}]},
+            "expires": True,
+            "expiration_date_from": desde.isoformat(timespec="milliseconds"),
+            "expiration_date_to": hasta.isoformat(timespec="milliseconds"),
         })
         if respuesta.get("status") not in (200, 201):
             log.error("Mercado Pago rechazó la preferencia: %s", respuesta)
@@ -115,7 +127,7 @@ class PasarelaMercadoPago:
         )
 
 
-def crear_pasarela(repo, entorno):
+def crear_pasarela(repo, entorno, reloj=ahora_en_el_parque):
     """Mercado Pago real si está MP_ACCESS_TOKEN; si no, el checkout simulado."""
     access_token = entorno.get("MP_ACCESS_TOKEN")
     if not access_token:
@@ -125,7 +137,7 @@ def crear_pasarela(repo, entorno):
         raise ValueError(
             "Falta APP_BASE_URL: Mercado Pago la necesita para volver a la app y avisar los pagos"
         )
-    return PasarelaMercadoPago(access_token, base_url)
+    return PasarelaMercadoPago(access_token, base_url, reloj)
 
 
 class NotificadorMailSimulado:
