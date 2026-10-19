@@ -45,6 +45,7 @@ web/contenido.py                 Textos del bioparque: sectores, actividades y p
 web/templates/                   Pantallas HTML
 web/static/                      Logo, favicon y la fuente Lato
 scripts/generar_iconos.py        Regenera favicon, ícono de app y logo del mail desde los SVG
+scripts/ver_preferencia.py       Consulta una preferencia de Mercado Pago (diagnóstico)
 supabase/schema.sql              Tablas de la base
 app.py                           Entrada para Vercel
 run.py                           Entrada para correr local
@@ -197,10 +198,12 @@ La confirmación muestra las entradas como tickets con talón y se pueden imprim
 
 **Mails (FAQ 5):**
 
-- **Efectivo o total $0:** el mail de confirmación incluye los QR y el PDF.
-- **Tarjeta:** el mail de confirmación dice "pago pendiente de confirmación".
-  Cuando el webhook aprueba el pago se manda un segundo mail, **Tus entradas**,
-  con los QR y el PDF (una sola vez, aunque Mercado Pago repita la notificación).
+- **Efectivo o total $0:** el mail de confirmación sale al comprar, con los QR y el PDF.
+- **Tarjeta:** no sale ningún mail hasta que se aprueba el pago. Cuando el
+  webhook (o el checkout simulado) lo aprueba, se manda **Tus entradas** con los
+  QR y el PDF, una sola vez aunque Mercado Pago repita la notificación. Si la
+  compra se rechaza, se cancela o vence, no se manda nada
+  (`NotificadorSegunPago` en `web/servicios.py`).
 - Todos los mails traen el desglose por visitante y el total.
 - **PDF adjunto** (`web/pdf_entradas.py`, fpdf2 y Lato): una página de resumen
   con el desglose, el total y la forma de pago, y una página por entrada con QR,
@@ -218,7 +221,10 @@ total $0 no se pasa por Mercado Pago aunque se haya elegido tarjeta.
 1. La compra con tarjeta crea una **preferencia** con `external_reference` = id
    de la compra, `back_urls` a `/compras/<id>?mp=success|failure|pending`,
    `auto_return=approved`, `notification_url` = `/mercadopago/webhook`,
-   vencimiento a 30 minutos y sin medios en efectivo ni de cajero.
+   vencimiento a 30 minutos y sin medios en efectivo ni de cajero. Las fechas
+   van en ISO 8601 con offset (`2026-10-19T21:20:00.000-03:00`); la preferencia
+   es válida desde 5 minutos antes de crearla, por si el reloj de Mercado Pago
+   está atrasado respecto del nuestro.
 2. El visitante paga en Mercado Pago y vuelve a la confirmación. Esa vuelta
    (`?mp=...`) **nunca** marca la compra como pagada; solo decide qué se muestra:
 
@@ -260,6 +266,19 @@ a ella, así que tiene que ser accesible desde internet:
 - **Local:** levantá un túnel con `ngrok http 5001` y usá la URL `https://...`
   que te da. Con `localhost` Mercado Pago no puede llamar al webhook y la compra
   queda pendiente.
+
+### Si el checkout no deja pagar
+
+Para ver cómo quedó guardada una preferencia (vencimiento, medios excluidos,
+etc.), con el `pref_id` de la URL del checkout:
+
+```bash
+MP_ACCESS_TOKEN=... python scripts/ver_preferencia.py <pref_id>
+```
+
+En el entorno de prueba, "Pagar" también queda deshabilitado si en el
+checkout estás logueado con la cuenta del **vendedor** o con una cuenta real:
+abrilo en una ventana de incógnito y entrá con el **comprador de prueba**.
 
 ### Cargarlas en Vercel
 
