@@ -1,6 +1,7 @@
 {% extends "base.html" %}
-{# resultado_pago: "efectivo" | "aprobado" | "confirmando" | "pendiente" | "rechazado" #}
-{% set rechazado = resultado_pago == "rechazado" %}
+{# resultado_pago: "efectivo" | "sin_cargo" | "aprobado" | "confirmando" | "pendiente"
+                   | "rechazado" | "cancelado" | "vencido" #}
+{% set rechazado = resultado_pago in ("rechazado", "cancelado", "vencido") %}
 {% set confirmando = resultado_pago == "confirmando" %}
 {% block titulo %}{{ "Pago no completado" if rechazado else "Tu compra" }} · EcoHarmony Park{% endblock %}
 {% block estilos %}{% include "_ticket_estilos.html" %}
@@ -14,6 +15,13 @@
   .desglose-compra .num { text-align: right; white-space: nowrap; }
   .desglose-compra tfoot th, .desglose-compra tfoot td { border-bottom: 0; padding-top: 10px; }
   @media (max-width: 560px) { .desglose-compra .col-desc { display: none; } }
+  .cancelar { margin-top: 24px; border: 1px solid var(--borde); border-radius: 12px; background: var(--papel); }
+  .cancelar summary { cursor: pointer; padding: 14px 18px; font-weight: 600; color: var(--error); }
+  .cancelar summary:focus-visible { outline: 3px solid var(--hoja); outline-offset: 2px; border-radius: 12px; }
+  .cancelar-cuerpo { padding: 0 18px 18px; }
+  .cancelar-cuerpo p { margin: 0 0 14px; color: var(--suave); }
+  .boton.peligro { background: var(--error); color: #fff; }
+  .boton.peligro:hover { filter: brightness(.92); }
   .acciones { margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; }
   @media (max-width: 560px) { .acciones .boton { width: 100%; } }
   .confirmando [hidden] { display: none !important; }
@@ -34,7 +42,13 @@
 {% endblock %}
 {% block contenido %}
 <div class="confirmacion">
-  {% if rechazado %}
+  {% if resultado_pago == "cancelado" %}
+    <h1>Cancelaste esta compra</h1>
+    <p class="bajada">Sus entradas ya no son válidas y se liberó el cupo para esa fecha. Si querés, podés volver a comprar con los mismos datos.</p>
+  {% elif resultado_pago == "vencido" %}
+    <h1>El tiempo para pagar venció</h1>
+    <p class="bajada">El pago con tarjeta no se aprobó dentro de los 30 minutos, así que la compra quedó sin efecto y sus entradas no son válidas. Podés intentarlo de nuevo con tarjeta o elegir pagar en efectivo en boletería.</p>
+  {% elif rechazado %}
     <h1>No se pudo completar el pago</h1>
     <p class="bajada">Mercado Pago no aprobó el pago o se canceló antes de terminar. Esta compra quedó cancelada y sus entradas no son válidas. Podés intentarlo de nuevo con tarjeta o elegir pagar en efectivo en boletería.</p>
   {% elif confirmando %}
@@ -85,6 +99,10 @@
           Sin cargo (no hay nada que pagar)
         {% elif resultado_pago == "aprobado" %}
           Tarjeta · Mercado Pago (aprobado)
+        {% elif resultado_pago == "cancelado" %}
+          Tarjeta · Mercado Pago (cancelada)
+        {% elif resultado_pago == "vencido" %}
+          Tarjeta · Mercado Pago (vencido)
         {% elif rechazado %}
           Tarjeta · Mercado Pago (no completado)
         {% else %}
@@ -119,6 +137,18 @@
         {% include "_ticket.html" %}
       {% endfor %}
     </div>
+  {% endif %}
+
+  {% if se_puede_cancelar %}
+  <details class="cancelar no-imprimir">
+    <summary>Cancelar compra</summary>
+    <div class="cancelar-cuerpo">
+      <p>Si cancelás, las entradas dejan de ser válidas y se libera el cupo para esa fecha. Si ya pagaste en Mercado Pago, no canceles: esperá la confirmación.</p>
+      <form method="post" action="{{ url_for('cancelar_compra', compra_id=compra.id) }}">
+        <button class="boton peligro" type="submit">Sí, cancelar la compra</button>
+      </form>
+    </div>
+  </details>
   {% endif %}
 
   <p class="acciones no-imprimir">

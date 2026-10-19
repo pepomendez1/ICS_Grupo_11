@@ -17,7 +17,7 @@ def _como_compra_existente(fila: dict) -> CompraExistente:
     return CompraExistente(
         id=fila["id"], cantidad=fila["cantidad"], forma_pago=FormaPago(fila["forma_pago"]),
         pagada=fila["pagada"], estado=fila.get("estado") or "activa", monto=fila["monto"],
-        creado=fila["creado"],
+        creado=fila.get("creado"),
     )
 
 
@@ -38,8 +38,9 @@ def _armar_compra(fila: dict, entradas=()) -> dict:
         "id": fila["id"],
         "email": fila["email"],
         "pagada": fila["pagada"],
-        "estado": fila.get("estado") or "activa",  # "activa" | "rechazada"
+        "estado": fila.get("estado") or "activa",  # "activa" | "rechazada" | "cancelada"
         "edades": list(fila.get("edades") or []),
+        "existente": _como_compra_existente(fila),  # para las reglas del dominio
         "pago_id": fila.get("pago_id"),
         "resultado": ResultadoCompra(
             cantidad=fila["cantidad"],
@@ -132,6 +133,14 @@ class RepositorioMemoria:
         if not fila or fila["pagada"] or fila["estado"] == "rechazada":
             return False
         fila["estado"] = "rechazada"
+        return True
+
+    def marcar_compra_cancelada(self, compra_id):
+        """Cancela la compra si no está pagada. Devuelve True si cambió el estado."""
+        fila = self._compras.get(compra_id)
+        if not fila or fila["pagada"] or fila["estado"] != "activa":
+            return False
+        fila["estado"] = "cancelada"
         return True
 
     # Mails
@@ -294,6 +303,15 @@ class RepositorioPostgres:
         """Rechaza la compra si no está pagada. Devuelve True si cambió el estado."""
         filas = self._ejecutar(
             "update compras set estado = 'rechazada' "
+            "where id = %s and not pagada and estado = 'activa'",
+            (compra_id,),
+        )
+        return filas == 1
+
+    def marcar_compra_cancelada(self, compra_id):
+        """Cancela la compra si no está pagada (atómico). True si cambió el estado."""
+        filas = self._ejecutar(
+            "update compras set estado = 'cancelada' "
             "where id = %s and not pagada and estado = 'activa'",
             (compra_id,),
         )

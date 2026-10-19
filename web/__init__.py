@@ -17,6 +17,10 @@ from parque.compra import (
     EDAD_MAXIMA,
     PRECIOS,
     CompraError,
+    EstadoCompra,
+    LimitePorFechaError,
+    estado_de_compra,
+    se_puede_cancelar,
     FormaPago,
     ServicioCompraEntradas,
     SolicitudCompra,
@@ -74,18 +78,21 @@ def _parse_enum(enum_cls, valor):
 ZONA_PARQUE = config.ZONA_HORARIA
 
 
-def resultado_del_pago(compra, vuelta_mp):
-    """Qué pantalla de confirmación mostrar. Lo guardado en la base manda sobre
-    el query param: si el webhook ya aprobó el pago, es "aprobado" aunque MP
-    haya vuelto con failure."""
-    if compra["resultado"].forma_pago == FormaPago.EFECTIVO:
-        return "efectivo"
-    if compra["resultado"].sin_cargo:
-        return "sin_cargo"  # total $0: no pasa por Mercado Pago
-    if compra["pagada"]:
-        return "aprobado"
-    if compra["estado"] == "rechazada":
+def resultado_del_pago(compra, vuelta_mp, ahora):
+    """Qué pantalla de confirmación mostrar. El estado lo decide el dominio con lo
+    guardado en la base, que manda sobre el query param: si el webhook ya aprobó
+    el pago, es "aprobado" aunque MP haya vuelto con failure."""
+    estado = estado_de_compra(compra["existente"], ahora)
+    if estado == EstadoCompra.CONFIRMADA:
+        if compra["resultado"].forma_pago == FormaPago.EFECTIVO:
+            return "efectivo"
+        return "sin_cargo" if compra["resultado"].sin_cargo else "aprobado"
+    if estado == EstadoCompra.RECHAZADA:
         return "rechazado"
+    if estado == EstadoCompra.CANCELADA:
+        return "cancelado"
+    if estado == EstadoCompra.VENCIDA:
+        return "vencido"
     if vuelta_mp in ("success", "approved"):
         return "confirmando"  # MP dice que aprobó, falta que llegue el webhook
     return "pendiente"
@@ -95,6 +102,8 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(16)
     app.config["TESTING"] = testing
+    # La cookie de sesión no viaja en POST desde otros sitios (protege "Cancelar compra").
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
     repo = repo or crear_repositorio()
     usuarios = RepositorioUsuarios(repo)
@@ -142,7 +151,7 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
 
     def tickets(compra):
         """Las entradas de la compra listas para mostrar, con QR solo si son válidas."""
-        valida = estado_de(compra).valida
+        valida = estado_de(compra, reloj()).valida
         return [
             {"entrada": e, "qr": qr_svg(url_entrada(base_url(), e.codigo)) if valida else None}
             for e in compra["resultado"].entradas
@@ -253,6 +262,8 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
             resultado = servicio.comprar(Usuario(email=u["email"], registrado=True), solicitud)
         except CompraError as e:
             contexto.update(form=request.form, edades=request.form.getlist("edades"), error=str(e))
+            if isinstance(e, LimitePorFechaError):
+                contexto["pendientes"] = [c for c in map(repo.obtener_compra, e.pendientes) if c]
             return render_template("comprar.html", **contexto), 400
 
 
@@ -278,15 +289,40 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
             compra = repo.obtener_compra(compra_id)
         return render_template(
             "confirmacion.html", compra=compra, r=compra["resultado"],
-            resultado_pago=resultado_del_pago(compra, vuelta_mp),
-            tickets=tickets(compra), estado=estado_de(compra),
+            resultado_pago=resultado_del_pago(compra, vuelta_mp, reloj()),
+            tickets=tickets(compra), estado=estado_de(compra, reloj()),
+            se_puede_cancelar=se_puede_cancelar(compra["existente"], reloj()),
         )
+
+    @app.post("/compras/<compra_id>/cancelar")
+    @login_requerido
+    def cancelar_compra(compra_id):
+        """Cancela una compra pendiente del visitante: deja de contar para el
+        límite y sus entradas dejan de ser válidas."""
+        compra = repo.obtener_compra(compra_id)
+        if not compra or compra["email"] != usuario_actual()["email"]:
+            abort(404)
+        if se_puede_cancelar(compra["existente"], reloj()) and repo.marcar_compra_cancelada(compra_id):
+            flash("Cancelaste la compra. Sus entradas ya no son válidas y se liberó el cupo para esa fecha.", "ok")
+        else:
+            flash("Esta compra no se puede cancelar: solo se cancelan las compras con pago pendiente.", "error")
+        return redirect(url_for("confirmacion", compra_id=compra_id), code=303)
 
     def acreditar_pago(compra_id):
         """Marca la compra pagada y manda "Tus entradas" con los QR. Si ya estaba
         pagada no hace nada: MP puede repetir la misma notificación."""
+        antes = repo.obtener_compra(compra_id)
+        if not antes:
+            return
+        estado = estado_de_compra(antes["existente"], reloj())
         if not repo.marcar_compra_pagada(compra_id):
             return
+        if estado in (EstadoCompra.CANCELADA, EstadoCompra.VENCIDA, EstadoCompra.RECHAZADA):
+            # Caso borde (README): la persona pagó igual, así que la compra vale.
+            log.warning(
+                "Llegó la aprobación de la compra %s, que estaba %s: se acepta porque la persona pagó",
+                compra_id, estado.value,
+            )
         compra = repo.obtener_compra(compra_id)
         notificador.enviar_entradas(compra["email"], compra["resultado"])
 
@@ -300,7 +336,7 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
         compra = encontrada["compra"]
         t = next(t for t in tickets(compra) if t["entrada"].codigo == codigo)
         return render_template(
-            "entrada.html", r=compra["resultado"], t=t, estado=estado_de(compra)
+            "entrada.html", r=compra["resultado"], t=t, estado=estado_de(compra, reloj())
         )
 
     @app.get("/compras/<compra_id>/estado")

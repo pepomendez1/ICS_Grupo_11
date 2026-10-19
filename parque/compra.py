@@ -168,6 +168,12 @@ def estado_de_compra(compra: CompraExistente, ahora: datetime) -> EstadoCompra:
     return EstadoCompra.PENDIENTE
 
 
+def se_puede_cancelar(compra: CompraExistente, ahora: datetime) -> bool:
+    """Solo una compra pendiente se cancela desde la app: una pagada o en
+    efectivo no (y una vencida o rechazada ya no cuenta para nada)."""
+    return estado_de_compra(compra, ahora) == EstadoCompra.PENDIENTE
+
+
 # ---------- Dependencias externas ----------
 
 class CalendarioParque(Protocol):

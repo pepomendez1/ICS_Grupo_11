@@ -38,6 +38,21 @@ alter table compras
   add column if not exists estado text not null default 'activa'
   check (estado in ('activa', 'rechazada'));
 
+-- El visitante puede cancelar una compra pendiente: se suma 'cancelada' a los
+-- estados posibles (se reemplaza el check solo si todavía no la incluye).
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+     where conname = 'compras_estado_check'
+       and pg_get_constraintdef(oid) like '%cancelada%'
+  ) then
+    alter table compras drop constraint if exists compras_estado_check;
+    alter table compras add constraint compras_estado_check
+      check (estado in ('activa', 'rechazada', 'cancelada'));
+  end if;
+end $$;
+
 -- Una fila por entrada individual de la compra. El código es el que va en el
 -- QR (secrets.token_urlsafe): no se puede adivinar.
 create table if not exists entradas (

@@ -22,7 +22,7 @@
     {% if t.qr %}
       {{ t.qr | safe }}
       <code>{{ t.entrada.codigo[:12] }}</code>
-    {% elif estado.clave == "rechazada" %}
+    {% elif estado.clave in ("rechazada", "cancelada", "vencida") %}
       <p class="espera" style="color: var(--error)">Esta entrada no es válida</p>
     {% else %}
       <p class="espera">

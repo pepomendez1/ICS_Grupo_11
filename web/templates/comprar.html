@@ -39,7 +39,18 @@
 <h1>Comprar entradas</h1>
 <p class="bajada">Elegí el día, cuántos van y cómo querés pagar. Máximo {{ maximo }} entradas por persona para cada fecha.</p>
 
-{% if error %}<div class="aviso error" role="alert">{{ error }}</div>{% endif %}
+{% if error %}
+<div class="aviso error" role="alert">
+  {{ error }}
+  {% if pendientes %}
+  <ul class="pendientes">
+    {% for c in pendientes %}
+    <li><a href="{{ url_for('confirmacion', compra_id=c.id) }}">Compra pendiente de {{ c.resultado.cantidad }} entrada{{ "s" if c.resultado.cantidad != 1 }} para el {{ c.resultado.fecha_visita.strftime('%d/%m') }}</a>: pagala o cancelala desde ahí.</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endif %}
 {% if reintento %}<div class="aviso info" role="status">Cargamos los datos de tu compra anterior. Revisalos y confirmá: podés volver a pagar con tarjeta o elegir efectivo.</div>{% endif %}
 
 <form class="tarjeta" method="post" novalidate id="form-compra">
