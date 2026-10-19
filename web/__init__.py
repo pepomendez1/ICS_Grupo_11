@@ -246,6 +246,7 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
                     edades=[str(e) for e in anterior["edades"]],
                     reintento=True,
                 )
+            contexto["fecha_elegida"] = _parse_fecha(contexto["form"].get("fecha_visita"))
             return render_template("comprar.html", **contexto)
 
         compra_id = uuid.uuid4().hex[:10]
@@ -265,6 +266,7 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
             contexto.update(form=request.form, edades=request.form.getlist("edades"), error=str(e))
             if isinstance(e, LimitePorFechaError):
                 contexto["pendientes"] = [c for c in map(repo.obtener_compra, e.pendientes) if c]
+            contexto["fecha_elegida"] = _parse_fecha(request.form.get("fecha_visita"))
             return render_template("comprar.html", **contexto), 400
 
 

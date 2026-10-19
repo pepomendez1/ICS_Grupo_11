@@ -18,10 +18,15 @@
     border-radius: 8px; cursor: pointer; font-weight: 600; font-size: .95rem; color: var(--texto);
   }
   .celda input:not(:disabled) + label:hover { background: var(--salvia); }
-  .celda label.hoy { box-shadow: inset 0 0 0 2px var(--musgo); }
+  .celda label { flex-direction: column; line-height: 1.1; }
+  /* Hoy se marca con una palabra, no con un recuadro: el recuadro se confundía con el día elegido. */
+  .marca-hoy { font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--suave); }
+  .celda input:checked + label .marca-hoy { color: #fff; }
   .celda input:checked + label { background: var(--bosque); color: #fff; box-shadow: none; }
   .celda input:focus-visible + label { outline: 3px solid var(--hoja); outline-offset: 1px; }
-  .celda input:disabled + label { color: #8f8a80; cursor: not-allowed; font-weight: 400; text-decoration: line-through; text-decoration-color: #c9c2b2; }
+  .celda input:disabled + label { color: #8f8a80; cursor: not-allowed; font-weight: 400; }
+  /* Se tacha solo el número: la marca "Hoy" se tiene que poder leer aunque hoy no se venda. */
+  .celda input:disabled + label .numero { text-decoration: line-through; text-decoration-color: #c9c2b2; }
   .desglose { background: #fff; border: 1px solid var(--borde); border-radius: 12px; padding: 14px 16px; }
   .desglose-titulo { margin: 0 0 8px; font-weight: 700; color: var(--bosque); }
   .desglose table { width: 100%; border-collapse: collapse; font-size: .95rem; }
@@ -31,6 +36,7 @@
   .desglose tfoot th, .desglose tfoot td { border-bottom: 0; padding-top: 12px; font-size: 1.05rem; }
   .desglose tfoot strong { font-size: 1.35rem; color: var(--bosque); }
   .desglose .descuento { display: block; font-size: .82rem; color: var(--suave); }
+  .resumen-fecha { margin: 4px 0 12px; padding: 10px 14px; border-radius: 10px; background: var(--salvia); color: var(--bosque); font-weight: 700; text-align: center; }
   .fecha-elegida { margin: 10px 0 0; font-weight: 600; color: var(--bosque); min-height: 1.5em; }
   @media (max-width: 560px) { .celda label { height: 44px; } }
 </style>
@@ -66,8 +72,8 @@
           {% for semana in mes.semanas %}{% for d in semana %}
             {% if d %}{% set iso = d.fecha.isoformat() %}
             <div class="celda">
-              <input type="radio" name="fecha_visita" value="{{ iso }}" id="dia-{{ iso }}"{% if not d.disponible %} disabled{% endif %} aria-label="{{ fecha_larga(d.fecha) }}{% if not d.disponible %}, no disponible: {{ d.motivo.corto }}{% endif %}"{% if form.get('fecha_visita') == iso %} checked{% endif %}>
-              <label for="dia-{{ iso }}" class="dia{% if d.fecha == hoy %} hoy{% endif %}"{% if not d.disponible %} title="No disponible: {{ d.motivo.corto }}"{% endif %}>{{ d.fecha.day }}</label>
+              <input type="radio" name="fecha_visita" value="{{ iso }}" id="dia-{{ iso }}"{% if not d.disponible %} disabled{% endif %} aria-label="{{ fecha_larga(d.fecha) }}{% if not d.disponible %}, no disponible: {{ d.motivo.corto }}{% endif %}" data-larga="{{ fecha_larga(d.fecha) }}"{% if d.fecha == hoy %} aria-current="date"{% endif %}{% if form.get('fecha_visita') == iso %} checked{% endif %}>
+              <label for="dia-{{ iso }}" class="dia{% if d.fecha == hoy %} hoy{% endif %}"{% if not d.disponible %} title="No disponible: {{ d.motivo.corto }}"{% endif %}><span class="numero">{{ d.fecha.day }}</span>{% if d.fecha == hoy %}<span class="marca-hoy">Hoy</span>{% endif %}</label>
             </div>
             {% else %}<div class="celda vacia" aria-hidden="true"></div>{% endif %}
           {% endfor %}{% endfor %}
@@ -75,7 +81,7 @@
       </div>
       {% endfor %}
     </div>
-    <p class="fecha-elegida" id="fecha-elegida" aria-live="polite"></p>
+    <p class="fecha-elegida" id="fecha-elegida" aria-live="polite">{% if fecha_elegida %}Elegiste: {{ fecha_larga(fecha_elegida) }}{% endif %}</p>
   </fieldset>
 
   <div class="campo">
@@ -135,6 +141,7 @@
     </div>
   </div>
 
+  <p class="resumen-fecha" id="resumen-fecha">{% if fecha_elegida %}Vas a comprar para el {{ fecha_larga(fecha_elegida) }}.{% else %}Todavía no elegiste la fecha de visita.{% endif %}</p>
   <button class="boton ancho" type="submit">Confirmar compra</button>
 </form>
 {% endblock %}
@@ -218,11 +225,13 @@
     total.textContent = formato(suma);
   }
 
-  // Muestra en palabras el día elegido (el radio ya lo anuncia el lector de pantalla).
+  // Muestra en palabras el día elegido, abajo del calendario y antes de confirmar.
   const elegida = document.getElementById("fecha-elegida");
+  const resumen = document.getElementById("resumen-fecha");
   function mostrarFecha() {
     const radio = document.querySelector("input[name=fecha_visita]:checked");
-    elegida.textContent = radio ? "Elegiste: " + radio.getAttribute("aria-label") : "";
+    elegida.textContent = radio ? "Elegiste: " + radio.dataset.larga : "";
+    resumen.textContent = radio ? "Vas a comprar para el " + radio.dataset.larga + "." : "Todavía no elegiste la fecha de visita.";
   }
   document.querySelectorAll("input[name=fecha_visita]").forEach(r => r.addEventListener("change", mostrarFecha));
   mostrarFecha();
