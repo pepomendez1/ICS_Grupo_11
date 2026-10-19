@@ -144,6 +144,12 @@ def comprar_con_tarjeta(cliente, pasarela):
     return pasarela.crear_pago.call_args.kwargs["referencia"]
 
 
+def comprar_con_tarjeta_cantidad(cliente, pasarela, cantidad):
+    """Compra con tarjeta de `cantidad` adultos para el jueves; devuelve el id."""
+    cliente.post("/comprar", data=datos_compra(forma_pago="TARJETA", cantidad=str(cantidad), edades=["30"] * cantidad))
+    return pasarela.crear_pago.call_args.kwargs["referencia"]
+
+
 def notificar_pago(cliente, pago_id="555"):
     return cliente.post("/mercadopago/webhook", json={"type": "payment", "data": {"id": pago_id}})
 
@@ -750,3 +756,123 @@ class TestLimitePorFecha:
     def test_web_limite_no_cuenta_compras_rechazadas(self, cliente_mp, pasarela_mp):
         compra_rechazada(cliente_mp, pasarela_mp, cantidad="10", edades=["30"] * 10)
         assert cliente_mp.post("/comprar", data=datos_compra()).status_code == 302
+
+
+@pytest.fixture
+def momento():
+    """Reloj que el test puede adelantar sin cambiar de app (ni de sesión)."""
+    return {"ahora": HOY}
+
+
+@pytest.fixture
+def cliente_reloj(repo, pasarela_mp, registrar, momento):
+    cliente = create_app(reloj=lambda: momento["ahora"], testing=True, repo=repo,
+                         pasarela=pasarela_mp).test_client()
+    registrar(cliente)
+    return cliente
+
+
+def cancelar(cliente, compra_id):
+    return cliente.post(f"/compras/{compra_id}/cancelar", follow_redirects=True)
+
+
+class TestCancelarCompra:
+    """Una compra pendiente (tarjeta sin aprobar) se puede cancelar y libera el cupo."""
+
+    def test_cancelar_compra_pendiente_libera_cupo_pasa(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta_cantidad(cliente_mp, pasarela_mp, 10)
+        bloqueada = cliente_mp.post("/comprar", data=datos_compra(cantidad="1", edades=["30"]))
+        assert bloqueada.status_code == 400
+        html = cancelar(cliente_mp, compra_id).get_data(as_text=True)
+        assert repo.obtener_compra(compra_id)["estado"] == "cancelada"
+        assert "Cancelaste esta compra" in html
+        assert "Volver e intentar de nuevo" in html
+        assert cliente_mp.post("/comprar", data=datos_compra(cantidad="1", edades=["30"])).status_code == 302
+
+    def test_cancelar_compra_deja_sus_entradas_sin_validez(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        cancelar(cliente_mp, compra_id)
+        entrada = entradas_de(repo, compra_id)[0]
+        html = cliente_mp.get(f"/entradas/{entrada.codigo}").get_data(as_text=True)
+        assert "Compra cancelada · Entrada no válida" in html
+        assert QR not in html
+
+    def test_no_se_puede_cancelar_compra_pagada_falla(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        aprobar_por_webhook(cliente_mp, pasarela_mp, compra_id)
+        html = cancelar(cliente_mp, compra_id).get_data(as_text=True)
+        assert "no se puede cancelar" in html
+        compra = repo.obtener_compra(compra_id)
+        assert compra["estado"] == "activa" and compra["pagada"] is True
+
+    def test_no_se_puede_cancelar_compra_en_efectivo_falla(self, cliente_logueado, repo):
+        compra_id = comprar_en_efectivo(cliente_logueado)
+        assert "no se puede cancelar" in cancelar(cliente_logueado, compra_id).get_data(as_text=True)
+        assert repo.obtener_compra(compra_id)["estado"] == "activa"
+
+    def test_cancelar_compra_de_otro_usuario_da_404(self, cliente_mp, pasarela_mp, app, registrar, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        otro = app.test_client()
+        registrar(otro, "otra.persona@mail.com")
+        assert otro.post(f"/compras/{compra_id}/cancelar").status_code == 404
+        assert repo.obtener_compra(compra_id)["estado"] == "activa"
+
+    def test_la_compra_pendiente_ofrece_cancelar_con_confirmacion(self, cliente_mp, pasarela_mp):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        html = volver_de_mp(cliente_mp, compra_id, "pending")
+        assert f'action="/compras/{compra_id}/cancelar"' in html
+        assert "<summary" in html and "Cancelar compra" in html   # primer paso
+        assert "Sí, cancelar la compra" in html                   # confirmación
+
+    def test_una_compra_en_efectivo_no_ofrece_cancelar(self, cliente_logueado):
+        compra_id = comprar_en_efectivo(cliente_logueado)
+        assert "/cancelar" not in cliente_logueado.get(f"/compras/{compra_id}").get_data(as_text=True)
+
+    def test_el_error_del_limite_tiene_links_a_las_compras_pendientes(self, cliente_mp, pasarela_mp):
+        compra_id = comprar_con_tarjeta_cantidad(cliente_mp, pasarela_mp, 9)
+        html = cliente_mp.post("/comprar", data=datos_compra(cantidad="2", edades=["30", "30"])).get_data(as_text=True)
+        assert "9 con pago pendiente" in html
+        assert f'href="/compras/{compra_id}"' in html
+
+
+class TestCompraVencida:
+    """Una compra con tarjeta que no se aprobó en 30 minutos vence."""
+
+    def test_compra_vencida_se_muestra_vencida_con_reintento(self, cliente_reloj, pasarela_mp, momento):
+        compra_id = comprar_con_tarjeta(cliente_reloj, pasarela_mp)
+        momento["ahora"] = HOY + timedelta(minutes=31)
+        html = cliente_reloj.get(f"/compras/{compra_id}").get_data(as_text=True)
+        assert "El tiempo para pagar venció" in html
+        assert "Volver e intentar de nuevo" in html
+        assert QR not in html
+
+    def test_compra_vencida_no_cuenta_para_el_limite(self, cliente_reloj, pasarela_mp, momento):
+        comprar_con_tarjeta_cantidad(cliente_reloj, pasarela_mp, 10)
+        assert cliente_reloj.post("/comprar", data=datos_compra()).status_code == 400
+        momento["ahora"] = HOY + timedelta(minutes=31)
+        assert cliente_reloj.post("/comprar", data=datos_compra()).status_code == 302
+
+    def test_entrada_de_compra_vencida_no_es_valida(self, cliente_reloj, pasarela_mp, momento, repo):
+        compra_id = comprar_con_tarjeta(cliente_reloj, pasarela_mp)
+        momento["ahora"] = HOY + timedelta(minutes=31)
+        entrada = entradas_de(repo, compra_id)[0]
+        assert "Pago vencido · Entrada no válida" in cliente_reloj.get(f"/entradas/{entrada.codigo}").get_data(as_text=True)
+
+
+class TestAprobacionTardia:
+    """Caso borde: llega por webhook la aprobación de una compra cancelada o vencida."""
+
+    def test_webhook_aprueba_compra_cancelada_la_acepta_y_avisa(self, cliente_mp, pasarela_mp, repo, caplog):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        cancelar(cliente_mp, compra_id)
+        aprobar_por_webhook(cliente_mp, pasarela_mp, compra_id)
+        compra = repo.obtener_compra(compra_id)
+        assert compra["pagada"] is True and compra["estado"] == "activa"
+        assert "cancelada" in caplog.text and compra_id in caplog.text
+
+    def test_webhook_aprueba_compra_vencida_la_acepta_y_avisa(self, cliente_reloj, pasarela_mp, momento, repo, caplog):
+        compra_id = comprar_con_tarjeta(cliente_reloj, pasarela_mp)
+        momento["ahora"] = HOY + timedelta(hours=2)
+        aprobar_por_webhook(cliente_reloj, pasarela_mp, compra_id)
+        assert repo.obtener_compra(compra_id)["pagada"] is True
+        assert "vencida" in caplog.text and compra_id in caplog.text
