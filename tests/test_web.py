@@ -965,3 +965,39 @@ class TestComprasSimultaneas:
     def test_web_el_boton_de_confirmar_evita_el_doble_envio(self, cliente_logueado):
         html = cliente_logueado.get("/comprar").get_data(as_text=True)
         assert 'data-un-solo-envio' in html
+
+
+class TestSinMailHastaQueSePague:
+    """Con tarjeta no sale ningún mail hasta que Mercado Pago aprueba el pago:
+    recién ahí se manda "Tus entradas". Si no se paga, no se manda nada."""
+
+    def test_web_compra_con_tarjeta_no_manda_mail_hasta_que_se_aprueba(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        assert repo.todos_los_mails() == []
+        aprobar_por_webhook(cliente_mp, pasarela_mp, compra_id)
+        assert [m["asunto"] for m in repo.todos_los_mails()] == [ASUNTO_TUS_ENTRADAS]
+
+    def test_web_compra_con_tarjeta_rechazada_no_manda_ningun_mail(self, cliente_mp, pasarela_mp, repo):
+        compra_rechazada(cliente_mp, pasarela_mp)
+        assert repo.todos_los_mails() == []
+
+    def test_web_compra_con_tarjeta_cancelada_no_manda_ningun_mail(self, cliente_mp, pasarela_mp, repo):
+        cancelar(cliente_mp, comprar_con_tarjeta(cliente_mp, pasarela_mp))
+        assert repo.todos_los_mails() == []
+
+    def test_web_con_gmail_la_compra_con_tarjeta_no_manda_nada_por_smtp(self, con_gmail, repo, pasarela_mp, registrar):
+        with patch("web.servicios.smtplib.SMTP") as smtp:
+            cliente = create_app(reloj=lambda: HOY, testing=True, repo=repo, pasarela=pasarela_mp).test_client()
+            registrar(cliente)
+            comprar_con_tarjeta(cliente, pasarela_mp)
+        smtp.assert_not_called()
+
+    def test_web_compra_en_efectivo_sigue_mandando_la_confirmacion(self, cliente_logueado, repo):
+        comprar_en_efectivo(cliente_logueado)
+        assert len(repo.todos_los_mails()) == 1
+
+    def test_web_mientras_se_confirma_el_pago_no_dice_que_mandamos_un_mail(self, cliente_mp, pasarela_mp):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        html = volver_de_mp(cliente_mp, compra_id, "success")
+        assert "Te mandamos un mail" not in html
+        assert "Ver mail de confirmación" not in html
