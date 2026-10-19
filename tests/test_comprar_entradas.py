@@ -238,8 +238,9 @@ class TestIntegraciones:
         solicitud_valida.forma_pago = FormaPago.TARJETA
         solicitud_valida.referencia = "compra-123"
         servicio.comprar(usuario_registrado, solicitud_valida)
+        # Regular, edades 35, 33 y 8: $10.000 + $10.000 + $5.000 (FAQ 6, 7 y 21).
         pasarela_mp.crear_pago.assert_called_once_with(
-            3 * PRECIOS["REGULAR"], usuario_registrado.email, referencia="compra-123"
+            25_000, usuario_registrado.email, referencia="compra-123"
         )
 
     def test_comprar_entrada_exitosa_envia_detalle_de_compra_al_mail_pasa(self, servicio, usuario_registrado, solicitud_valida, notificador):
@@ -249,20 +250,60 @@ class TestIntegraciones:
         )
 
 
+def comprar_con_edades(servicio, usuario, solicitud, edades, pase=TipoPase.REGULAR):
+    solicitud.cantidad, solicitud.edades, solicitud.tipo_pase = len(edades), edades, pase
+    return servicio.comprar(usuario, solicitud)
+
+
 class TestPrecios:
-    """Regular $50.000 y VIP $75.000 por entrada."""
+    """FAQ 6, 7 y 21: Regular $10.000 y VIP $20.000, con descuento según la edad."""
 
-    def test_comprar_tres_entradas_regulares_cobra_150000_pasa(self, servicio, usuario_registrado, solicitud_valida):
-        solicitud_valida.tipo_pase = TipoPase.REGULAR
-        resultado = servicio.comprar(usuario_registrado, solicitud_valida)
-        assert resultado.monto == 150_000
+    def test_precio_regular_adulto_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        resultado = comprar_con_edades(servicio, usuario_registrado, solicitud_valida, [30])
+        assert resultado.monto == 10_000
+        assert resultado.entradas[0].precio == 10_000
 
-    def test_comprar_dos_entradas_vip_cobra_150000_pasa(self, servicio, usuario_registrado, solicitud_valida):
-        solicitud_valida.tipo_pase = TipoPase.VIP
-        solicitud_valida.cantidad = 2
-        solicitud_valida.edades = [35, 33]
-        resultado = servicio.comprar(usuario_registrado, solicitud_valida)
-        assert resultado.monto == 150_000
+    def test_precio_vip_adulto_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        resultado = comprar_con_edades(servicio, usuario_registrado, solicitud_valida, [30], TipoPase.VIP)
+        assert resultado.monto == 20_000
+
+    def test_precio_edad_3_gratis_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        resultado = comprar_con_edades(servicio, usuario_registrado, solicitud_valida, [3, 30])
+        assert resultado.entradas[0].precio == 0
+        assert resultado.entradas[0].descuento == 100
+
+    def test_precio_edad_4_mitad_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        resultado = comprar_con_edades(servicio, usuario_registrado, solicitud_valida, [4])
+        assert resultado.entradas[0].precio == 5_000
+
+    def test_precio_edad_15_mitad_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        resultado = comprar_con_edades(servicio, usuario_registrado, solicitud_valida, [15])
+        assert resultado.entradas[0].precio == 5_000
+
+    def test_precio_edad_16_completo_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        resultado = comprar_con_edades(servicio, usuario_registrado, solicitud_valida, [16])
+        assert resultado.entradas[0].precio == 10_000
+
+    def test_precio_edad_59_completo_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        resultado = comprar_con_edades(servicio, usuario_registrado, solicitud_valida, [59])
+        assert resultado.entradas[0].precio == 10_000
+
+    def test_precio_edad_60_mitad_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        resultado = comprar_con_edades(servicio, usuario_registrado, solicitud_valida, [60])
+        assert resultado.entradas[0].precio == 5_000
+
+    def test_total_compra_mixta_pasa(self, servicio, usuario_registrado, solicitud_valida):
+        resultado = comprar_con_edades(servicio, usuario_registrado, solicitud_valida, [2, 10, 35, 70], TipoPase.VIP)
+        assert [e.precio for e in resultado.entradas] == [0, 10_000, 20_000, 10_000]
+        assert resultado.monto == 40_000
+
+    def test_compra_total_cero_con_tarjeta_no_redirige_mp_pasa(self, servicio, usuario_registrado, solicitud_valida, pasarela_mp):
+        solicitud_valida.forma_pago = FormaPago.TARJETA
+        resultado = comprar_con_edades(servicio, usuario_registrado, solicitud_valida, [1, 3])
+        assert resultado.monto == 0
+        assert resultado.sin_cargo is True
+        assert resultado.url_pago is None
+        pasarela_mp.crear_pago.assert_not_called()
 
 
 class TestEntradas:

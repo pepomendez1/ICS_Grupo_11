@@ -1,4 +1,5 @@
 """Tests de integración de la app web: recorren el flujo completo por HTTP."""
+import json
 import os
 import re
 from datetime import date, datetime, timedelta
@@ -118,7 +119,7 @@ class TestWeb:
         assert "Compraste 2 entrada(s)" in respuesta.get_data(as_text=True)
 
 
-MONTO_DOS_REGULARES = 2 * PRECIOS["REGULAR"]
+MONTO_DOS_REGULARES = 15_000  # datos_compra: Regular, 30 y 8 años -> $10.000 + $5.000 (FAQ 6, 7 y 21)
 URL_MP = "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-1"
 
 
@@ -266,7 +267,9 @@ class TestBioparque:
     def test_web_inicio_describe_los_pases(self, cliente):
         html = cliente.get("/").get_data(as_text=True)
         assert "Acceso al parque, senderos y exhibiciones." in html
-        assert "fila preferencial" in html
+        # FAQ 6: la única diferencia entre VIP y Regular es el precio.
+        assert "fila preferencial" not in html.lower()
+        assert "$10.000" in html and "$20.000" in html
 
     @pytest.mark.parametrize("ruta", ["/", "/comprar", "/login", "/registro", "/mails"])
     def test_web_paginas_sin_terminos_de_parque_de_diversiones(self, cliente_logueado, ruta):
@@ -683,3 +686,41 @@ class TestCalendarioDeCompra:
     def test_web_backend_rechaza_dias_deshabilitados_aunque_se_manipule_el_html(self, cliente_a_las, fecha, ahora):
         respuesta = cliente_a_las(ahora).post("/comprar", data=datos_compra(fecha_visita=fecha))
         assert respuesta.status_code == 400
+
+
+
+class TestPreciosEnLaWeb:
+    """FAQ 6, 7 y 21 en la web: desglose antes de pagar y total $0 sin Mercado Pago."""
+
+    def test_web_compra_guarda_el_precio_final_de_cada_entrada(self, cliente_logueado, repo):
+        compra_id = comprar_en_efectivo(cliente_logueado)  # Regular, 30 y 8 años
+        compra = repo.obtener_compra(compra_id)
+        assert [e.precio for e in compra["resultado"].entradas] == [10_000, 5_000]
+        assert compra["resultado"].monto == 15_000
+
+    def test_web_el_desglose_esta_antes_de_elegir_la_forma_de_pago(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert 'id="desglose"' in html
+        assert html.index('id="desglose"') < html.index('name="forma_pago"')
+
+    def test_web_el_calculo_en_pantalla_usa_las_reglas_del_backend(self, cliente_logueado):
+        from parque.precios import reglas_de_precio
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        reglas = re.search(r'<script type="application/json" id="reglas-precio">(.*?)</script>', html, re.S)
+        assert reglas and json.loads(reglas.group(1)) == reglas_de_precio()
+
+    def test_web_compra_total_cero_con_tarjeta_queda_confirmada_sin_mp(self, cliente_mp, pasarela_mp, repo):
+        respuesta = cliente_mp.post("/comprar", data=datos_compra(
+            forma_pago="TARJETA", cantidad="2", edades=["1", "3"]))
+        pasarela_mp.crear_pago.assert_not_called()
+        assert "/compras/" in respuesta.headers["Location"]
+        html = cliente_mp.get(respuesta.headers["Location"]).get_data(as_text=True)
+        assert "¡Listo, te esperamos!" in html
+        assert html.count(QR) == 2
+        assert "Sin cargo" in html
+
+    def test_web_la_confirmacion_muestra_el_desglose_por_visitante(self, cliente_logueado):
+        compra_id = comprar_en_efectivo(cliente_logueado, tipo_pase="VIP", cantidad="2", edades=["70", "35"])
+        html = cliente_logueado.get(f"/compras/{compra_id}").get_data(as_text=True)
+        assert "60 años o más" in html and "50%" in html
+        assert "$10.000" in html and "$20.000" in html and "$30.000" in html
