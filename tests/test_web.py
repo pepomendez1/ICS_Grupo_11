@@ -724,3 +724,29 @@ class TestPreciosEnLaWeb:
         html = cliente_logueado.get(f"/compras/{compra_id}").get_data(as_text=True)
         assert "60 años o más" in html and "50%" in html
         assert "$10.000" in html and "$20.000" in html and "$30.000" in html
+
+
+
+class TestLimitePorFecha:
+    """FAQ 27 contra la base real (memoria y, con TEST_DATABASE_URL, Postgres)."""
+
+    def test_web_limite_de_10_por_usuario_y_fecha_cuenta_las_compras_guardadas(self, cliente_logueado):
+        siete = datos_compra(cantidad="7", edades=["30"] * 7)
+        assert cliente_logueado.post("/comprar", data=siete).status_code == 302
+        cuatro = cliente_logueado.post("/comprar", data=datos_compra(cantidad="4", edades=["30"] * 4))
+        assert cuatro.status_code == 400
+        assert "Te quedan 3 disponibles" in cuatro.get_data(as_text=True)
+        tres = cliente_logueado.post("/comprar", data=datos_compra(cantidad="3", edades=["30"] * 3))
+        assert tres.status_code == 302
+
+    def test_web_limite_no_suma_otra_fecha_ni_otro_usuario(self, cliente_logueado, app, registrar):
+        cliente_logueado.post("/comprar", data=datos_compra(cantidad="10", edades=["30"] * 10))
+        otra_fecha = (HOY.date() + timedelta(days=3)).isoformat()  # viernes
+        assert cliente_logueado.post("/comprar", data=datos_compra(fecha_visita=otra_fecha)).status_code == 302
+        otro = app.test_client()
+        registrar(otro, "otra.persona@mail.com")
+        assert otro.post("/comprar", data=datos_compra()).status_code == 302
+
+    def test_web_limite_no_cuenta_compras_rechazadas(self, cliente_mp, pasarela_mp):
+        compra_rechazada(cliente_mp, pasarela_mp, cantidad="10", edades=["30"] * 10)
+        assert cliente_mp.post("/comprar", data=datos_compra()).status_code == 302

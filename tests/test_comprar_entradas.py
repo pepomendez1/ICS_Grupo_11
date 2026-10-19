@@ -64,6 +64,36 @@ class TestCantidad:
         with pytest.raises(CantidadInvalidaError):
             servicio.comprar(usuario_registrado, solicitud_valida)
 
+    # FAQ 27: el máximo de 10 es por usuario y por fecha de visita, sumando sus compras.
+    def test_comprar_tres_entradas_con_siete_previas_misma_fecha_pasa(self, servicio, usuario_registrado, solicitud_valida, compras_previas):
+        compras_previas.agregar(usuario_registrado.email, solicitud_valida.fecha_visita.date(), cantidad=7)
+        resultado = servicio.comprar(usuario_registrado, solicitud_valida)  # 3 entradas
+        assert resultado.cantidad == 3
+
+    def test_comprar_cuatro_entradas_con_siete_previas_misma_fecha_falla(self, servicio, usuario_registrado, solicitud_valida, compras_previas):
+        compras_previas.agregar(usuario_registrado.email, solicitud_valida.fecha_visita.date(), cantidad=7)
+        solicitud_valida.cantidad = 4
+        solicitud_valida.edades = [35, 33, 8, 5]
+        with pytest.raises(CantidadInvalidaError, match="Te quedan 3 disponibles"):
+            servicio.comprar(usuario_registrado, solicitud_valida)
+
+    def test_compras_rechazadas_no_cuentan_para_el_limite_pasa(self, servicio, usuario_registrado, solicitud_valida, compras_previas):
+        compras_previas.agregar(usuario_registrado.email, solicitud_valida.fecha_visita.date(), cantidad=10,
+                                forma_pago=FormaPago.TARJETA, estado="rechazada")
+        resultado = servicio.comprar(usuario_registrado, solicitud_valida)
+        assert resultado.cantidad == 3
+
+    def test_entradas_de_otra_fecha_no_cuentan_para_el_limite_pasa(self, servicio, usuario_registrado, solicitud_valida, compras_previas):
+        otra_fecha = solicitud_valida.fecha_visita.date() + timedelta(days=1)
+        compras_previas.agregar(usuario_registrado.email, otra_fecha, cantidad=10)
+        resultado = servicio.comprar(usuario_registrado, solicitud_valida)
+        assert resultado.cantidad == 3
+
+    def test_entradas_de_otro_usuario_no_cuentan_para_el_limite_pasa(self, servicio, usuario_registrado, solicitud_valida, compras_previas):
+        compras_previas.agregar("otra.persona@mail.com", solicitud_valida.fecha_visita.date(), cantidad=10)
+        resultado = servicio.comprar(usuario_registrado, solicitud_valida)
+        assert resultado.cantidad == 3
+
 
 class TestFechaVisita:
     """La fecha debe ser del día actual o futuro y el parque debe estar abierto."""
