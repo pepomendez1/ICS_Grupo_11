@@ -59,7 +59,7 @@
 {% endif %}
 {% if reintento %}<div class="aviso info" role="status">Cargamos los datos de tu compra anterior. Revisalos y confirmá: podés volver a pagar con tarjeta o elegir efectivo.</div>{% endif %}
 
-<form class="tarjeta" method="post" novalidate id="form-compra">
+<form class="tarjeta" method="post" novalidate id="form-compra" data-un-solo-envio>
   <fieldset class="campo calendario">
     <legend>Fecha de visita</legend>
     <p class="ayuda calendario-ayuda">{{ horario }}. Cerrado los {{ dia_cierre }}, el 25/12 y el 1/1. Se venden entradas hasta un mes adelante.</p>
@@ -235,6 +235,23 @@
   }
   document.querySelectorAll("input[name=fecha_visita]").forEach(r => r.addEventListener("change", mostrarFecha));
   mostrarFecha();
+
+  // Un solo envío: con doble clic se mandaban dos compras iguales. El backend
+  // igual lo controla (FAQ 27); esto evita el error en la pantalla.
+  const form = document.getElementById("form-compra");
+  const confirmar = form.querySelector("button[type=submit]");
+  form.addEventListener("submit", (e) => {
+    if (form.dataset.enviando) { e.preventDefault(); return; }
+    form.dataset.enviando = "1";
+    confirmar.disabled = true;
+    confirmar.textContent = "Procesando…";
+  });
+  // Si vuelve con "Atrás", el navegador puede restaurar el botón deshabilitado.
+  window.addEventListener("pageshow", () => {
+    delete form.dataset.enviando;
+    confirmar.disabled = false;
+    confirmar.textContent = "Confirmar compra";
+  });
 
   cantidad.addEventListener("input", renderEdades);
   document.querySelectorAll("input[name=tipo_pase]").forEach(r => r.addEventListener("change", actualizarTotal));

@@ -1,6 +1,7 @@
 """Aplicación web de EcoHarmony Park, bioparque (Flask)."""
 import io
 import os
+from contextlib import nullcontext
 import secrets
 import uuid
 from datetime import date, timezone
@@ -260,18 +261,21 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
             referencia=compra_id,
         )
         u = usuario_actual()
-        try:
-            resultado = servicio.comprar(Usuario(email=u["email"], registrado=True), solicitud)
-        except CompraError as e:
-            contexto.update(form=request.form, edades=request.form.getlist("edades"), error=str(e))
-            if isinstance(e, LimitePorFechaError):
-                contexto["pendientes"] = [c for c in map(repo.obtener_compra, e.pendientes) if c]
-            contexto["fecha_elegida"] = _parse_fecha(request.form.get("fecha_visita"))
-            return render_template("comprar.html", **contexto), 400
+        # Contar las entradas que ya tiene y guardar esta compra es atómico por
+        # persona y fecha (FAQ 27): con dos envíos a la vez, uno espera al otro.
+        bloqueo = repo.bloqueo_de_cupo(u["email"], solicitud.fecha_visita) if solicitud.fecha_visita else nullcontext()
+        with bloqueo:
+            try:
+                resultado = servicio.comprar(Usuario(email=u["email"], registrado=True), solicitud)
+            except CompraError as e:
+                contexto.update(form=request.form, edades=request.form.getlist("edades"), error=str(e))
+                if isinstance(e, LimitePorFechaError):
+                    contexto["pendientes"] = [c for c in map(repo.obtener_compra, e.pendientes) if c]
+                contexto["fecha_elegida"] = _parse_fecha(request.form.get("fecha_visita"))
+                return render_template("comprar.html", **contexto), 400
 
-
-        pago_id = PasarelaMercadoPagoSimulada.id_de_pago(resultado.url_pago)
-        repo.guardar_compra(compra_id, u["email"], resultado, solicitud.edades, pago_id, creado=ahora)
+            pago_id = PasarelaMercadoPagoSimulada.id_de_pago(resultado.url_pago)
+            repo.guardar_compra(compra_id, u["email"], resultado, solicitud.edades, pago_id, creado=ahora)
 
         if resultado.url_pago:  # tarjeta → Mercado Pago
             return redirect(resultado.url_pago)

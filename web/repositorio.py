@@ -7,6 +7,8 @@
 Ambos exponen la misma interfaz, así que el resto de la app no sabe cuál usa.
 """
 import os
+import threading
+from contextlib import contextmanager
 from datetime import date, datetime, timezone
 
 from parque.compra import CompraExistente, Entrada, FormaPago, ResultadoCompra, TipoPase
@@ -57,10 +59,33 @@ def _armar_compra(fila: dict, entradas=()) -> dict:
     }
 
 
+class _CandadosPorClave:
+    """Un candado por (email, fecha) para los hilos de este proceso."""
+
+    def __init__(self):
+        self._candados = {}
+        self._mutex = threading.Lock()
+
+    @contextmanager
+    def tomar(self, *clave):
+        with self._mutex:
+            candado = self._candados.setdefault(clave, threading.Lock())
+        with candado:
+            yield
+
+
 class RepositorioMemoria:
     def __init__(self):
         self._usuarios, self._pagos, self._compras, self._mails = {}, {}, {}, []
         self._entradas = {}  # codigo -> fila
+        self._candados = _CandadosPorClave()
+
+    @contextmanager
+    def bloqueo_de_cupo(self, email, fecha):
+        """FAQ 27: contar las entradas y guardar la compra de una persona para una
+        fecha tiene que ser atómico; si no, dos compras simultáneas pasan las dos."""
+        with self._candados.tomar(email, fecha):
+            yield
 
     # Usuarios
     def crear_usuario(self, nombre, email, password_hash):
@@ -171,6 +196,7 @@ class RepositorioPostgres:
         self._dict_row = dict_row
         self._url = url
         self._con = None
+        self._candados = _CandadosPorClave()
 
     def _conexion(self):
         """Reutiliza una sola conexión mientras la instancia siga viva.
@@ -214,6 +240,20 @@ class RepositorioPostgres:
                 self._con = None
                 if intento == 1:
                     raise
+
+    @contextmanager
+    def bloqueo_de_cupo(self, email, fecha):
+        """FAQ 27: contar y guardar es atómico por persona y fecha, también entre
+        instancias (Vercel puede correr varias). Se usa un advisory lock de
+        transacción en una conexión aparte: con el pooler de Supabase (modo
+        transacción) un lock de sesión podría quedar colgado en otra conexión.
+        El candado local cubre los hilos de este proceso, que comparten conexión."""
+        with self._candados.tomar(email, fecha):
+            with self._psycopg.connect(self._url, prepare_threshold=None, autocommit=True) as con:
+                with con.transaction():
+                    con.execute("select pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                                (f"compra:{email}:{fecha}",))
+                    yield
 
     def crear_tablas(self):
         ruta = os.path.join(os.path.dirname(__file__), "..", "supabase", "schema.sql")
