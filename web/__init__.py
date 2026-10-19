@@ -107,6 +107,7 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
         pasarela_pago=pasarela,
         notificador=notificador,
         reloj=reloj,
+        compras=repo,
     )
     app.extensions["ecoharmony"] = {"repo": repo}
     # "Mis mails" es la bandeja del notificador simulado: con Gmail real no existe.
@@ -256,7 +257,7 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
 
 
         pago_id = PasarelaMercadoPagoSimulada.id_de_pago(resultado.url_pago)
-        repo.guardar_compra(compra_id, u["email"], resultado, solicitud.edades, pago_id)
+        repo.guardar_compra(compra_id, u["email"], resultado, solicitud.edades, pago_id, creado=ahora)
 
         if resultado.url_pago:  # tarjeta → Mercado Pago
             return redirect(resultado.url_pago)

@@ -7,10 +7,18 @@
 Ambos exponen la misma interfaz, así que el resto de la app no sabe cuál usa.
 """
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
-from parque.compra import Entrada, FormaPago, ResultadoCompra, TipoPase
+from parque.compra import CompraExistente, Entrada, FormaPago, ResultadoCompra, TipoPase
 from parque.precios import tarifa_para
+
+
+def _como_compra_existente(fila: dict) -> CompraExistente:
+    return CompraExistente(
+        id=fila["id"], cantidad=fila["cantidad"], forma_pago=FormaPago(fila["forma_pago"]),
+        pagada=fila["pagada"], estado=fila.get("estado") or "activa", monto=fila["monto"],
+        creado=fila["creado"],
+    )
 
 
 def _armar_entrada(fila: dict, tipo_pase: str) -> Entrada:
@@ -75,8 +83,9 @@ class RepositorioMemoria:
             self._pagos[pago_id]["estado"] = "aprobado"
 
     # Compras
-    def guardar_compra(self, compra_id, email, resultado: ResultadoCompra, edades, pago_id=None):
+    def guardar_compra(self, compra_id, email, resultado: ResultadoCompra, edades, pago_id=None, creado=None):
         self._compras[compra_id] = {
+            "creado": creado or datetime.now(timezone.utc),
             "id": compra_id, "email": email, "pagada": False, "estado": "activa", "pago_id": pago_id,
             "cantidad": resultado.cantidad, "fecha_visita": resultado.fecha_visita,
             "url_pago": resultado.url_pago, "monto": resultado.monto,
@@ -94,6 +103,13 @@ class RepositorioMemoria:
         if not fila:
             return None
         return _armar_compra(fila, [e for e in self._entradas.values() if e["compra_id"] == compra_id])
+
+    def compras_para(self, email, fecha):
+        """Puerto ComprasDelVisitante (FAQ 27)."""
+        return [
+            _como_compra_existente(f) for f in self._compras.values()
+            if f["email"] == email and f["fecha_visita"] == fecha
+        ]
 
     def obtener_entrada(self, codigo):
         fila = self._entradas.get(codigo)
@@ -218,16 +234,17 @@ class RepositorioPostgres:
         self._ejecutar("update pagos set estado = 'aprobado' where id = %s", (pago_id,))
 
     # Compras
-    def guardar_compra(self, compra_id, email, resultado: ResultadoCompra, edades, pago_id=None):
+    def guardar_compra(self, compra_id, email, resultado: ResultadoCompra, edades, pago_id=None, creado=None):
         # La compra y sus entradas se guardan juntas o no se guarda nada.
         def pasos(cur):
             cur.execute(
                 "insert into compras (id, email, fecha_visita, cantidad, edades, tipo_pase, forma_pago, "
-                "monto, url_pago, pago_id) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "monto, url_pago, pago_id, creado) "
+                "values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, coalesce(%s, now()))",
                 (
                     compra_id, email, resultado.fecha_visita, resultado.cantidad, list(edades),
                     resultado.tipo_pase.value, resultado.forma_pago.value, resultado.monto,
-                    resultado.url_pago, pago_id,
+                    resultado.url_pago, pago_id, creado,
                 ),
             )
             cur.executemany(
@@ -244,6 +261,15 @@ class RepositorioPostgres:
             "select codigo, numero, edad, precio from entradas where compra_id = %s", (compra_id,), todos=True
         )
         return _armar_compra(dict(fila), [dict(e) for e in entradas])
+
+    def compras_para(self, email, fecha):
+        """Puerto ComprasDelVisitante (FAQ 27): una sola consulta por email y fecha."""
+        filas = self._ejecutar(
+            "select id, cantidad, forma_pago, pagada, estado, monto, creado from compras "
+            "where email = %s and fecha_visita = %s",
+            (email, fecha), todos=True,
+        )
+        return [_como_compra_existente(dict(f)) for f in filas]
 
     def obtener_entrada(self, codigo):
         fila = self._ejecutar(

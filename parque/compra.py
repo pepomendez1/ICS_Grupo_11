@@ -46,6 +46,14 @@ class CantidadInvalidaError(CompraError):
     pass
 
 
+class LimitePorFechaError(CantidadInvalidaError):
+    """FAQ 27: el visitante superaría las 10 entradas para esa fecha."""
+
+    def __init__(self, mensaje: str, disponibles: int):
+        super().__init__(mensaje)
+        self.disponibles = disponibles
+
+
 class FechaInvalidaError(CompraError):
     pass
 
@@ -161,6 +169,10 @@ class Notificador(Protocol):
 
 # ---------- Servicio ----------
 
+def _entradas(n: int) -> str:
+    return f"{n} entrada" if n == 1 else f"{n} entradas"
+
+
 def _como_fecha(valor) -> date:
     """La fecha de visita es un date; si llega un datetime (por ejemplo el HOY de
     los tests, que es un datetime de las 10:00), se toma su día."""
@@ -240,6 +252,22 @@ class ServicioCompraEntradas:
 
         if not isinstance(s.forma_pago, FormaPago):
             raise FormaPagoInvalidaError("Debe seleccionar la forma de pago")
+
+        self._validar_limite_por_fecha(usuario.email, _como_fecha(s.fecha_visita), s.cantidad)
+
+    def _validar_limite_por_fecha(self, email: str, fecha: date, cantidad: int) -> None:
+        """FAQ 27: máximo de entradas por usuario y por fecha, sumando sus compras
+        que siguen en pie (las rechazadas no cuentan)."""
+        vigentes = [c for c in self._compras.compras_para(email, fecha) if c.estado == "activa"]
+        ya_tiene = sum(c.cantidad for c in vigentes)
+        disponibles = max(CANTIDAD_MAXIMA_ENTRADAS - ya_tiene, 0)
+        if cantidad > disponibles:
+            raise LimitePorFechaError(
+                f"Ya tenés {_entradas(ya_tiene)} para el {fecha.strftime('%d/%m')}. "
+                f"Te quedan {disponibles} disponibles para esa fecha "
+                f"(máximo {CANTIDAD_MAXIMA_ENTRADAS} por persona).",
+                disponibles,
+            )
 
     def _validar_fecha(self, fecha_visita) -> None:
         if fecha_visita is None:

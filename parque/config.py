@@ -23,7 +23,7 @@ HORA_LIMITE_COMPRA_PARA_HOY = time(17, 30)  # FAQ 26: para el mismo día, hasta 
 
 # ---------- Compra ----------
 
-CANTIDAD_MAXIMA_ENTRADAS = 10
+CANTIDAD_MAXIMA_ENTRADAS = 10  # FAQ 27: por usuario y por fecha de visita, sumando sus compras
 
 EDAD_MAXIMA = 150  # supuesto del equipo (sin confirmar por la PO); la edad 0 es válida
 
