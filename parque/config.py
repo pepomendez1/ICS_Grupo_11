@@ -25,6 +25,10 @@ HORA_LIMITE_COMPRA_PARA_HOY = time(17, 30)  # FAQ 26: para el mismo día, hasta 
 
 CANTIDAD_MAXIMA_ENTRADAS = 10  # FAQ 27: por usuario y por fecha de visita, sumando sus compras
 
+# Supuesto del equipo: una compra con tarjeta sin aprobar es "pendiente" y cuenta para
+# el límite durante este tiempo; después vence (la preferencia de MP vence igual).
+VENCIMIENTO_PAGO_MINUTOS = 30
+
 EDAD_MAXIMA = 150  # supuesto del equipo (sin confirmar por la PO); la edad 0 es válida
 
 # ---------- Precios (FAQ 6, 7 y 21) ----------
