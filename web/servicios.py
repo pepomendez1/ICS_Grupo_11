@@ -64,6 +64,9 @@ class EstadoPago:
     monto: int
 
 
+TOLERANCIA_RELOJ_MP = timedelta(minutes=5)
+
+
 class PasarelaMercadoPago:
     """Checkout Pro de Mercado Pago con el SDK oficial.
 
@@ -84,8 +87,11 @@ class PasarelaMercadoPago:
         vuelta = f"{self._base_url}/compras/{referencia}?mp="
         # Vence junto con la compra pendiente (config.VENCIMIENTO_PAGO_MINUTOS):
         # pasado ese plazo la compra deja de contar para el límite de 10.
-        desde = self._reloj()
-        hasta = desde + timedelta(minutes=config.VENCIMIENTO_PAGO_MINUTOS)
+        ahora = self._reloj()
+        # Vigente desde unos minutos antes: si el reloj de MP está atrasado respecto
+        # del nuestro, una preferencia que arranca "ahora" todavía no se puede pagar.
+        desde = ahora - TOLERANCIA_RELOJ_MP
+        hasta = ahora + timedelta(minutes=config.VENCIMIENTO_PAGO_MINUTOS)
         respuesta = self._sdk.preference().create({
             "items": [{
                 "title": self.TITULO,
