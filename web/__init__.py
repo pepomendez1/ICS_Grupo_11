@@ -92,8 +92,6 @@ def resultado_del_pago(compra, vuelta_mp):
 
 def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, notificador=None):
     app = Flask(__name__)
-    # En Vercel SECRET_KEY tiene que ser fija: si cada instancia generara una
-    # distinta, la sesión se perdería entre requests.
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(16)
     app.config["TESTING"] = testing
 
@@ -249,8 +247,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
             contexto.update(form=request.form, edades=request.form.getlist("edades"), error=str(e))
             return render_template("comprar.html", **contexto), 400
 
-        # Solo el checkout simulado registra el pago en nuestra base; con
-        # Mercado Pago real la compra se vincula por external_reference.
+
         pago_id = PasarelaMercadoPagoSimulada.id_de_pago(resultado.url_pago)
         repo.guardar_compra(compra_id, u["email"], resultado, solicitud.edades, pago_id)
 
