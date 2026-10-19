@@ -540,7 +540,7 @@ class TestReintentoDeCompraRechazada:
             edades=["41", "12", "0"], tipo_pase="VIP",
         )
         html = cliente_mp.get(f"/comprar?reintentar={compra_id}").get_data(as_text=True)
-        assert re.search(r'name="fecha_visita"[^>]*value="2026-10-09"', html)
+        assert "checked" in radio_fecha(html, "2026-10-09")
         assert re.search(r'name="cantidad"[^>]*value="3"', html)
         assert re.findall(r'<input name="edades"[^>]*value="(\d+)"', html) == ["41", "12", "0"]
         assert 'name="tipo_pase" value="VIP" checked' in html
@@ -616,3 +616,70 @@ class TestHorario:
     def test_web_muestra_el_horario(self, cliente_logueado, ruta):
         html = cliente_logueado.get(ruta).get_data(as_text=True)
         assert "de 8:30 a 19:00" in html
+
+
+
+def radio_fecha(html, iso):
+    """El <input type="radio"> del calendario para esa fecha (falla si no está)."""
+    encontrado = re.search(rf'<input[^>]*name="fecha_visita"[^>]*value="{iso}"[^>]*>', html)
+    assert encontrado, f"no hay día {iso} en el calendario"
+    return encontrado.group(0)
+
+
+@pytest.fixture
+def cliente_a_las(repo, registrar):
+    """Cliente logueado con el reloj de la app en otro momento."""
+    def crear(ahora):
+        cliente = create_app(reloj=lambda: ahora, testing=True, repo=repo).test_client()
+        registrar(cliente, f"visitante.{ahora:%m%d%H%M}@mail.com")
+        return cliente
+    return crear
+
+
+class TestCalendarioDeCompra:
+    """FAQ 2: el calendario no deja elegir días sin venta; los días vienen del backend."""
+
+    def test_web_el_calendario_reemplaza_al_input_date(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert 'type="date"' not in html
+        assert 'type="radio" name="fecha_visita"' in html
+
+    def test_web_calendario_deshabilita_los_lunes(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert "disabled" in radio_fecha(html, "2026-10-12")      # lunes
+        assert "disabled" not in radio_fecha(html, "2026-10-08")  # jueves
+
+    def test_web_calendario_deshabilita_los_dias_pasados(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert "disabled" in radio_fecha(html, "2026-10-05")
+        assert "disabled" not in radio_fecha(html, "2026-10-06")  # hoy a las 10:00
+
+    def test_web_calendario_deshabilita_mas_alla_de_un_mes(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert "disabled" not in radio_fecha(html, "2026-11-06")
+        assert "disabled" in radio_fecha(html, "2026-11-07")
+
+    def test_web_calendario_deshabilita_hoy_despues_de_las_17_30(self, cliente_a_las):
+        html = cliente_a_las(HOY.replace(hour=17, minute=31)).get("/comprar").get_data(as_text=True)
+        assert "disabled" in radio_fecha(html, "2026-10-06")
+        assert "disabled" not in radio_fecha(html, "2026-10-07")
+
+    def test_web_calendario_deshabilita_25_de_diciembre_y_1_de_enero(self, cliente_a_las):
+        html = cliente_a_las(HOY.replace(month=12, day=20)).get("/comprar").get_data(as_text=True)
+        assert "disabled" in radio_fecha(html, "2026-12-25")
+        assert "disabled" in radio_fecha(html, "2027-01-01")
+        assert "disabled" not in radio_fecha(html, "2026-12-26")
+
+    def test_web_calendario_explica_por_que_un_dia_no_esta_disponible(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert "no disponible: el parque cierra los lunes" in radio_fecha(html, "2026-10-12")
+
+    @pytest.mark.parametrize("fecha, ahora", [
+        ("2026-10-12", HOY),                                # lunes
+        ("2026-10-05", HOY),                                # pasado
+        ("2026-11-07", HOY),                                # más de un mes
+        ("2026-10-06", HOY.replace(hour=17, minute=31)),    # hoy después de las 17:30
+    ])
+    def test_web_backend_rechaza_dias_deshabilitados_aunque_se_manipule_el_html(self, cliente_a_las, fecha, ahora):
+        respuesta = cliente_a_las(ahora).post("/comprar", data=datos_compra(fecha_visita=fecha))
+        assert respuesta.status_code == 400
