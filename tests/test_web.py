@@ -684,6 +684,25 @@ class TestCalendarioDeCompra:
         html = cliente_a_las(lunes_a_la_noche).get("/comprar").get_data(as_text=True)
         assert "no disponible: el parque cierra los lunes" in radio_fecha(html, "2026-10-12")
 
+    def test_web_hoy_se_marca_con_la_palabra_hoy_y_no_parece_seleccionado(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        etiqueta = re.search(r'<label for="dia-2026-10-06".*?</label>', html, re.S).group(0)
+        assert '<span class="marca-hoy">Hoy</span>' in etiqueta
+        assert 'aria-current="date"' in radio_fecha(html, "2026-10-06")
+        # El recuadro verde era igual al del día elegido: confundía hoy con la selección.
+        assert "label.hoy { box-shadow" not in html
+        assert "checked" not in radio_fecha(html, "2026-10-06")
+
+    def test_web_antes_de_confirmar_muestra_la_fecha_elegida_en_palabras(self, cliente_logueado):
+        html = cliente_logueado.post("/comprar", data=datos_compra(edades=["30", "151"])).get_data(as_text=True)
+        aviso = "Vas a comprar para el jueves 8 de octubre de 2026"
+        assert aviso in html
+        assert html.index('id="desglose"') < html.index(aviso) < html.index('type="submit">Confirmar compra')
+
+    def test_web_sin_fecha_elegida_lo_avisa_antes_de_confirmar(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert "Todavía no elegiste la fecha de visita" in html
+
     def test_web_calendario_explica_por_que_un_dia_no_esta_disponible(self, cliente_logueado):
         html = cliente_logueado.get("/comprar").get_data(as_text=True)
         assert "no disponible: el parque cierra los lunes" in radio_fecha(html, "2026-10-12")
