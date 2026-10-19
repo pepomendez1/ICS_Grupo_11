@@ -923,3 +923,45 @@ class TestBandejaConAdjunto:
         otro = app.test_client()
         registrar(otro, "otra.persona@mail.com")
         assert otro.get(enlace.group(1)).status_code == 404
+
+
+class TestComprasSimultaneas:
+    """FAQ 27 con dos envíos a la vez (doble clic, reintento del navegador, dos
+    pestañas): el control del límite y el guardado de la compra tienen que ser
+    atómicos por persona y fecha, si no las dos compras ven "0 entradas"."""
+
+    def test_web_dos_compras_simultaneas_no_superan_el_limite(self, app, repo, registrar):
+        import threading
+        import time
+
+        clientes = [app.test_client(), app.test_client()]
+        registrar(clientes[0])
+        clientes[1].post("/login", data={"email": EMAIL_VISITANTE, "password": "secreta1"})
+
+        # Ensancha la ventana entre "contar las entradas" y "guardar la compra"
+        # para que la carrera ocurra siempre, no por casualidad.
+        contar = repo.compras_para
+
+        def contar_despacio(*args, **kwargs):
+            resultado = contar(*args, **kwargs)
+            time.sleep(0.3)
+            return resultado
+        repo.compras_para = contar_despacio
+
+        diez = datos_compra(cantidad="10", edades=["30"] * 10)
+        respuestas = []
+        hilos = [threading.Thread(target=lambda c=c: respuestas.append(c.post("/comprar", data=diez).status_code))
+                 for c in clientes]
+        for h in hilos:
+            h.start()
+        for h in hilos:
+            h.join()
+
+        repo.compras_para = contar
+        total = sum(c.cantidad for c in repo.compras_para(EMAIL_VISITANTE, HOY.date() + timedelta(days=2)))
+        assert total == 10
+        assert sorted(respuestas) == [302, 400]
+
+    def test_web_el_boton_de_confirmar_evita_el_doble_envio(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert 'data-un-solo-envio' in html
