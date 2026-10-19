@@ -7,6 +7,7 @@ from parque.compra import (
     PRECIOS,
     CantidadInvalidaError,
     EdadesInvalidasError,
+    LimitePorFechaError,
     FechaInvalidaError,
     FormaPago,
     FormaPagoInvalidaError,
@@ -354,3 +355,63 @@ class TestEntradas:
             resultado = servicio.comprar(usuario_registrado, solicitud_valida)
         assert [e.codigo for e in resultado.entradas] == ["c1", "c2", "c3"]
         token.assert_called_with(16)  # 128 bits de azar criptográfico
+
+
+SABADO_24 = date(2026, 10, 24)  # dentro del mes desde HOY (06/10)
+
+
+class TestComprasPendientes:
+    """FAQ 27 y definición del equipo: una compra con tarjeta sin aprobar es
+    "pendiente" y cuenta para el límite hasta que vence (30 minutos)."""
+
+    def test_compra_pendiente_cuenta_para_el_limite_pasa(self, servicio, usuario_registrado, solicitud_valida, compras_previas):
+        compras_previas.agregar(usuario_registrado.email, SABADO_24, cantidad=8, forma_pago=FormaPago.TARJETA)
+        solicitud_valida.fecha_visita = SABADO_24
+        with pytest.raises(CantidadInvalidaError):
+            servicio.comprar(usuario_registrado, solicitud_valida)  # 8 pendientes + 3 > 10
+        solicitud_valida.cantidad, solicitud_valida.edades = 2, [35, 33]
+        assert servicio.comprar(usuario_registrado, solicitud_valida).cantidad == 2
+
+    def test_limite_superado_por_pendientes_informa_detalle_falla(self, servicio, usuario_registrado, solicitud_valida, compras_previas):
+        compras_previas.agregar(usuario_registrado.email, SABADO_24, cantidad=2)  # efectivo: confirmada
+        compras_previas.agregar(usuario_registrado.email, SABADO_24, cantidad=9, forma_pago=FormaPago.TARJETA,
+                                compra_id="pend-9")
+        solicitud_valida.fecha_visita = SABADO_24
+        with pytest.raises(LimitePorFechaError) as error:
+            servicio.comprar(usuario_registrado, solicitud_valida)
+        assert ("Ya tenés 11 entradas para el 24/10: 2 confirmadas y 9 con pago pendiente. "
+                "Pagá o cancelá la compra pendiente para liberar lugar.") in str(error.value)
+        assert error.value.pendientes == ["pend-9"]
+
+    def test_compra_en_efectivo_no_se_considera_pendiente_pasa(self, compras_previas):
+        from parque.compra import EstadoCompra, estado_de_compra
+        efectivo = compras_previas.agregar("a@mail.com", SABADO_24, cantidad=3)
+        con_tarjeta = compras_previas.agregar("a@mail.com", SABADO_24, cantidad=3, forma_pago=FormaPago.TARJETA)
+        assert estado_de_compra(efectivo, HOY) == EstadoCompra.CONFIRMADA
+        assert estado_de_compra(con_tarjeta, HOY) == EstadoCompra.PENDIENTE
+
+    def test_compra_pendiente_vencida_no_cuenta_para_el_limite_pasa(self, servicio_con_reloj, usuario_registrado, solicitud_valida, compras_previas):
+        compras_previas.agregar(usuario_registrado.email, SABADO_24, cantidad=10, forma_pago=FormaPago.TARJETA,
+                                creado=HOY)
+        solicitud_valida.fecha_visita = SABADO_24
+        servicio = servicio_con_reloj(HOY + timedelta(minutes=31))
+        assert servicio.comprar(usuario_registrado, solicitud_valida).cantidad == 3
+
+    def test_compra_pendiente_a_los_29_minutos_todavia_cuenta_falla(self, servicio_con_reloj, usuario_registrado, solicitud_valida, compras_previas):
+        compras_previas.agregar(usuario_registrado.email, SABADO_24, cantidad=10, forma_pago=FormaPago.TARJETA,
+                                creado=HOY)
+        solicitud_valida.fecha_visita = SABADO_24
+        with pytest.raises(LimitePorFechaError):
+            servicio_con_reloj(HOY + timedelta(minutes=29)).comprar(usuario_registrado, solicitud_valida)
+
+    def test_compra_cancelada_no_cuenta_para_el_limite_pasa(self, servicio, usuario_registrado, solicitud_valida, compras_previas):
+        compras_previas.agregar(usuario_registrado.email, SABADO_24, cantidad=10, forma_pago=FormaPago.TARJETA,
+                                estado="cancelada")
+        solicitud_valida.fecha_visita = SABADO_24
+        assert servicio.comprar(usuario_registrado, solicitud_valida).cantidad == 3
+
+    def test_compra_pagada_con_tarjeta_es_confirmada_aunque_haya_vencido_pasa(self, compras_previas):
+        from parque.compra import EstadoCompra, estado_de_compra
+        pagada = compras_previas.agregar("a@mail.com", SABADO_24, cantidad=3, forma_pago=FormaPago.TARJETA,
+                                         pagada=True, creado=HOY)
+        assert estado_de_compra(pagada, HOY + timedelta(hours=5)) == EstadoCompra.CONFIRMADA
