@@ -83,6 +83,22 @@ class TestCrearPago:
         assert isinstance(error.value, CompraError)
 
 
+class TestPreferenciaConVencimiento:
+    """Definición del equipo (5-bis): MP solo ofrece tarjetas y la preferencia vence a los 30 min."""
+
+    def test_preferencia_mp_excluye_ticket_y_atm_pasa(self, sdk):
+        PasarelaMercadoPago("APP_USR-token", BASE_URL, reloj=lambda: HOY).crear_pago(10_000, "ana@mail.com", referencia="c1")
+        excluidos = preferencia_enviada(sdk)["payment_methods"]["excluded_payment_types"]
+        assert excluidos == [{"id": "ticket"}, {"id": "atm"}]
+
+    def test_preferencia_mp_vence_a_los_30_minutos_pasa(self, sdk):
+        PasarelaMercadoPago("APP_USR-token", BASE_URL, reloj=lambda: HOY).crear_pago(10_000, "ana@mail.com", referencia="c1")
+        pref = preferencia_enviada(sdk)
+        assert pref["expires"] is True
+        assert pref["expiration_date_from"] == "2026-10-06T10:00:00.000-03:00"
+        assert pref["expiration_date_to"] == "2026-10-06T10:30:00.000-03:00"
+
+
 class TestConsultarPago:
     def test_consulta_el_pago_a_la_api(self, sdk):
         sdk.payment.return_value.get.return_value = {"status": 200, "response": {
