@@ -1,22 +1,92 @@
 {% extends "base.html" %}
 {% block titulo %}Comprar entradas · EcoHarmony Park{% endblock %}
+{% block estilos %}
+<style>
+  .calendario { border: 0; padding: 0; margin: 0 0 22px; min-width: 0; }
+  .calendario legend { font-weight: 600; font-size: .92rem; padding: 0; margin-bottom: 2px; }
+  .calendario-ayuda { margin: 0 0 10px; }
+  .meses { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .mes { background: #fff; border: 1px solid var(--borde); border-radius: 12px; padding: 12px; }
+  .mes-titulo { margin: 0 0 8px; font-weight: 700; color: var(--bosque); text-transform: capitalize; }
+  .dias-semana, .dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+  .dias-semana span { font-size: .72rem; color: var(--suave); text-transform: uppercase; letter-spacing: .04em; padding-bottom: 2px; }
+  .celda { position: relative; }
+  /* El radio queda accesible (foco y lector de pantalla); la etiqueta es la celda visible. */
+  .celda input { position: absolute; inset: 0; opacity: 0; margin: 0; width: 100%; height: 100%; min-height: 0; }
+  .celda label {
+    display: flex; align-items: center; justify-content: center; height: 40px; margin: 0;
+    border-radius: 8px; cursor: pointer; font-weight: 600; font-size: .95rem; color: var(--texto);
+  }
+  .celda input:not(:disabled) + label:hover { background: var(--salvia); }
+  .celda label { flex-direction: column; line-height: 1.1; }
+  /* Hoy se marca con una palabra, no con un recuadro: el recuadro se confundía con el día elegido. */
+  .marca-hoy { font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--suave); }
+  .celda input:checked + label .marca-hoy { color: #fff; }
+  .celda input:checked + label { background: var(--bosque); color: #fff; box-shadow: none; }
+  .celda input:focus-visible + label { outline: 3px solid var(--hoja); outline-offset: 1px; }
+  .celda input:disabled + label { color: #8f8a80; cursor: not-allowed; font-weight: 400; }
+  /* Se tacha solo el número: la marca "Hoy" se tiene que poder leer aunque hoy no se venda. */
+  .celda input:disabled + label .numero { text-decoration: line-through; text-decoration-color: #c9c2b2; }
+  .desglose { background: #fff; border: 1px solid var(--borde); border-radius: 12px; padding: 14px 16px; }
+  .desglose-titulo { margin: 0 0 8px; font-weight: 700; color: var(--bosque); }
+  .desglose table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+  .desglose th, .desglose td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--borde); }
+  .desglose thead th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--suave); font-weight: 600; }
+  .desglose .num { text-align: right; white-space: nowrap; }
+  .desglose tfoot th, .desglose tfoot td { border-bottom: 0; padding-top: 12px; font-size: 1.05rem; }
+  .desglose tfoot strong { font-size: 1.35rem; color: var(--bosque); }
+  .desglose .descuento { display: block; font-size: .82rem; color: var(--suave); }
+  .resumen-fecha { margin: 4px 0 12px; padding: 10px 14px; border-radius: 10px; background: var(--salvia); color: var(--bosque); font-weight: 700; text-align: center; }
+  .fecha-elegida { margin: 10px 0 0; font-weight: 600; color: var(--bosque); min-height: 1.5em; }
+  @media (max-width: 560px) { .celda label { height: 44px; } }
+</style>
+{% endblock %}
 {% block contenido %}
 <h1>Comprar entradas</h1>
-<p class="bajada">Elegí el día, cuántos van y cómo querés pagar. Máximo {{ maximo }} entradas por compra.</p>
+<p class="bajada">Elegí el día, cuántos van y cómo querés pagar. Máximo {{ maximo }} entradas por persona para cada fecha.</p>
 
-{% if error %}<div class="aviso error" role="alert">{{ error }}</div>{% endif %}
+{% if error %}
+<div class="aviso error" role="alert">
+  {{ error }}
+  {% if pendientes %}
+  <ul class="pendientes">
+    {% for c in pendientes %}
+    <li><a href="{{ url_for('confirmacion', compra_id=c.id) }}">Compra pendiente de {{ c.resultado.cantidad }} entrada{{ "s" if c.resultado.cantidad != 1 }} para el {{ c.resultado.fecha_visita.strftime('%d/%m') }}</a>: pagala o cancelala desde ahí.</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endif %}
 {% if reintento %}<div class="aviso info" role="status">Cargamos los datos de tu compra anterior. Revisalos y confirmá: podés volver a pagar con tarjeta o elegir efectivo.</div>{% endif %}
 
 <form class="tarjeta" method="post" novalidate id="form-compra">
-  <div class="grilla">
-    <div class="campo">
-      <label for="fecha_visita">Fecha de visita <span class="ayuda">(cerrado los {{ dia_cierre }})</span></label>
-      <input id="fecha_visita" name="fecha_visita" type="date" min="{{ hoy }}" value="{{ form.get('fecha_visita', '') }}">
+  <fieldset class="campo calendario">
+    <legend>Fecha de visita</legend>
+    <p class="ayuda calendario-ayuda">{{ horario }}. Cerrado los {{ dia_cierre }}, el 25/12 y el 1/1. Se venden entradas hasta un mes adelante.</p>
+    <div class="meses">
+      {% for mes in meses %}
+      <div class="mes">
+        <p class="mes-titulo">{{ mes.titulo }}</p>
+        <div class="dias-semana" aria-hidden="true">{% for d in dias_cortos %}<span>{{ d }}</span>{% endfor %}</div>
+        <div class="dias">
+          {% for semana in mes.semanas %}{% for d in semana %}
+            {% if d %}{% set iso = d.fecha.isoformat() %}
+            <div class="celda">
+              <input type="radio" name="fecha_visita" value="{{ iso }}" id="dia-{{ iso }}"{% if not d.disponible %} disabled{% endif %} aria-label="{{ fecha_larga(d.fecha) }}{% if not d.disponible %}, no disponible: {{ d.motivo.corto }}{% endif %}" data-larga="{{ fecha_larga(d.fecha) }}"{% if d.fecha == hoy %} aria-current="date"{% endif %}{% if form.get('fecha_visita') == iso %} checked{% endif %}>
+              <label for="dia-{{ iso }}" class="dia{% if d.fecha == hoy %} hoy{% endif %}"{% if not d.disponible %} title="No disponible: {{ d.motivo.corto }}"{% endif %}><span class="numero">{{ d.fecha.day }}</span>{% if d.fecha == hoy %}<span class="marca-hoy">Hoy</span>{% endif %}</label>
+            </div>
+            {% else %}<div class="celda vacia" aria-hidden="true"></div>{% endif %}
+          {% endfor %}{% endfor %}
+        </div>
+      </div>
+      {% endfor %}
     </div>
-    <div class="campo">
-      <label for="cantidad">Cantidad de entradas</label>
-      <input id="cantidad" name="cantidad" type="number" min="1" max="{{ maximo }}" value="{{ form.get('cantidad', '') }}">
-    </div>
+    <p class="fecha-elegida" id="fecha-elegida" aria-live="polite">{% if fecha_elegida %}Elegiste: {{ fecha_larga(fecha_elegida) }}{% endif %}</p>
+  </fieldset>
+
+  <div class="campo">
+    <label for="cantidad">Cantidad de entradas</label>
+    <input id="cantidad" name="cantidad" type="number" min="1" max="{{ maximo }}" value="{{ form.get('cantidad', '') }}">
   </div>
 
   <div class="campo">
@@ -41,6 +111,22 @@
     </div>
   </div>
 
+  <section class="campo desglose" id="desglose" aria-labelledby="desglose-titulo">
+    <p class="desglose-titulo" id="desglose-titulo">Detalle del precio</p>
+    <table>
+      <thead>
+        <tr><th scope="col">Visitante</th><th scope="col">Tarifa</th><th scope="col" class="num">Subtotal</th></tr>
+      </thead>
+      <tbody id="desglose-filas">
+        <tr><td colspan="3" class="ayuda">Completá la cantidad, la edad de cada visitante y el tipo de pase.</td></tr>
+      </tbody>
+      <tfoot>
+        <tr><th scope="row" colspan="2">Total</th><td class="num"><strong id="total" aria-live="polite">$0</strong></td></tr>
+      </tfoot>
+    </table>
+    <p class="ayuda" style="margin:8px 0 0">{{ texto_descuentos }}. El total final lo calcula el sistema al confirmar.</p>
+  </section>
+
   <div class="campo">
     <label>Forma de pago</label>
     <div class="opciones">
@@ -55,23 +141,22 @@
     </div>
   </div>
 
-  <div class="total">
-    <span>Total estimado</span>
-    <strong id="total">$0</strong>
-  </div>
-
+  <p class="resumen-fecha" id="resumen-fecha">{% if fecha_elegida %}Vas a comprar para el {{ fecha_larga(fecha_elegida) }}.{% else %}Todavía no elegiste la fecha de visita.{% endif %}</p>
   <button class="boton ancho" type="submit">Confirmar compra</button>
 </form>
 {% endblock %}
 
 {% block scripts %}
+<script type="application/json" id="reglas-precio">{{ reglas_precio | tojson }}</script>
 <script>
-  const precios = {{ precios | tojson }};
+  // Las reglas de precio vienen del backend (parque/config.py): acá solo se muestran.
+  const reglas = JSON.parse(document.getElementById("reglas-precio").textContent);
   const maximo = {{ maximo }};
   const cantidad = document.getElementById("cantidad");
   const contenedor = document.getElementById("edades");
   const ayuda = document.getElementById("edades-ayuda");
   const total = document.getElementById("total");
+  const filas = document.getElementById("desglose-filas");
   const formato = n => "$" + n.toLocaleString("es-AR");
 
   function renderEdades() {
@@ -91,14 +176,69 @@
     actualizarTotal();
   }
 
-  function actualizarTotal() {
-    const n = parseInt(cantidad.value, 10) || 0;
-    const pase = document.querySelector("input[name=tipo_pase]:checked");
-    total.textContent = formato(pase && n > 0 ? n * precios[pase.value] : 0);
+  function tarifa(edad, pase) {
+    const base = reglas.precios[pase];
+    for (const d of reglas.descuentos) {
+      if (edad >= d.desde && (d.hasta === null || edad <= d.hasta)) {
+        return { nombre: d.nombre, descuento: d.porcentaje, precio: Math.floor(base * (100 - d.porcentaje) / 100) };
+      }
+    }
+    return { nombre: reglas.tarifa_general, descuento: 0, precio: base };
   }
+
+  function celda(texto, clase) {
+    const td = document.createElement("td");
+    td.textContent = texto;
+    if (clase) td.className = clase;
+    return td;
+  }
+
+  function actualizarTotal() {
+    const pase = document.querySelector("input[name=tipo_pase]:checked");
+    const edades = [...contenedor.querySelectorAll("input")].map(i => i.value === "" ? null : parseInt(i.value, 10));
+    filas.innerHTML = "";
+    if (!pase || edades.length === 0) {
+      const tr = document.createElement("tr");
+      tr.appendChild(celda("Completá la cantidad, la edad de cada visitante y el tipo de pase.", "ayuda")).colSpan = 3;
+      filas.appendChild(tr);
+      total.textContent = formato(0);
+      return;
+    }
+    let suma = 0;
+    edades.forEach((edad, i) => {
+      const tr = document.createElement("tr");
+      if (edad === null || isNaN(edad) || edad < 0) {
+        tr.append(celda("Visitante " + (i + 1)), celda("Falta la edad"), celda("—", "num"));
+      } else {
+        const t = tarifa(edad, pase.value);
+        suma += t.precio;
+        const descuento = t.descuento === 100 ? "Sin cargo" : t.descuento ? t.descuento + "% off" : "—";
+        const tarifaCelda = celda(t.nombre);
+        const detalle = document.createElement("span");
+        detalle.className = "descuento";
+        detalle.textContent = descuento === "—" ? "Precio completo" : descuento;
+        tarifaCelda.appendChild(detalle);
+        tr.append(celda("Visitante " + (i + 1) + " · " + edad + " años"), tarifaCelda, celda(formato(t.precio), "num"));
+      }
+      filas.appendChild(tr);
+    });
+    total.textContent = formato(suma);
+  }
+
+  // Muestra en palabras el día elegido, abajo del calendario y antes de confirmar.
+  const elegida = document.getElementById("fecha-elegida");
+  const resumen = document.getElementById("resumen-fecha");
+  function mostrarFecha() {
+    const radio = document.querySelector("input[name=fecha_visita]:checked");
+    elegida.textContent = radio ? "Elegiste: " + radio.dataset.larga : "";
+    resumen.textContent = radio ? "Vas a comprar para el " + radio.dataset.larga + "." : "Todavía no elegiste la fecha de visita.";
+  }
+  document.querySelectorAll("input[name=fecha_visita]").forEach(r => r.addEventListener("change", mostrarFecha));
+  mostrarFecha();
 
   cantidad.addEventListener("input", renderEdades);
   document.querySelectorAll("input[name=tipo_pase]").forEach(r => r.addEventListener("change", actualizarTotal));
+  contenedor.addEventListener("input", actualizarTotal);
   renderEdades();
 </script>
 {% endblock %}

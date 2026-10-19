@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from parque.compra import PRECIOS, CompraError
+from tests.conftest import HOY
 from web import create_app
 from web.repositorio import RepositorioMemoria
 from web.servicios import (
@@ -82,6 +83,22 @@ class TestCrearPago:
         assert isinstance(error.value, CompraError)
 
 
+class TestPreferenciaConVencimiento:
+    """Definición del equipo (5-bis): MP solo ofrece tarjetas y la preferencia vence a los 30 min."""
+
+    def test_preferencia_mp_excluye_ticket_y_atm_pasa(self, sdk):
+        PasarelaMercadoPago("APP_USR-token", BASE_URL, reloj=lambda: HOY).crear_pago(10_000, "ana@mail.com", referencia="c1")
+        excluidos = preferencia_enviada(sdk)["payment_methods"]["excluded_payment_types"]
+        assert excluidos == [{"id": "ticket"}, {"id": "atm"}]
+
+    def test_preferencia_mp_vence_a_los_30_minutos_pasa(self, sdk):
+        PasarelaMercadoPago("APP_USR-token", BASE_URL, reloj=lambda: HOY).crear_pago(10_000, "ana@mail.com", referencia="c1")
+        pref = preferencia_enviada(sdk)
+        assert pref["expires"] is True
+        assert pref["expiration_date_from"] == "2026-10-06T10:00:00.000-03:00"
+        assert pref["expiration_date_to"] == "2026-10-06T10:30:00.000-03:00"
+
+
 class TestConsultarPago:
     def test_consulta_el_pago_a_la_api(self, sdk):
         sdk.payment.return_value.get.return_value = {"status": 200, "response": {
@@ -114,10 +131,10 @@ class TestElegirPasarela:
     def test_la_app_usa_mercado_pago_si_hay_access_token(self, sdk, monkeypatch, registrar):
         monkeypatch.setenv("MP_ACCESS_TOKEN", "TEST-token")
         monkeypatch.setenv("APP_BASE_URL", BASE_URL)
-        cliente = create_app(testing=True, repo=RepositorioMemoria()).test_client()
+        cliente = create_app(reloj=lambda: HOY, testing=True, repo=RepositorioMemoria()).test_client()
         registrar(cliente)
         cliente.post("/comprar", data={
-            "fecha_visita": "2099-01-01", "cantidad": "1", "edades": ["30"],  # jueves
+            "fecha_visita": "2026-10-08", "cantidad": "1", "edades": ["30"],  # jueves, dentro del mes
             "tipo_pase": "VIP", "forma_pago": "TARJETA",
         })
         assert preferencia_enviada(sdk)["items"][0]["unit_price"] == PRECIOS["VIP"]

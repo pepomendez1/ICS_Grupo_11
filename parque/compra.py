@@ -3,28 +3,24 @@
 COMO visitante QUIERO comprar una entrada PARA asegurar mi visita al parque.
 
 Las dependencias externas (calendario del parque, Mercado Pago, envío de mail
-y fecha actual) se inyectan para poder reemplazarlas por dobles en los tests.
+y el reloj) se inyectan para poder reemplazarlas por dobles en los tests.
 """
-import calendar
 import secrets
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime, timedelta
 from enum import Enum
 from typing import Callable, Optional, Protocol
 
-# ---------- Configuración del parque ----------
-# Valores a confirmar con la PO (ver README > Supuestos): se cambian solo acá.
+from parque import config
+from parque.calendario import ahora_en_el_parque, motivo_sin_venta
+from parque.precios import tarifa_para
 
-CANTIDAD_MAXIMA_ENTRADAS = 10
-
-EDAD_MAXIMA = 150  # años; la edad 0 (bebés) es válida
-
-DIA_CIERRE = calendar.MONDAY  # el parque cierra los lunes
-
-PRECIOS = {  # por entrada, en pesos
-    "REGULAR": 50_000,
-    "VIP": 75_000,
-}
+from parque.config import (  # noqa: F401  (se re-exportan para la web y los tests)
+    CANTIDAD_MAXIMA_ENTRADAS,
+    DIA_CIERRE,
+    EDAD_MAXIMA,
+    PRECIOS,
+)
 
 
 class TipoPase(Enum):
@@ -49,6 +45,15 @@ class UsuarioNoRegistradoError(CompraError):
 
 class CantidadInvalidaError(CompraError):
     pass
+
+
+class LimitePorFechaError(CantidadInvalidaError):
+    """FAQ 27: el visitante superaría las 10 entradas para esa fecha."""
+
+    def __init__(self, mensaje: str, disponibles: int, pendientes=()):
+        super().__init__(mensaje)
+        self.disponibles = disponibles
+        self.pendientes = list(pendientes)  # ids de las compras con pago pendiente
 
 
 class FechaInvalidaError(CompraError):
@@ -95,6 +100,9 @@ class Entrada:
     numero: int   # 1..cantidad
     edad: int
     codigo: str   # secrets.token_urlsafe: no se puede adivinar ni enumerar
+    precio: int = 0       # precio final de esta entrada (FAQ 6, 7 y 21)
+    descuento: int = 0    # porcentaje aplicado por la edad
+    tarifa: str = ""      # "General", "De 4 a 15 años", ...
 
 
 @dataclass
@@ -108,11 +116,62 @@ class ResultadoCompra:
     entradas: list = field(default_factory=list)
 
     @property
+    def sin_cargo(self) -> bool:
+        """Todas las entradas son gratis (por ejemplo, todos <= 3 años): no se paga."""
+        return self.monto == 0
+
+    @property
     def mensaje(self) -> str:
         return (
             f"Compraste {self.cantidad} entrada(s) para el "
             f"{self.fecha_visita.strftime('%d/%m/%Y')}"
         )
+
+
+@dataclass
+class CompraExistente:
+    """Una compra anterior del visitante, tal como la guarda la base."""
+    id: str
+    cantidad: int
+    forma_pago: FormaPago
+    pagada: bool
+    estado: str        # "activa" | "rechazada" | ...
+    monto: int
+    creado: datetime
+
+
+class EstadoCompra(Enum):
+    CONFIRMADA = "confirmada"  # en efectivo, sin cargo o pagada con tarjeta
+    PENDIENTE = "pendiente"    # con tarjeta, todavía sin aprobar y sin vencer
+    VENCIDA = "vencida"        # con tarjeta, sin aprobar después del plazo
+    RECHAZADA = "rechazada"    # volvió de Mercado Pago sin pagar
+    CANCELADA = "cancelada"    # la canceló el visitante
+
+
+ESTADOS_QUE_CUENTAN = {EstadoCompra.CONFIRMADA, EstadoCompra.PENDIENTE}
+
+
+def estado_de_compra(compra: CompraExistente, ahora: datetime) -> EstadoCompra:
+    """El estado de una compra en este momento. "Pendiente" es SOLO una compra
+    con tarjeta que todavía no fue aprobada: el efectivo nunca lo es. El
+    vencimiento se calcula por la fecha de creación (no hace falta un cron)."""
+    if compra.pagada:
+        return EstadoCompra.CONFIRMADA  # si MP cobró, la compra vale
+    if compra.estado == "rechazada":
+        return EstadoCompra.RECHAZADA
+    if compra.estado == "cancelada":
+        return EstadoCompra.CANCELADA
+    if compra.forma_pago == FormaPago.EFECTIVO or compra.monto == 0:
+        return EstadoCompra.CONFIRMADA
+    if ahora >= compra.creado + timedelta(minutes=config.VENCIMIENTO_PAGO_MINUTOS):
+        return EstadoCompra.VENCIDA
+    return EstadoCompra.PENDIENTE
+
+
+def se_puede_cancelar(compra: CompraExistente, ahora: datetime) -> bool:
+    """Solo una compra pendiente se cancela desde la app: una pagada o en
+    efectivo no (y una vencida o rechazada ya no cuenta para nada)."""
+    return estado_de_compra(compra, ahora) == EstadoCompra.PENDIENTE
 
 
 # ---------- Dependencias externas ----------
@@ -126,6 +185,18 @@ class PasarelaMercadoPago(Protocol):
         """Devuelve la URL a la que se redirige al usuario."""
 
 
+class ComprasDelVisitante(Protocol):
+    def compras_para(self, email: str, fecha: date) -> list:
+        """Las compras (CompraExistente) de ese visitante para esa fecha de visita."""
+
+
+class SinComprasPrevias:
+    """Puerto vacío por defecto: el visitante no tiene compras anteriores."""
+
+    def compras_para(self, email: str, fecha: date) -> list:
+        return []
+
+
 class Notificador(Protocol):
     def enviar_confirmacion(
         self, email: str, mensaje: str, resultado: Optional[ResultadoCompra] = None
@@ -134,34 +205,49 @@ class Notificador(Protocol):
 
 # ---------- Servicio ----------
 
+def _entradas(n: int) -> str:
+    return f"{n} entrada" if n == 1 else f"{n} entradas"
+
+
+def _como_fecha(valor) -> date:
+    """La fecha de visita es un date; si llega un datetime (por ejemplo el HOY de
+    los tests, que es un datetime de las 10:00), se toma su día."""
+    return valor.date() if isinstance(valor, datetime) else valor
+
+
 class ServicioCompraEntradas:
     def __init__(
         self,
         calendario: CalendarioParque,
         pasarela_pago: PasarelaMercadoPago,
         notificador: Notificador,
-        hoy: Callable[[], date] = date.today,
+        reloj: Callable[[], datetime] = ahora_en_el_parque,
+        compras: Optional[ComprasDelVisitante] = None,
     ):
         self._calendario = calendario
         self._pasarela_pago = pasarela_pago
         self._notificador = notificador
-        self._hoy = hoy
+        self._reloj = reloj
+        self._compras = compras or SinComprasPrevias()
 
     def comprar(self, usuario: Usuario, solicitud: SolicitudCompra) -> ResultadoCompra:
         self._validar(usuario, solicitud)
 
-        monto = solicitud.cantidad * PRECIOS[solicitud.tipo_pase.value]
+        entradas = []
+        for numero, edad in enumerate(solicitud.edades, start=1):
+            tarifa = tarifa_para(solicitud.tipo_pase, edad)
+            entradas.append(Entrada(
+                numero=numero, edad=edad, codigo=secrets.token_urlsafe(16),
+                precio=tarifa.precio, descuento=tarifa.descuento, tarifa=tarifa.nombre,
+            ))
+        monto = sum(e.precio for e in entradas)
 
+        # Con total $0 no hay nada que cobrar: no se pasa por Mercado Pago.
         url_pago = None
-        if solicitud.forma_pago == FormaPago.TARJETA:
+        if solicitud.forma_pago == FormaPago.TARJETA and monto > 0:
             url_pago = self._pasarela_pago.crear_pago(
                 monto, usuario.email, referencia=solicitud.referencia
             )
-
-        entradas = [
-            Entrada(numero=i, edad=edad, codigo=secrets.token_urlsafe(16))
-            for i, edad in enumerate(solicitud.edades, start=1)
-        ]
 
         resultado = ResultadoCompra(
             cantidad=solicitud.cantidad,
@@ -186,10 +272,7 @@ class ServicioCompraEntradas:
                 f"La cantidad debe estar entre 1 y {CANTIDAD_MAXIMA_ENTRADAS}"
             )
 
-        if s.fecha_visita is None or s.fecha_visita < self._hoy():
-            raise FechaInvalidaError("La fecha de visita debe ser hoy o una fecha futura")
-        if not self._calendario.esta_abierto(s.fecha_visita):
-            raise ParqueCerradoError("El parque está cerrado en la fecha elegida")
+        self._validar_fecha(s.fecha_visita)
 
         if len(s.edades) != s.cantidad:
             raise EdadesInvalidasError("Debe indicar la edad de cada visitante")
@@ -205,3 +288,45 @@ class ServicioCompraEntradas:
 
         if not isinstance(s.forma_pago, FormaPago):
             raise FormaPagoInvalidaError("Debe seleccionar la forma de pago")
+
+        self._validar_limite_por_fecha(usuario.email, _como_fecha(s.fecha_visita), s.cantidad)
+
+    def _validar_limite_por_fecha(self, email: str, fecha: date, cantidad: int) -> None:
+        """FAQ 27: máximo de entradas por usuario y por fecha, sumando sus compras
+        confirmadas y pendientes (las rechazadas, canceladas y vencidas no cuentan)."""
+        ahora = self._reloj()
+        confirmadas, pendientes = 0, []
+        for compra in self._compras.compras_para(email, fecha):
+            estado = estado_de_compra(compra, ahora)
+            if estado == EstadoCompra.CONFIRMADA:
+                confirmadas += compra.cantidad
+            elif estado == EstadoCompra.PENDIENTE:
+                pendientes.append(compra)
+        en_pendientes = sum(c.cantidad for c in pendientes)
+        ya_tiene = confirmadas + en_pendientes
+        disponibles = max(CANTIDAD_MAXIMA_ENTRADAS - ya_tiene, 0)
+        if cantidad <= disponibles:
+            return
+
+        dia = fecha.strftime("%d/%m")
+        quedan = f"Te quedan {disponibles} disponibles para esa fecha (máximo {CANTIDAD_MAXIMA_ENTRADAS} por persona)."
+        if not pendientes:
+            mensaje = f"Ya tenés {_entradas(ya_tiene)} para el {dia}. {quedan}"
+        else:
+            cual = "la compra pendiente" if len(pendientes) == 1 else "las compras pendientes"
+            mensaje = (
+                f"Ya tenés {_entradas(ya_tiene)} para el {dia}: "
+                f"{confirmadas} {'confirmada' if confirmadas == 1 else 'confirmadas'} y "
+                f"{en_pendientes} con pago pendiente. Pagá o cancelá {cual} para liberar lugar. {quedan}"
+            )
+        raise LimitePorFechaError(mensaje, disponibles, [c.id for c in pendientes])
+
+    def _validar_fecha(self, fecha_visita) -> None:
+        if fecha_visita is None:
+            raise FechaInvalidaError("La fecha de visita debe ser hoy o una fecha futura")
+        motivo = motivo_sin_venta(_como_fecha(fecha_visita), self._reloj(), self._calendario)
+        if motivo is None:
+            return
+        if motivo.tipo == "cerrado":
+            raise ParqueCerradoError(motivo.mensaje)
+        raise FechaInvalidaError(motivo.mensaje)

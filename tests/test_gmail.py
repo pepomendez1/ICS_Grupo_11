@@ -1,5 +1,7 @@
 """Tests del envío de mail por Gmail. smtplib siempre está mockeado:
 nunca se manda un mail de verdad."""
+import os
+import re
 import smtplib
 from datetime import date
 from unittest.mock import Mock, patch
@@ -16,7 +18,11 @@ from web.servicios import NotificadorGmail, NotificadorMailSimulado, crear_notif
 USUARIO_GMAIL = "ecoharmony.park@gmail.com"
 APP_PASSWORD = "abcd efgh ijkl mnop"
 BASE_URL = "https://ecoharmony.test"
-ENTRADAS = [Entrada(1, 38, "cod-uno"), Entrada(2, 36, "cod-dos"), Entrada(3, 7, "cod-tres")]
+ENTRADAS = [  # VIP: 38 y 36 años a precio completo, 7 años con 50% off (FAQ 6, 7 y 21)
+    Entrada(1, 38, "cod-uno", precio=20_000, descuento=0, tarifa="General"),
+    Entrada(2, 36, "cod-dos", precio=20_000, descuento=0, tarifa="General"),
+    Entrada(3, 7, "cod-tres", precio=10_000, descuento=50, tarifa="De 4 a 15 años"),
+]
 
 
 @pytest.fixture
@@ -44,13 +50,14 @@ def notificador_qr(repo):
 
 def resultado(forma_pago=FormaPago.TARJETA):
     return ResultadoCompra(
-        cantidad=3, fecha_visita=date(2026, 10, 8), monto=45000,
+        cantidad=3, fecha_visita=date(2026, 10, 8), monto=sum(e.precio for e in ENTRADAS),
         tipo_pase=TipoPase.VIP, forma_pago=forma_pago, entradas=list(ENTRADAS),
     )
 
 
 def imagenes(mail):
-    return [p for p in mail.walk() if p.get_content_maintype() == "image"]
+    """Los QR del mail (el logo también va inline, pero no cuenta)."""
+    return [p for p in mail.walk() if p.get_content_maintype() == "image" and p.get_filename() != "logo.png"]
 
 
 def enviar(notificador, r=None):
@@ -88,10 +95,12 @@ class TestEnvio:
         enviar(notificador)
         mail = mail_enviado(smtp)
         assert mail.get_content_type() == "multipart/alternative"
-        assert [p.get_content_type() for p in mail.iter_parts()] == ["text/plain", "text/html"]
+        # el HTML va con sus imágenes inline (el logo) en un multipart/related
+        assert [p.get_content_type() for p in mail.iter_parts()] == ["text/plain", "multipart/related"]
+        assert mail.get_body(preferencelist=("html",)).get_content_type() == "text/html"
 
     @pytest.mark.parametrize("dato", [
-        "EcoHarmony Park", "3", "08/10/2026", "VIP", "$45.000", "Tarjeta (Mercado Pago)",
+        "EcoHarmony Park", "3", "08/10/2026", "VIP", "$50.000", "Tarjeta (Mercado Pago)",
     ])
     def test_ambas_versiones_tienen_el_detalle_de_la_compra(self, smtp, notificador, dato):
         enviar(notificador)
@@ -194,7 +203,7 @@ class TestFallas:
     def test_si_gmail_falla_la_compra_se_completa_igual(self, smtp, notificador, solicitud_valida):
         smtp.side_effect = OSError("sin red")
         servicio = ServicioCompraEntradas(
-            calendario=CalendarioFake(), pasarela_pago=Mock(), notificador=notificador, hoy=lambda: HOY,
+            calendario=CalendarioFake(), pasarela_pago=Mock(), notificador=notificador, reloj=lambda: HOY,
         )
         r = servicio.comprar(Usuario(email="ana@mail.com", registrado=True), solicitud_valida)
         assert r.cantidad == solicitud_valida.cantidad
@@ -224,10 +233,99 @@ class TestElegirNotificador:
     def test_la_app_manda_por_gmail_si_estan_las_variables(self, smtp, monkeypatch, registrar):
         monkeypatch.setenv("GMAIL_USER", USUARIO_GMAIL)
         monkeypatch.setenv("GMAIL_APP_PASSWORD", APP_PASSWORD)
-        cliente = create_app(hoy=lambda: HOY, testing=True, repo=RepositorioMemoria()).test_client()
+        cliente = create_app(reloj=lambda: HOY, testing=True, repo=RepositorioMemoria()).test_client()
         email = registrar(cliente)
         cliente.post("/comprar", data={
             "fecha_visita": "2026-10-08", "cantidad": "1", "edades": ["30"],
             "tipo_pase": "REGULAR", "forma_pago": "EFECTIVO",
         })
         assert mail_enviado(smtp)["To"] == email
+
+
+
+def adjuntos_pdf(mail):
+    return [p for p in mail.iter_attachments() if p.get_content_type() == "application/pdf"]
+
+
+def resultado_sin_cargo():
+    return ResultadoCompra(
+        cantidad=2, fecha_visita=date(2026, 10, 8), monto=0, tipo_pase=TipoPase.REGULAR,
+        forma_pago=FormaPago.TARJETA,
+        entradas=[Entrada(1, 1, "cod-bebe", precio=0, descuento=100, tarifa="Hasta 3 años"),
+                  Entrada(2, 3, "cod-nene", precio=0, descuento=100, tarifa="Hasta 3 años")],
+    )
+
+
+class TestPdfDeEntradas:
+    """FAQ 5: el mail con las entradas lleva un PDF adjunto (fpdf2)."""
+
+    def test_mail_tus_entradas_lleva_un_pdf_adjunto(self, smtp, notificador_qr):
+        notificador_qr.enviar_entradas("ana@mail.com", resultado(FormaPago.TARJETA))
+        pdfs = adjuntos_pdf(mail_enviado(smtp))
+        assert len(pdfs) == 1
+        assert pdfs[0].get_filename().endswith(".pdf")
+        assert pdfs[0].get_content().startswith(b"%PDF")
+
+    def test_mail_de_confirmacion_en_efectivo_lleva_el_pdf(self, smtp, notificador_qr):
+        enviar(notificador_qr, resultado(FormaPago.EFECTIVO))
+        assert len(adjuntos_pdf(mail_enviado(smtp))) == 1
+
+    def test_mail_con_tarjeta_pendiente_no_lleva_pdf(self, smtp, notificador_qr):
+        enviar(notificador_qr, resultado(FormaPago.TARJETA))
+        assert adjuntos_pdf(mail_enviado(smtp)) == []
+
+    def test_compra_sin_cargo_el_mail_lleva_los_qr_y_el_pdf(self, smtp, notificador_qr):
+        r = resultado_sin_cargo()
+        enviar(notificador_qr, r)
+        mail = mail_enviado(smtp)
+        texto, html = texto_y_html(mail)
+        assert len(imagenes(mail)) == 2 and len(adjuntos_pdf(mail)) == 1
+        assert "pago pendiente" not in texto.lower() and "pago pendiente" not in html.lower()
+        assert "Sin cargo" in texto
+
+    def test_el_pdf_se_genera_y_contiene_el_codigo_de_cada_entrada(self):
+        from web.pdf_entradas import generar_pdf_entradas
+        pdf = generar_pdf_entradas(resultado(FormaPago.EFECTIVO), BASE_URL)
+        assert pdf.startswith(b"%PDF")
+        for e in ENTRADAS:
+            assert e.codigo.encode() in pdf
+
+    def test_el_pdf_tiene_un_resumen_y_una_pagina_por_entrada(self):
+        from web.pdf_entradas import generar_pdf_entradas
+        pdf = generar_pdf_entradas(resultado(FormaPago.EFECTIVO), BASE_URL)
+        paginas = pdf.count(b"/Type /Page") - pdf.count(b"/Type /Pages")
+        assert paginas == 1 + len(ENTRADAS)  # resumen + una página por entrada
+
+
+class TestDesgloseEnElMail:
+    """El cuerpo del mail incluye el desglose por visitante y el total."""
+
+    @pytest.mark.parametrize("forma_pago", [FormaPago.TARJETA, FormaPago.EFECTIVO])
+    def test_el_cuerpo_tiene_el_desglose_y_el_total(self, smtp, notificador_qr, forma_pago):
+        enviar(notificador_qr, resultado(forma_pago))
+        texto, html = texto_y_html(mail_enviado(smtp))
+        for parte in (texto, html):
+            assert "38 años" in parte and "De 4 a 15 años" in parte and "50%" in parte
+            assert "$20.000" in parte and "$10.000" in parte
+            assert "$50.000" in parte
+
+
+
+class TestMarcaEnElMail:
+    """FAQ 3: el mail usa Lato (con fallback) y el logo de web/static."""
+
+    def test_el_mail_usa_lato_con_fallback(self, smtp, notificador_qr):
+        enviar(notificador_qr)
+        _, html = texto_y_html(mail_enviado(smtp))
+        assert re.search(r"font-family:\s*Lato,[^;\"]*(Arial|Helvetica|sans-serif)", html)
+
+    def test_el_mail_lleva_el_logo_inline(self, smtp, notificador_qr):
+        enviar(notificador_qr)
+        mail = mail_enviado(smtp)
+        _, html = texto_y_html(mail)
+        logos = [p for p in mail.walk() if (p.get_filename() or "").startswith("logo")]
+        assert len(logos) == 1
+        cid = logos[0]["Content-ID"].strip("<>")
+        assert f'src="cid:{cid}"' in html
+        with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "web", "static", "logo-mail.png"), "rb") as f:
+            assert logos[0].get_content() == f.read()

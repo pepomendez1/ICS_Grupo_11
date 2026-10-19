@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 import segno
 
+from parque.compra import EstadoCompra, estado_de_compra
+
 COLOR_QR = "#1f261f"
 
 
@@ -32,17 +34,23 @@ def qr_png(url: str) -> bytes:
 
 @dataclass
 class EstadoEntrada:
-    clave: str   # "efectivo" | "pagada" | "pendiente" | "rechazada"
+    clave: str   # "efectivo" | "sin_cargo" | "pagada" | "pendiente" | "vencida" | "rechazada" | "cancelada"
     texto: str
     valida: bool  # si tiene QR para entrar al parque
 
 
-def estado_de(compra: dict) -> EstadoEntrada:
-    """El estado de las entradas de una compra (todas comparten el de la compra)."""
-    if compra["resultado"].forma_pago.value == "EFECTIVO":
-        return EstadoEntrada("efectivo", "Válida · Pagar en boletería", True)
-    if compra["pagada"]:
+def estado_de(compra: dict, ahora) -> EstadoEntrada:
+    """El estado de las entradas de una compra (todas comparten el de la compra).
+    Las reglas son del dominio (parque.compra.estado_de_compra); acá solo el texto."""
+    estado = estado_de_compra(compra["existente"], ahora)
+    if estado == EstadoCompra.CONFIRMADA:
+        if compra["resultado"].forma_pago.value == "EFECTIVO":
+            return EstadoEntrada("efectivo", "Válida · Pagar en boletería", True)
+        if compra["resultado"].sin_cargo:
+            return EstadoEntrada("sin_cargo", "Válida · Sin cargo", True)
         return EstadoEntrada("pagada", "Válida · Pagada con Mercado Pago", True)
-    if compra["estado"] == "rechazada":
-        return EstadoEntrada("rechazada", "Compra cancelada · Entrada no válida", False)
+    if estado == EstadoCompra.VENCIDA:
+        return EstadoEntrada("vencida", "Pago vencido · Entrada no válida", False)
+    if estado in (EstadoCompra.RECHAZADA, EstadoCompra.CANCELADA):
+        return EstadoEntrada(estado.value, "Compra cancelada · Entrada no válida", False)
     return EstadoEntrada("pendiente", "Esperando confirmación del pago", False)

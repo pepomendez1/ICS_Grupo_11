@@ -1,12 +1,14 @@
 """Tests de integración de la app web: recorren el flujo completo por HTTP."""
+import json
 import os
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from unittest.mock import Mock, patch
 
 import pytest
 
 from parque.compra import PRECIOS
+from parque.config import ZONA_HORARIA
 from web import create_app
 from web.repositorio import RepositorioMemoria, RepositorioPostgres
 from web.servicios import EstadoPago, PagoNoDisponibleError
@@ -14,8 +16,8 @@ from tests.conftest import EMAIL_VISITANTE
 
 TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
 
-HOY = date(2026, 10, 6)  # martes
-JUEVES = (HOY + timedelta(days=2)).isoformat()
+HOY = datetime(2026, 10, 6, 10, 0, tzinfo=ZONA_HORARIA)  # martes a las 10:00 (hora de Córdoba)
+JUEVES = (HOY.date() + timedelta(days=2)).isoformat()
 LUNES = date(2026, 10, 12).isoformat()
 
 
@@ -34,7 +36,7 @@ def repo(request):
 
 @pytest.fixture
 def app(repo):
-    return create_app(hoy=lambda: HOY, testing=True, repo=repo)
+    return create_app(reloj=lambda: HOY, testing=True, repo=repo)
 
 
 @pytest.fixture
@@ -117,7 +119,7 @@ class TestWeb:
         assert "Compraste 2 entrada(s)" in respuesta.get_data(as_text=True)
 
 
-MONTO_DOS_REGULARES = 2 * PRECIOS["REGULAR"]
+MONTO_DOS_REGULARES = 15_000  # datos_compra: Regular, 30 y 8 años -> $10.000 + $5.000 (FAQ 6, 7 y 21)
 URL_MP = "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=pref-1"
 
 
@@ -131,7 +133,7 @@ def pasarela_mp():
 
 @pytest.fixture
 def cliente_mp(repo, pasarela_mp, registrar):
-    cliente = create_app(hoy=lambda: HOY, testing=True, repo=repo, pasarela=pasarela_mp).test_client()
+    cliente = create_app(reloj=lambda: HOY, testing=True, repo=repo, pasarela=pasarela_mp).test_client()
     registrar(cliente)
     return cliente
 
@@ -139,6 +141,12 @@ def cliente_mp(repo, pasarela_mp, registrar):
 def comprar_con_tarjeta(cliente, pasarela):
     """Compra 2 entradas regulares con tarjeta y devuelve el id de la compra."""
     cliente.post("/comprar", data=datos_compra(forma_pago="TARJETA"))
+    return pasarela.crear_pago.call_args.kwargs["referencia"]
+
+
+def comprar_con_tarjeta_cantidad(cliente, pasarela, cantidad):
+    """Compra con tarjeta de `cantidad` adultos para el jueves; devuelve el id."""
+    cliente.post("/comprar", data=datos_compra(forma_pago="TARJETA", cantidad=str(cantidad), edades=["30"] * cantidad))
     return pasarela.crear_pago.call_args.kwargs["referencia"]
 
 
@@ -265,7 +273,9 @@ class TestBioparque:
     def test_web_inicio_describe_los_pases(self, cliente):
         html = cliente.get("/").get_data(as_text=True)
         assert "Acceso al parque, senderos y exhibiciones." in html
-        assert "fila preferencial" in html
+        # FAQ 6: la única diferencia entre VIP y Regular es el precio.
+        assert "fila preferencial" not in html.lower()
+        assert "$10.000" in html and "$20.000" in html
 
     @pytest.mark.parametrize("ruta", ["/", "/comprar", "/login", "/registro", "/mails"])
     def test_web_paginas_sin_terminos_de_parque_de_diversiones(self, cliente_logueado, ruta):
@@ -415,7 +425,7 @@ def con_gmail(monkeypatch):
 
 @pytest.fixture
 def cliente_gmail(con_gmail, repo, pasarela_mp, registrar):
-    cliente = create_app(hoy=lambda: HOY, testing=True, repo=repo, pasarela=pasarela_mp).test_client()
+    cliente = create_app(reloj=lambda: HOY, testing=True, repo=repo, pasarela=pasarela_mp).test_client()
     registrar(cliente)
     return cliente
 
@@ -539,7 +549,7 @@ class TestReintentoDeCompraRechazada:
             edades=["41", "12", "0"], tipo_pase="VIP",
         )
         html = cliente_mp.get(f"/comprar?reintentar={compra_id}").get_data(as_text=True)
-        assert re.search(r'name="fecha_visita"[^>]*value="2026-10-09"', html)
+        assert "checked" in radio_fecha(html, "2026-10-09")
         assert re.search(r'name="cantidad"[^>]*value="3"', html)
         assert re.findall(r'<input name="edades"[^>]*value="(\d+)"', html) == ["41", "12", "0"]
         assert 'name="tipo_pase" value="VIP" checked' in html
@@ -606,3 +616,310 @@ class TestConfirmandoPago:
         html = volver_de_mp(cliente_mp, compra_id, "approved")
         assert "Estamos confirmando tu pago…" not in html
         assert QR in html
+
+
+class TestHorario:
+    """FAQ 11: el parque abre de 8:30 a 19:00."""
+
+    @pytest.mark.parametrize("ruta", ["/", "/comprar"])
+    def test_web_muestra_el_horario(self, cliente_logueado, ruta):
+        html = cliente_logueado.get(ruta).get_data(as_text=True)
+        assert "de 8:30 a 19:00" in html
+
+
+
+def radio_fecha(html, iso):
+    """El <input type="radio"> del calendario para esa fecha (falla si no está)."""
+    encontrado = re.search(rf'<input[^>]*name="fecha_visita"[^>]*value="{iso}"[^>]*>', html)
+    assert encontrado, f"no hay día {iso} en el calendario"
+    return encontrado.group(0)
+
+
+@pytest.fixture
+def cliente_a_las(repo, registrar):
+    """Cliente logueado con el reloj de la app en otro momento."""
+    def crear(ahora):
+        cliente = create_app(reloj=lambda: ahora, testing=True, repo=repo).test_client()
+        registrar(cliente, f"visitante.{ahora:%m%d%H%M}@mail.com")
+        return cliente
+    return crear
+
+
+class TestCalendarioDeCompra:
+    """FAQ 2: el calendario no deja elegir días sin venta; los días vienen del backend."""
+
+    def test_web_el_calendario_reemplaza_al_input_date(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert 'type="date"' not in html
+        assert 'type="radio" name="fecha_visita"' in html
+
+    def test_web_calendario_deshabilita_los_lunes(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert "disabled" in radio_fecha(html, "2026-10-12")      # lunes
+        assert "disabled" not in radio_fecha(html, "2026-10-08")  # jueves
+
+    def test_web_calendario_deshabilita_los_dias_pasados(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert "disabled" in radio_fecha(html, "2026-10-05")
+        assert "disabled" not in radio_fecha(html, "2026-10-06")  # hoy a las 10:00
+
+    def test_web_calendario_deshabilita_mas_alla_de_un_mes(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert "disabled" not in radio_fecha(html, "2026-11-06")
+        assert "disabled" in radio_fecha(html, "2026-11-07")
+
+    def test_web_calendario_deshabilita_hoy_despues_de_las_17_30(self, cliente_a_las):
+        html = cliente_a_las(HOY.replace(hour=17, minute=31)).get("/comprar").get_data(as_text=True)
+        assert "disabled" in radio_fecha(html, "2026-10-06")
+        assert "disabled" not in radio_fecha(html, "2026-10-07")
+
+    def test_web_calendario_deshabilita_25_de_diciembre_y_1_de_enero(self, cliente_a_las):
+        html = cliente_a_las(HOY.replace(month=12, day=20)).get("/comprar").get_data(as_text=True)
+        assert "disabled" in radio_fecha(html, "2026-12-25")
+        assert "disabled" in radio_fecha(html, "2027-01-01")
+        assert "disabled" not in radio_fecha(html, "2026-12-26")
+
+    def test_web_hoy_lunes_despues_de_las_17_30_explica_que_el_parque_cierra(self, cliente_a_las):
+        lunes_a_la_noche = HOY.replace(day=12, hour=20, minute=18)  # lunes 12/10
+        html = cliente_a_las(lunes_a_la_noche).get("/comprar").get_data(as_text=True)
+        assert "no disponible: el parque cierra los lunes" in radio_fecha(html, "2026-10-12")
+
+    def test_web_hoy_se_marca_con_la_palabra_hoy_y_no_parece_seleccionado(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        etiqueta = re.search(r'<label for="dia-2026-10-06".*?</label>', html, re.S).group(0)
+        assert '<span class="marca-hoy">Hoy</span>' in etiqueta
+        assert 'aria-current="date"' in radio_fecha(html, "2026-10-06")
+        # El recuadro verde era igual al del día elegido: confundía hoy con la selección.
+        assert "label.hoy { box-shadow" not in html
+        assert "checked" not in radio_fecha(html, "2026-10-06")
+
+    def test_web_antes_de_confirmar_muestra_la_fecha_elegida_en_palabras(self, cliente_logueado):
+        html = cliente_logueado.post("/comprar", data=datos_compra(edades=["30", "151"])).get_data(as_text=True)
+        aviso = "Vas a comprar para el jueves 8 de octubre de 2026"
+        assert aviso in html
+        assert html.index('id="desglose"') < html.index(aviso) < html.index('type="submit">Confirmar compra')
+
+    def test_web_sin_fecha_elegida_lo_avisa_antes_de_confirmar(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert "Todavía no elegiste la fecha de visita" in html
+
+    def test_web_calendario_explica_por_que_un_dia_no_esta_disponible(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert "no disponible: el parque cierra los lunes" in radio_fecha(html, "2026-10-12")
+
+    @pytest.mark.parametrize("fecha, ahora", [
+        ("2026-10-12", HOY),                                # lunes
+        ("2026-10-05", HOY),                                # pasado
+        ("2026-11-07", HOY),                                # más de un mes
+        ("2026-10-06", HOY.replace(hour=17, minute=31)),    # hoy después de las 17:30
+    ])
+    def test_web_backend_rechaza_dias_deshabilitados_aunque_se_manipule_el_html(self, cliente_a_las, fecha, ahora):
+        respuesta = cliente_a_las(ahora).post("/comprar", data=datos_compra(fecha_visita=fecha))
+        assert respuesta.status_code == 400
+
+
+
+class TestPreciosEnLaWeb:
+    """FAQ 6, 7 y 21 en la web: desglose antes de pagar y total $0 sin Mercado Pago."""
+
+    def test_web_compra_guarda_el_precio_final_de_cada_entrada(self, cliente_logueado, repo):
+        compra_id = comprar_en_efectivo(cliente_logueado)  # Regular, 30 y 8 años
+        compra = repo.obtener_compra(compra_id)
+        assert [e.precio for e in compra["resultado"].entradas] == [10_000, 5_000]
+        assert compra["resultado"].monto == 15_000
+
+    def test_web_el_desglose_esta_antes_de_elegir_la_forma_de_pago(self, cliente_logueado):
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        assert 'id="desglose"' in html
+        assert html.index('id="desglose"') < html.index('name="forma_pago"')
+
+    def test_web_el_calculo_en_pantalla_usa_las_reglas_del_backend(self, cliente_logueado):
+        from parque.precios import reglas_de_precio
+        html = cliente_logueado.get("/comprar").get_data(as_text=True)
+        reglas = re.search(r'<script type="application/json" id="reglas-precio">(.*?)</script>', html, re.S)
+        assert reglas and json.loads(reglas.group(1)) == reglas_de_precio()
+
+    def test_web_compra_total_cero_con_tarjeta_queda_confirmada_sin_mp(self, cliente_mp, pasarela_mp, repo):
+        respuesta = cliente_mp.post("/comprar", data=datos_compra(
+            forma_pago="TARJETA", cantidad="2", edades=["1", "3"]))
+        pasarela_mp.crear_pago.assert_not_called()
+        assert "/compras/" in respuesta.headers["Location"]
+        html = cliente_mp.get(respuesta.headers["Location"]).get_data(as_text=True)
+        assert "¡Listo, te esperamos!" in html
+        assert html.count(QR) == 2
+        assert "Sin cargo" in html
+
+    def test_web_la_confirmacion_muestra_el_desglose_por_visitante(self, cliente_logueado):
+        compra_id = comprar_en_efectivo(cliente_logueado, tipo_pase="VIP", cantidad="2", edades=["70", "35"])
+        html = cliente_logueado.get(f"/compras/{compra_id}").get_data(as_text=True)
+        assert "60 años o más" in html and "50%" in html
+        assert "$10.000" in html and "$20.000" in html and "$30.000" in html
+
+
+
+class TestLimitePorFecha:
+    """FAQ 27 contra la base real (memoria y, con TEST_DATABASE_URL, Postgres)."""
+
+    def test_web_limite_de_10_por_usuario_y_fecha_cuenta_las_compras_guardadas(self, cliente_logueado):
+        siete = datos_compra(cantidad="7", edades=["30"] * 7)
+        assert cliente_logueado.post("/comprar", data=siete).status_code == 302
+        cuatro = cliente_logueado.post("/comprar", data=datos_compra(cantidad="4", edades=["30"] * 4))
+        assert cuatro.status_code == 400
+        assert "Te quedan 3 disponibles" in cuatro.get_data(as_text=True)
+        tres = cliente_logueado.post("/comprar", data=datos_compra(cantidad="3", edades=["30"] * 3))
+        assert tres.status_code == 302
+
+    def test_web_limite_no_suma_otra_fecha_ni_otro_usuario(self, cliente_logueado, app, registrar):
+        cliente_logueado.post("/comprar", data=datos_compra(cantidad="10", edades=["30"] * 10))
+        otra_fecha = (HOY.date() + timedelta(days=3)).isoformat()  # viernes
+        assert cliente_logueado.post("/comprar", data=datos_compra(fecha_visita=otra_fecha)).status_code == 302
+        otro = app.test_client()
+        registrar(otro, "otra.persona@mail.com")
+        assert otro.post("/comprar", data=datos_compra()).status_code == 302
+
+    def test_web_limite_no_cuenta_compras_rechazadas(self, cliente_mp, pasarela_mp):
+        compra_rechazada(cliente_mp, pasarela_mp, cantidad="10", edades=["30"] * 10)
+        assert cliente_mp.post("/comprar", data=datos_compra()).status_code == 302
+
+
+@pytest.fixture
+def momento():
+    """Reloj que el test puede adelantar sin cambiar de app (ni de sesión)."""
+    return {"ahora": HOY}
+
+
+@pytest.fixture
+def cliente_reloj(repo, pasarela_mp, registrar, momento):
+    cliente = create_app(reloj=lambda: momento["ahora"], testing=True, repo=repo,
+                         pasarela=pasarela_mp).test_client()
+    registrar(cliente)
+    return cliente
+
+
+def cancelar(cliente, compra_id):
+    return cliente.post(f"/compras/{compra_id}/cancelar", follow_redirects=True)
+
+
+class TestCancelarCompra:
+    """Una compra pendiente (tarjeta sin aprobar) se puede cancelar y libera el cupo."""
+
+    def test_cancelar_compra_pendiente_libera_cupo_pasa(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta_cantidad(cliente_mp, pasarela_mp, 10)
+        bloqueada = cliente_mp.post("/comprar", data=datos_compra(cantidad="1", edades=["30"]))
+        assert bloqueada.status_code == 400
+        html = cancelar(cliente_mp, compra_id).get_data(as_text=True)
+        assert repo.obtener_compra(compra_id)["estado"] == "cancelada"
+        assert "Cancelaste esta compra" in html
+        assert "Volver e intentar de nuevo" in html
+        assert cliente_mp.post("/comprar", data=datos_compra(cantidad="1", edades=["30"])).status_code == 302
+
+    def test_cancelar_compra_deja_sus_entradas_sin_validez(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        cancelar(cliente_mp, compra_id)
+        entrada = entradas_de(repo, compra_id)[0]
+        html = cliente_mp.get(f"/entradas/{entrada.codigo}").get_data(as_text=True)
+        assert "Compra cancelada · Entrada no válida" in html
+        assert QR not in html
+
+    def test_no_se_puede_cancelar_compra_pagada_falla(self, cliente_mp, pasarela_mp, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        aprobar_por_webhook(cliente_mp, pasarela_mp, compra_id)
+        html = cancelar(cliente_mp, compra_id).get_data(as_text=True)
+        assert "no se puede cancelar" in html
+        compra = repo.obtener_compra(compra_id)
+        assert compra["estado"] == "activa" and compra["pagada"] is True
+
+    def test_no_se_puede_cancelar_compra_en_efectivo_falla(self, cliente_logueado, repo):
+        compra_id = comprar_en_efectivo(cliente_logueado)
+        assert "no se puede cancelar" in cancelar(cliente_logueado, compra_id).get_data(as_text=True)
+        assert repo.obtener_compra(compra_id)["estado"] == "activa"
+
+    def test_cancelar_compra_de_otro_usuario_da_404(self, cliente_mp, pasarela_mp, app, registrar, repo):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        otro = app.test_client()
+        registrar(otro, "otra.persona@mail.com")
+        assert otro.post(f"/compras/{compra_id}/cancelar").status_code == 404
+        assert repo.obtener_compra(compra_id)["estado"] == "activa"
+
+    def test_la_compra_pendiente_ofrece_cancelar_con_confirmacion(self, cliente_mp, pasarela_mp):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        html = volver_de_mp(cliente_mp, compra_id, "pending")
+        assert f'action="/compras/{compra_id}/cancelar"' in html
+        assert "<summary" in html and "Cancelar compra" in html   # primer paso
+        assert "Sí, cancelar la compra" in html                   # confirmación
+
+    def test_una_compra_en_efectivo_no_ofrece_cancelar(self, cliente_logueado):
+        compra_id = comprar_en_efectivo(cliente_logueado)
+        assert "/cancelar" not in cliente_logueado.get(f"/compras/{compra_id}").get_data(as_text=True)
+
+    def test_el_error_del_limite_tiene_links_a_las_compras_pendientes(self, cliente_mp, pasarela_mp):
+        compra_id = comprar_con_tarjeta_cantidad(cliente_mp, pasarela_mp, 9)
+        html = cliente_mp.post("/comprar", data=datos_compra(cantidad="2", edades=["30", "30"])).get_data(as_text=True)
+        assert "9 con pago pendiente" in html
+        assert f'href="/compras/{compra_id}"' in html
+
+
+class TestCompraVencida:
+    """Una compra con tarjeta que no se aprobó en 30 minutos vence."""
+
+    def test_compra_vencida_se_muestra_vencida_con_reintento(self, cliente_reloj, pasarela_mp, momento):
+        compra_id = comprar_con_tarjeta(cliente_reloj, pasarela_mp)
+        momento["ahora"] = HOY + timedelta(minutes=31)
+        html = cliente_reloj.get(f"/compras/{compra_id}").get_data(as_text=True)
+        assert "El tiempo para pagar venció" in html
+        assert "Volver e intentar de nuevo" in html
+        assert QR not in html
+
+    def test_compra_vencida_no_cuenta_para_el_limite(self, cliente_reloj, pasarela_mp, momento):
+        comprar_con_tarjeta_cantidad(cliente_reloj, pasarela_mp, 10)
+        assert cliente_reloj.post("/comprar", data=datos_compra()).status_code == 400
+        momento["ahora"] = HOY + timedelta(minutes=31)
+        assert cliente_reloj.post("/comprar", data=datos_compra()).status_code == 302
+
+    def test_entrada_de_compra_vencida_no_es_valida(self, cliente_reloj, pasarela_mp, momento, repo):
+        compra_id = comprar_con_tarjeta(cliente_reloj, pasarela_mp)
+        momento["ahora"] = HOY + timedelta(minutes=31)
+        entrada = entradas_de(repo, compra_id)[0]
+        assert "Pago vencido · Entrada no válida" in cliente_reloj.get(f"/entradas/{entrada.codigo}").get_data(as_text=True)
+
+
+class TestAprobacionTardia:
+    """Caso borde: llega por webhook la aprobación de una compra cancelada o vencida."""
+
+    def test_webhook_aprueba_compra_cancelada_la_acepta_y_avisa(self, cliente_mp, pasarela_mp, repo, caplog):
+        compra_id = comprar_con_tarjeta(cliente_mp, pasarela_mp)
+        cancelar(cliente_mp, compra_id)
+        aprobar_por_webhook(cliente_mp, pasarela_mp, compra_id)
+        compra = repo.obtener_compra(compra_id)
+        assert compra["pagada"] is True and compra["estado"] == "activa"
+        assert "cancelada" in caplog.text and compra_id in caplog.text
+
+    def test_webhook_aprueba_compra_vencida_la_acepta_y_avisa(self, cliente_reloj, pasarela_mp, momento, repo, caplog):
+        compra_id = comprar_con_tarjeta(cliente_reloj, pasarela_mp)
+        momento["ahora"] = HOY + timedelta(hours=2)
+        aprobar_por_webhook(cliente_reloj, pasarela_mp, compra_id)
+        assert repo.obtener_compra(compra_id)["pagada"] is True
+        assert "vencida" in caplog.text and compra_id in caplog.text
+
+
+
+class TestBandejaConAdjunto:
+    """Sin Gmail, "Mis mails" muestra el PDF adjunto y deja descargarlo (solo al dueño)."""
+
+    def test_mis_mails_muestra_el_adjunto_y_permite_descargarlo(self, cliente_logueado):
+        comprar_en_efectivo(cliente_logueado)
+        html = cliente_logueado.get("/mails").get_data(as_text=True)
+        enlace = re.search(r'href="(/mails/\d+/adjunto)"', html)
+        assert enlace, "no hay link al adjunto en Mis mails"
+        assert ".pdf" in html
+        respuesta = cliente_logueado.get(enlace.group(1))
+        assert respuesta.status_code == 200
+        assert respuesta.mimetype == "application/pdf"
+        assert respuesta.get_data().startswith(b"%PDF")
+
+    def test_el_adjunto_de_otro_visitante_da_404(self, cliente_logueado, app, registrar):
+        comprar_en_efectivo(cliente_logueado)
+        enlace = re.search(r'href="(/mails/\d+/adjunto)"', cliente_logueado.get("/mails").get_data(as_text=True))
+        otro = app.test_client()
+        registrar(otro, "otra.persona@mail.com")
+        assert otro.get(enlace.group(1)).status_code == 404

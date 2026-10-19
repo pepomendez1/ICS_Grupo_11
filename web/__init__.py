@@ -1,20 +1,27 @@
 """Aplicación web de EcoHarmony Park, bioparque (Flask)."""
+import io
 import os
 import secrets
 import uuid
-from datetime import date, datetime, timezone
-from zoneinfo import ZoneInfo
+from datetime import date, timezone
 from functools import wraps
 
 import logging
 
-from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, send_file, session, url_for
 
+from parque import config
+from parque.calendario import ahora_en_el_parque
+from parque.precios import reglas_de_precio
 from parque.compra import (
     CANTIDAD_MAXIMA_ENTRADAS,
     EDAD_MAXIMA,
     PRECIOS,
     CompraError,
+    EstadoCompra,
+    LimitePorFechaError,
+    estado_de_compra,
+    se_puede_cancelar,
     FormaPago,
     ServicioCompraEntradas,
     SolicitudCompra,
@@ -26,10 +33,12 @@ from web.contenido import (
     HORARIOS_ALIMENTACION,
     PASES,
     SECTORES,
+    texto_descuentos,
     dia_de_cierre,
     horario,
     pesos,
 )
+from web.calendario_compra import DIAS_CORTOS, fecha_larga, meses_de_compra
 from web.entradas import estado_de, qr_svg, url_entrada
 from web.repositorio import crear_repositorio
 from web.servicios import (
@@ -67,44 +76,48 @@ def _parse_enum(enum_cls, valor):
         return None
 
 
-ZONA_PARQUE = ZoneInfo("America/Argentina/Cordoba")
+ZONA_PARQUE = config.ZONA_HORARIA
 
 
-def hoy_en_el_parque() -> date:
-    # Vercel corre en UTC: sin esto, después de las 21 h "hoy" sería mañana.
-    return datetime.now(ZONA_PARQUE).date()
-
-
-def resultado_del_pago(compra, vuelta_mp):
-    """Qué pantalla de confirmación mostrar. Lo guardado en la base manda sobre
-    el query param: si el webhook ya aprobó el pago, es "aprobado" aunque MP
-    haya vuelto con failure."""
-    if compra["resultado"].forma_pago == FormaPago.EFECTIVO:
-        return "efectivo"
-    if compra["pagada"]:
-        return "aprobado"
-    if compra["estado"] == "rechazada":
+def resultado_del_pago(compra, vuelta_mp, ahora):
+    """Qué pantalla de confirmación mostrar. El estado lo decide el dominio con lo
+    guardado en la base, que manda sobre el query param: si el webhook ya aprobó
+    el pago, es "aprobado" aunque MP haya vuelto con failure."""
+    estado = estado_de_compra(compra["existente"], ahora)
+    if estado == EstadoCompra.CONFIRMADA:
+        if compra["resultado"].forma_pago == FormaPago.EFECTIVO:
+            return "efectivo"
+        return "sin_cargo" if compra["resultado"].sin_cargo else "aprobado"
+    if estado == EstadoCompra.RECHAZADA:
         return "rechazado"
+    if estado == EstadoCompra.CANCELADA:
+        return "cancelado"
+    if estado == EstadoCompra.VENCIDA:
+        return "vencido"
     if vuelta_mp in ("success", "approved"):
         return "confirmando"  # MP dice que aprobó, falta que llegue el webhook
     return "pendiente"
 
 
-def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, notificador=None):
+def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None, notificador=None):
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(16)
     app.config["TESTING"] = testing
+    # La cookie de sesión no viaja en POST desde otros sitios (protege "Cancelar compra").
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
     repo = repo or crear_repositorio()
     usuarios = RepositorioUsuarios(repo)
 
-    pasarela = pasarela or crear_pasarela(repo, os.environ)
+    pasarela = pasarela or crear_pasarela(repo, os.environ, reloj)
     notificador = notificador or crear_notificador(repo, os.environ)
+    calendario = CalendarioEcoHarmony()
     servicio = ServicioCompraEntradas(
-        calendario=CalendarioEcoHarmony(),
+        calendario=calendario,
         pasarela_pago=pasarela,
         notificador=notificador,
-        hoy=hoy,
+        reloj=reloj,
+        compras=repo,
     )
     app.extensions["ecoharmony"] = {"repo": repo}
     # "Mis mails" es la bandeja del notificador simulado: con Gmail real no existe.
@@ -130,7 +143,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
         return {
             "usuario": usuario_actual(), "precios": PRECIOS, "pases": PASES,
             "dia_cierre": dia_de_cierre(), "horario": horario(),
-            "bandeja_simulada": bandeja_simulada,
+            "bandeja_simulada": bandeja_simulada, "texto_descuentos": texto_descuentos(),
         }
 
     def base_url():
@@ -139,7 +152,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
 
     def tickets(compra):
         """Las entradas de la compra listas para mostrar, con QR solo si son válidas."""
-        valida = estado_de(compra).valida
+        valida = estado_de(compra, reloj()).valida
         return [
             {"entrada": e, "qr": qr_svg(url_entrada(base_url(), e.codigo)) if valida else None}
             for e in compra["resultado"].entradas
@@ -202,8 +215,13 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
     @app.route("/comprar", methods=["GET", "POST"])
     @login_requerido
     def comprar():
+        ahora = reloj()
         contexto = {
-            "hoy": hoy().isoformat(),
+            "hoy": ahora.date(),
+            "meses": meses_de_compra(ahora, calendario),
+            "dias_cortos": DIAS_CORTOS,
+            "fecha_larga": fecha_larga,
+            "reglas_precio": reglas_de_precio(),
             "maximo": CANTIDAD_MAXIMA_ENTRADAS,
             "edad_maxima": EDAD_MAXIMA,
             "form": {},
@@ -228,6 +246,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
                     edades=[str(e) for e in anterior["edades"]],
                     reintento=True,
                 )
+            contexto["fecha_elegida"] = _parse_fecha(contexto["form"].get("fecha_visita"))
             return render_template("comprar.html", **contexto)
 
         compra_id = uuid.uuid4().hex[:10]
@@ -245,11 +264,14 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
             resultado = servicio.comprar(Usuario(email=u["email"], registrado=True), solicitud)
         except CompraError as e:
             contexto.update(form=request.form, edades=request.form.getlist("edades"), error=str(e))
+            if isinstance(e, LimitePorFechaError):
+                contexto["pendientes"] = [c for c in map(repo.obtener_compra, e.pendientes) if c]
+            contexto["fecha_elegida"] = _parse_fecha(request.form.get("fecha_visita"))
             return render_template("comprar.html", **contexto), 400
 
 
         pago_id = PasarelaMercadoPagoSimulada.id_de_pago(resultado.url_pago)
-        repo.guardar_compra(compra_id, u["email"], resultado, solicitud.edades, pago_id)
+        repo.guardar_compra(compra_id, u["email"], resultado, solicitud.edades, pago_id, creado=ahora)
 
         if resultado.url_pago:  # tarjeta → Mercado Pago
             return redirect(resultado.url_pago)
@@ -270,15 +292,40 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
             compra = repo.obtener_compra(compra_id)
         return render_template(
             "confirmacion.html", compra=compra, r=compra["resultado"],
-            resultado_pago=resultado_del_pago(compra, vuelta_mp),
-            tickets=tickets(compra), estado=estado_de(compra),
+            resultado_pago=resultado_del_pago(compra, vuelta_mp, reloj()),
+            tickets=tickets(compra), estado=estado_de(compra, reloj()),
+            se_puede_cancelar=se_puede_cancelar(compra["existente"], reloj()),
         )
+
+    @app.post("/compras/<compra_id>/cancelar")
+    @login_requerido
+    def cancelar_compra(compra_id):
+        """Cancela una compra pendiente del visitante: deja de contar para el
+        límite y sus entradas dejan de ser válidas."""
+        compra = repo.obtener_compra(compra_id)
+        if not compra or compra["email"] != usuario_actual()["email"]:
+            abort(404)
+        if se_puede_cancelar(compra["existente"], reloj()) and repo.marcar_compra_cancelada(compra_id):
+            flash("Cancelaste la compra. Sus entradas ya no son válidas y se liberó el cupo para esa fecha.", "ok")
+        else:
+            flash("Esta compra no se puede cancelar: solo se cancelan las compras con pago pendiente.", "error")
+        return redirect(url_for("confirmacion", compra_id=compra_id), code=303)
 
     def acreditar_pago(compra_id):
         """Marca la compra pagada y manda "Tus entradas" con los QR. Si ya estaba
         pagada no hace nada: MP puede repetir la misma notificación."""
+        antes = repo.obtener_compra(compra_id)
+        if not antes:
+            return
+        estado = estado_de_compra(antes["existente"], reloj())
         if not repo.marcar_compra_pagada(compra_id):
             return
+        if estado in (EstadoCompra.CANCELADA, EstadoCompra.VENCIDA, EstadoCompra.RECHAZADA):
+            # Caso borde (README): la persona pagó igual, así que la compra vale.
+            log.warning(
+                "Llegó la aprobación de la compra %s, que estaba %s: se acepta porque la persona pagó",
+                compra_id, estado.value,
+            )
         compra = repo.obtener_compra(compra_id)
         notificador.enviar_entradas(compra["email"], compra["resultado"])
 
@@ -292,7 +339,7 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
         compra = encontrada["compra"]
         t = next(t for t in tickets(compra) if t["entrada"].codigo == codigo)
         return render_template(
-            "entrada.html", r=compra["resultado"], t=t, estado=estado_de(compra)
+            "entrada.html", r=compra["resultado"], t=t, estado=estado_de(compra, reloj())
         )
 
     @app.get("/compras/<compra_id>/estado")
@@ -363,5 +410,16 @@ def create_app(hoy=hoy_en_el_parque, testing=False, repo=None, pasarela=None, no
         if not bandeja_simulada:
             abort(404)
         return render_template("mails.html", mails=repo.mails_de(usuario_actual()["email"]))
+
+    @app.get("/mails/<int:mail_id>/adjunto")
+    @login_requerido
+    def adjunto_mail(mail_id):
+        """Descarga el PDF adjunto de un mail de la bandeja simulada (solo del dueño)."""
+        adjunto = repo.obtener_adjunto(mail_id) if bandeja_simulada else None
+        if not adjunto or adjunto[0] != usuario_actual()["email"]:
+            abort(404)
+        _para, nombre, contenido = adjunto
+        return send_file(io.BytesIO(contenido), mimetype="application/pdf",
+                         as_attachment=True, download_name=nombre)
 
     return app

@@ -7,9 +7,30 @@
 Ambos exponen la misma interfaz, así que el resto de la app no sabe cuál usa.
 """
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
-from parque.compra import Entrada, FormaPago, ResultadoCompra, TipoPase
+from parque.compra import CompraExistente, Entrada, FormaPago, ResultadoCompra, TipoPase
+from parque.precios import tarifa_para
+
+
+def _como_compra_existente(fila: dict) -> CompraExistente:
+    return CompraExistente(
+        id=fila["id"], cantidad=fila["cantidad"], forma_pago=FormaPago(fila["forma_pago"]),
+        pagada=fila["pagada"], estado=fila.get("estado") or "activa", monto=fila["monto"],
+        creado=fila.get("creado"),
+    )
+
+
+def _armar_entrada(fila: dict, tipo_pase: str) -> Entrada:
+    """El precio guardado es el que se cobró; el nombre de la tarifa y el
+    descuento se derivan de la edad (las entradas viejas no tienen precio)."""
+    tarifa = tarifa_para(tipo_pase, fila["edad"])
+    precio = fila.get("precio")
+    return Entrada(
+        numero=fila["numero"], edad=fila["edad"], codigo=fila["codigo"],
+        precio=tarifa.precio if precio is None else precio,
+        descuento=tarifa.descuento, tarifa=tarifa.nombre,
+    )
 
 
 def _armar_compra(fila: dict, entradas=()) -> dict:
@@ -17,8 +38,9 @@ def _armar_compra(fila: dict, entradas=()) -> dict:
         "id": fila["id"],
         "email": fila["email"],
         "pagada": fila["pagada"],
-        "estado": fila.get("estado") or "activa",  # "activa" | "rechazada"
+        "estado": fila.get("estado") or "activa",  # "activa" | "rechazada" | "cancelada"
         "edades": list(fila.get("edades") or []),
+        "existente": _como_compra_existente(fila),  # para las reglas del dominio
         "pago_id": fila.get("pago_id"),
         "resultado": ResultadoCompra(
             cantidad=fila["cantidad"],
@@ -28,7 +50,7 @@ def _armar_compra(fila: dict, entradas=()) -> dict:
             tipo_pase=TipoPase(fila["tipo_pase"]),
             forma_pago=FormaPago(fila["forma_pago"]),
             entradas=[
-                Entrada(numero=e["numero"], edad=e["edad"], codigo=e["codigo"])
+                _armar_entrada(e, fila["tipo_pase"])
                 for e in sorted(entradas, key=lambda e: e["numero"])
             ],
         ),
@@ -62,8 +84,9 @@ class RepositorioMemoria:
             self._pagos[pago_id]["estado"] = "aprobado"
 
     # Compras
-    def guardar_compra(self, compra_id, email, resultado: ResultadoCompra, edades, pago_id=None):
+    def guardar_compra(self, compra_id, email, resultado: ResultadoCompra, edades, pago_id=None, creado=None):
         self._compras[compra_id] = {
+            "creado": creado or datetime.now(timezone.utc),
             "id": compra_id, "email": email, "pagada": False, "estado": "activa", "pago_id": pago_id,
             "cantidad": resultado.cantidad, "fecha_visita": resultado.fecha_visita,
             "url_pago": resultado.url_pago, "monto": resultado.monto,
@@ -73,6 +96,7 @@ class RepositorioMemoria:
         for e in resultado.entradas:
             self._entradas[e.codigo] = {
                 "codigo": e.codigo, "compra_id": compra_id, "numero": e.numero, "edad": e.edad,
+                "precio": e.precio,
             }
 
     def obtener_compra(self, compra_id):
@@ -80,6 +104,13 @@ class RepositorioMemoria:
         if not fila:
             return None
         return _armar_compra(fila, [e for e in self._entradas.values() if e["compra_id"] == compra_id])
+
+    def compras_para(self, email, fecha):
+        """Puerto ComprasDelVisitante (FAQ 27)."""
+        return [
+            _como_compra_existente(f) for f in self._compras.values()
+            if f["email"] == email and f["fecha_visita"] == fecha
+        ]
 
     def obtener_entrada(self, codigo):
         fila = self._entradas.get(codigo)
@@ -104,12 +135,28 @@ class RepositorioMemoria:
         fila["estado"] = "rechazada"
         return True
 
+    def marcar_compra_cancelada(self, compra_id):
+        """Cancela la compra si no está pagada. Devuelve True si cambió el estado."""
+        fila = self._compras.get(compra_id)
+        if not fila or fila["pagada"] or fila["estado"] != "activa":
+            return False
+        fila["estado"] = "cancelada"
+        return True
+
     # Mails
-    def guardar_mail(self, para, asunto, cuerpo):
-        self._mails.append({"para": para, "asunto": asunto, "cuerpo": cuerpo, "enviado": datetime.now()})
+    def guardar_mail(self, para, asunto, cuerpo, adjunto=None, adjunto_nombre=None):
+        self._mails.append({
+            "id": len(self._mails) + 1, "para": para, "asunto": asunto, "cuerpo": cuerpo,
+            "enviado": datetime.now(), "adjunto": adjunto, "adjunto_nombre": adjunto_nombre,
+        })
 
     def mails_de(self, email):
         return [m for m in reversed(self._mails) if m["para"] == email]
+
+    def obtener_adjunto(self, mail_id):
+        """(para, nombre, contenido) del PDF adjunto de un mail, o None."""
+        mail = next((m for m in self._mails if m["id"] == mail_id and m["adjunto"]), None)
+        return (mail["para"], mail["adjunto_nombre"], mail["adjunto"]) if mail else None
 
     def todos_los_mails(self):
         return list(self._mails)
@@ -204,21 +251,22 @@ class RepositorioPostgres:
         self._ejecutar("update pagos set estado = 'aprobado' where id = %s", (pago_id,))
 
     # Compras
-    def guardar_compra(self, compra_id, email, resultado: ResultadoCompra, edades, pago_id=None):
+    def guardar_compra(self, compra_id, email, resultado: ResultadoCompra, edades, pago_id=None, creado=None):
         # La compra y sus entradas se guardan juntas o no se guarda nada.
         def pasos(cur):
             cur.execute(
                 "insert into compras (id, email, fecha_visita, cantidad, edades, tipo_pase, forma_pago, "
-                "monto, url_pago, pago_id) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                "monto, url_pago, pago_id, creado) "
+                "values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, coalesce(%s, now()))",
                 (
                     compra_id, email, resultado.fecha_visita, resultado.cantidad, list(edades),
                     resultado.tipo_pase.value, resultado.forma_pago.value, resultado.monto,
-                    resultado.url_pago, pago_id,
+                    resultado.url_pago, pago_id, creado,
                 ),
             )
             cur.executemany(
-                "insert into entradas (codigo, compra_id, numero, edad) values (%s, %s, %s, %s)",
-                [(e.codigo, compra_id, e.numero, e.edad) for e in resultado.entradas],
+                "insert into entradas (codigo, compra_id, numero, edad, precio) values (%s, %s, %s, %s, %s)",
+                [(e.codigo, compra_id, e.numero, e.edad, e.precio) for e in resultado.entradas],
             )
         self._en_transaccion(pasos)
 
@@ -227,9 +275,18 @@ class RepositorioPostgres:
         if not fila:
             return None
         entradas = self._ejecutar(
-            "select codigo, numero, edad from entradas where compra_id = %s", (compra_id,), todos=True
+            "select codigo, numero, edad, precio from entradas where compra_id = %s", (compra_id,), todos=True
         )
         return _armar_compra(dict(fila), [dict(e) for e in entradas])
+
+    def compras_para(self, email, fecha):
+        """Puerto ComprasDelVisitante (FAQ 27): una sola consulta por email y fecha."""
+        filas = self._ejecutar(
+            "select id, cantidad, forma_pago, pagada, estado, monto, creado from compras "
+            "where email = %s and fecha_visita = %s",
+            (email, fecha), todos=True,
+        )
+        return [_como_compra_existente(dict(f)) for f in filas]
 
     def obtener_entrada(self, codigo):
         fila = self._ejecutar(
@@ -259,21 +316,40 @@ class RepositorioPostgres:
         )
         return filas == 1
 
+    def marcar_compra_cancelada(self, compra_id):
+        """Cancela la compra si no está pagada (atómico). True si cambió el estado."""
+        filas = self._ejecutar(
+            "update compras set estado = 'cancelada' "
+            "where id = %s and not pagada and estado = 'activa'",
+            (compra_id,),
+        )
+        return filas == 1
+
     # Mails
-    def guardar_mail(self, para, asunto, cuerpo):
+    def guardar_mail(self, para, asunto, cuerpo, adjunto=None, adjunto_nombre=None):
         self._ejecutar(
-            "insert into mails (para, asunto, cuerpo) values (%s, %s, %s)", (para, asunto, cuerpo)
+            "insert into mails (para, asunto, cuerpo, adjunto, adjunto_nombre) values (%s, %s, %s, %s, %s)",
+            (para, asunto, cuerpo, adjunto, adjunto_nombre),
         )
 
     def mails_de(self, email):
         filas = self._ejecutar(
-            "select para, asunto, cuerpo, enviado from mails where para = %s order by enviado desc",
+            "select id, para, asunto, cuerpo, enviado, adjunto_nombre from mails "
+            "where para = %s order by enviado desc",
             (email,), todos=True,
         )
         return [dict(f) for f in filas]
 
     def todos_los_mails(self):
         return [dict(f) for f in self._ejecutar("select * from mails order by enviado", todos=True)]
+
+    def obtener_adjunto(self, mail_id):
+        """(para, nombre, contenido) del PDF adjunto de un mail, o None."""
+        fila = self._ejecutar(
+            "select para, adjunto_nombre, adjunto from mails where id = %s and adjunto is not null",
+            (mail_id,), uno=True,
+        )
+        return (fila["para"], fila["adjunto_nombre"], bytes(fila["adjunto"])) if fila else None
 
 
 def crear_repositorio():

@@ -38,6 +38,21 @@ alter table compras
   add column if not exists estado text not null default 'activa'
   check (estado in ('activa', 'rechazada'));
 
+-- El visitante puede cancelar una compra pendiente: se suma 'cancelada' a los
+-- estados posibles (se reemplaza el check solo si todavía no la incluye).
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+     where conname = 'compras_estado_check'
+       and pg_get_constraintdef(oid) like '%cancelada%'
+  ) then
+    alter table compras drop constraint if exists compras_estado_check;
+    alter table compras add constraint compras_estado_check
+      check (estado in ('activa', 'rechazada', 'cancelada'));
+  end if;
+end $$;
+
 -- Una fila por entrada individual de la compra. El código es el que va en el
 -- QR (secrets.token_urlsafe): no se puede adivinar.
 create table if not exists entradas (
@@ -48,6 +63,10 @@ create table if not exists entradas (
   unique (compra_id, numero)
 );
 
+-- FAQ 6, 7 y 21: precio final de cada entrada (con el descuento por edad).
+-- Las entradas anteriores quedan con precio null.
+alter table entradas add column if not exists precio integer check (precio >= 0);
+
 create table if not exists mails (
   id       bigint generated always as identity primary key,
   para     text not null,
@@ -55,6 +74,10 @@ create table if not exists mails (
   cuerpo   text not null,
   enviado  timestamptz not null default now()
 );
+
+-- FAQ 5: la bandeja simulada ("Mis mails") guarda el PDF adjunto para descargarlo.
+alter table mails add column if not exists adjunto bytea;
+alter table mails add column if not exists adjunto_nombre text;
 
 -- La app accede con la connection string (rol postgres), no por la API REST.
 -- Activamos RLS sin políticas para que las tablas no queden expuestas
