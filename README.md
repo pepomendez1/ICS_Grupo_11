@@ -24,6 +24,10 @@ Todas las reglas del negocio están en un solo módulo, `parque/config.py`. Ver
 App web en Flask con base de datos en Supabase (Postgres), deployable en Vercel.
 La lógica de la compra (`parque/`) está separada de la web y se desarrolló con TDD.
 
+Las decisiones de diseño del proyecto (arquitectura en capas, inyección de
+dependencias, ciclo TDD, dobles de prueba y más) están documentadas en
+[`DECISIONES_DISENO.md`](DECISIONES_DISENO.md).
+
 ## Estructura
 
 ```
