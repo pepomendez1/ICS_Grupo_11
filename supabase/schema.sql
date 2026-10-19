@@ -75,6 +75,10 @@ create table if not exists mails (
   enviado  timestamptz not null default now()
 );
 
+-- FAQ 5: la bandeja simulada ("Mis mails") guarda el PDF adjunto para descargarlo.
+alter table mails add column if not exists adjunto bytea;
+alter table mails add column if not exists adjunto_nombre text;
+
 -- La app accede con la connection string (rol postgres), no por la API REST.
 -- Activamos RLS sin políticas para que las tablas no queden expuestas
 -- públicamente a través de la API de Supabase.

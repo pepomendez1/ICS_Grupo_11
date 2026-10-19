@@ -1,4 +1,5 @@
 """Aplicación web de EcoHarmony Park, bioparque (Flask)."""
+import io
 import os
 import secrets
 import uuid
@@ -7,7 +8,7 @@ from functools import wraps
 
 import logging
 
-from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, session, url_for
+from flask import Flask, abort, flash, g, jsonify, redirect, render_template, request, send_file, session, url_for
 
 from parque import config
 from parque.calendario import ahora_en_el_parque
@@ -407,5 +408,16 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
         if not bandeja_simulada:
             abort(404)
         return render_template("mails.html", mails=repo.mails_de(usuario_actual()["email"]))
+
+    @app.get("/mails/<int:mail_id>/adjunto")
+    @login_requerido
+    def adjunto_mail(mail_id):
+        """Descarga el PDF adjunto de un mail de la bandeja simulada (solo del dueño)."""
+        adjunto = repo.obtener_adjunto(mail_id) if bandeja_simulada else None
+        if not adjunto or adjunto[0] != usuario_actual()["email"]:
+            abort(404)
+        _para, nombre, contenido = adjunto
+        return send_file(io.BytesIO(contenido), mimetype="application/pdf",
+                         as_attachment=True, download_name=nombre)
 
     return app

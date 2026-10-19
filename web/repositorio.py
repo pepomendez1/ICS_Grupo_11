@@ -144,11 +144,19 @@ class RepositorioMemoria:
         return True
 
     # Mails
-    def guardar_mail(self, para, asunto, cuerpo):
-        self._mails.append({"para": para, "asunto": asunto, "cuerpo": cuerpo, "enviado": datetime.now()})
+    def guardar_mail(self, para, asunto, cuerpo, adjunto=None, adjunto_nombre=None):
+        self._mails.append({
+            "id": len(self._mails) + 1, "para": para, "asunto": asunto, "cuerpo": cuerpo,
+            "enviado": datetime.now(), "adjunto": adjunto, "adjunto_nombre": adjunto_nombre,
+        })
 
     def mails_de(self, email):
         return [m for m in reversed(self._mails) if m["para"] == email]
+
+    def obtener_adjunto(self, mail_id):
+        """(para, nombre, contenido) del PDF adjunto de un mail, o None."""
+        mail = next((m for m in self._mails if m["id"] == mail_id and m["adjunto"]), None)
+        return (mail["para"], mail["adjunto_nombre"], mail["adjunto"]) if mail else None
 
     def todos_los_mails(self):
         return list(self._mails)
@@ -318,20 +326,30 @@ class RepositorioPostgres:
         return filas == 1
 
     # Mails
-    def guardar_mail(self, para, asunto, cuerpo):
+    def guardar_mail(self, para, asunto, cuerpo, adjunto=None, adjunto_nombre=None):
         self._ejecutar(
-            "insert into mails (para, asunto, cuerpo) values (%s, %s, %s)", (para, asunto, cuerpo)
+            "insert into mails (para, asunto, cuerpo, adjunto, adjunto_nombre) values (%s, %s, %s, %s, %s)",
+            (para, asunto, cuerpo, adjunto, adjunto_nombre),
         )
 
     def mails_de(self, email):
         filas = self._ejecutar(
-            "select para, asunto, cuerpo, enviado from mails where para = %s order by enviado desc",
+            "select id, para, asunto, cuerpo, enviado, adjunto_nombre from mails "
+            "where para = %s order by enviado desc",
             (email,), todos=True,
         )
         return [dict(f) for f in filas]
 
     def todos_los_mails(self):
         return [dict(f) for f in self._ejecutar("select * from mails order by enviado", todos=True)]
+
+    def obtener_adjunto(self, mail_id):
+        """(para, nombre, contenido) del PDF adjunto de un mail, o None."""
+        fila = self._ejecutar(
+            "select para, adjunto_nombre, adjunto from mails where id = %s and adjunto is not null",
+            (mail_id,), uno=True,
+        )
+        return (fila["para"], fila["adjunto_nombre"], bytes(fila["adjunto"])) if fila else None
 
 
 def crear_repositorio():
