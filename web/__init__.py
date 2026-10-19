@@ -45,6 +45,7 @@ from web.repositorio import crear_repositorio
 from web.servicios import (
     CalendarioEcoHarmony,
     NotificadorMailSimulado,
+    NotificadorSegunPago,
     PagoNoDisponibleError,
     PasarelaMercadoPagoSimulada,
     crear_notificador,
@@ -111,7 +112,7 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
     usuarios = RepositorioUsuarios(repo)
 
     pasarela = pasarela or crear_pasarela(repo, os.environ, reloj)
-    notificador = notificador or crear_notificador(repo, os.environ)
+    notificador = NotificadorSegunPago(notificador or crear_notificador(repo, os.environ))
     calendario = CalendarioEcoHarmony()
     servicio = ServicioCompraEntradas(
         calendario=calendario,
@@ -122,7 +123,7 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
     )
     app.extensions["ecoharmony"] = {"repo": repo}
     # "Mis mails" es la bandeja del notificador simulado: con Gmail real no existe.
-    bandeja_simulada = isinstance(notificador, NotificadorMailSimulado)
+    bandeja_simulada = isinstance(notificador.interno, NotificadorMailSimulado)
 
     app.add_template_filter(pesos, "pesos")
 

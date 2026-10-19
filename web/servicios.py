@@ -409,6 +409,29 @@ class NotificadorGmail:
         self._repo.guardar_mail(email, ASUNTO_ENTRADAS, texto)
 
 
+class NotificadorSegunPago:
+    """Decide CUÁNDO sale cada mail; el notificador de adentro (Gmail o la
+    bandeja simulada) decide CÓMO.
+
+    El dominio pide el mail de confirmación al comprar. Con tarjeta todavía no
+    hay nada que confirmar: si la persona no paga, no tiene que recibir nada.
+    Por eso ese mail se omite y las entradas salen recién cuando Mercado Pago
+    aprueba el pago (enviar_entradas, desde el webhook o el checkout simulado).
+    En efectivo o con total $0 las entradas ya son válidas y el mail sale al comprar.
+    """
+
+    def __init__(self, interno):
+        self.interno = interno
+
+    def enviar_confirmacion(self, email: str, mensaje: str, resultado=None) -> None:
+        if resultado is not None and not entradas_validas(resultado):
+            return  # tarjeta sin pagar: el mail sale al aprobarse el pago
+        self.interno.enviar_confirmacion(email, mensaje, resultado=resultado)
+
+    def enviar_entradas(self, email: str, resultado: ResultadoCompra) -> None:
+        self.interno.enviar_entradas(email, resultado)
+
+
 def crear_notificador(repo, entorno):
     """Gmail si están GMAIL_USER y GMAIL_APP_PASSWORD; si no, la bandeja simulada.
     APP_BASE_URL es la URL que va en los QR de los mails."""
