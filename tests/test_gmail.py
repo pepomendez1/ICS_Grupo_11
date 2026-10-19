@@ -1,5 +1,7 @@
 """Tests del envío de mail por Gmail. smtplib siempre está mockeado:
 nunca se manda un mail de verdad."""
+import os
+import re
 import smtplib
 from datetime import date
 from unittest.mock import Mock, patch
@@ -54,7 +56,8 @@ def resultado(forma_pago=FormaPago.TARJETA):
 
 
 def imagenes(mail):
-    return [p for p in mail.walk() if p.get_content_maintype() == "image"]
+    """Los QR del mail (el logo también va inline, pero no cuenta)."""
+    return [p for p in mail.walk() if p.get_content_maintype() == "image" and p.get_filename() != "logo.png"]
 
 
 def enviar(notificador, r=None):
@@ -92,7 +95,9 @@ class TestEnvio:
         enviar(notificador)
         mail = mail_enviado(smtp)
         assert mail.get_content_type() == "multipart/alternative"
-        assert [p.get_content_type() for p in mail.iter_parts()] == ["text/plain", "text/html"]
+        # el HTML va con sus imágenes inline (el logo) en un multipart/related
+        assert [p.get_content_type() for p in mail.iter_parts()] == ["text/plain", "multipart/related"]
+        assert mail.get_body(preferencelist=("html",)).get_content_type() == "text/html"
 
     @pytest.mark.parametrize("dato", [
         "EcoHarmony Park", "3", "08/10/2026", "VIP", "$50.000", "Tarjeta (Mercado Pago)",
@@ -303,3 +308,24 @@ class TestDesgloseEnElMail:
             assert "38 años" in parte and "De 4 a 15 años" in parte and "50%" in parte
             assert "$20.000" in parte and "$10.000" in parte
             assert "$50.000" in parte
+
+
+
+class TestMarcaEnElMail:
+    """FAQ 3: el mail usa Lato (con fallback) y el logo de web/static."""
+
+    def test_el_mail_usa_lato_con_fallback(self, smtp, notificador_qr):
+        enviar(notificador_qr)
+        _, html = texto_y_html(mail_enviado(smtp))
+        assert re.search(r"font-family:\s*Lato,[^;\"]*(Arial|Helvetica|sans-serif)", html)
+
+    def test_el_mail_lleva_el_logo_inline(self, smtp, notificador_qr):
+        enviar(notificador_qr)
+        mail = mail_enviado(smtp)
+        _, html = texto_y_html(mail)
+        logos = [p for p in mail.walk() if (p.get_filename() or "").startswith("logo")]
+        assert len(logos) == 1
+        cid = logos[0]["Content-ID"].strip("<>")
+        assert f'src="cid:{cid}"' in html
+        with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "web", "static", "logo-mail.png"), "rb") as f:
+            assert logos[0].get_content() == f.read()
