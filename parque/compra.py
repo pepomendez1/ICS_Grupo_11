@@ -11,7 +11,8 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Callable, Optional, Protocol
 
-from parque.calendario import ahora_en_el_parque
+from parque import config
+from parque.calendario import ahora_en_el_parque, fecha_maxima_de_compra, se_vende_para_hoy, texto_hora
 
 from parque.config import (  # noqa: F401  (se re-exportan para la web y los tests)
     CANTIDAD_MAXIMA_ENTRADAS,
@@ -186,11 +187,7 @@ class ServicioCompraEntradas:
                 f"La cantidad debe estar entre 1 y {CANTIDAD_MAXIMA_ENTRADAS}"
             )
 
-        ahora = self._reloj()
-        if s.fecha_visita is None or _como_fecha(s.fecha_visita) < ahora.date():
-            raise FechaInvalidaError("La fecha de visita debe ser hoy o una fecha futura")
-        if not self._calendario.esta_abierto(_como_fecha(s.fecha_visita)):
-            raise ParqueCerradoError("El parque está cerrado en la fecha elegida")
+        self._validar_fecha(s.fecha_visita)
 
         if len(s.edades) != s.cantidad:
             raise EdadesInvalidasError("Debe indicar la edad de cada visitante")
@@ -206,3 +203,22 @@ class ServicioCompraEntradas:
 
         if not isinstance(s.forma_pago, FormaPago):
             raise FormaPagoInvalidaError("Debe seleccionar la forma de pago")
+
+    def _validar_fecha(self, fecha_visita) -> None:
+        ahora = self._reloj()
+        hoy = ahora.date()
+        if fecha_visita is None or _como_fecha(fecha_visita) < hoy:
+            raise FechaInvalidaError("La fecha de visita debe ser hoy o una fecha futura")
+        fecha = _como_fecha(fecha_visita)
+        maxima = fecha_maxima_de_compra(hoy)
+        if fecha > maxima:  # FAQ 25
+            raise FechaInvalidaError(
+                f"Se pueden comprar entradas hasta el {maxima.strftime('%d/%m/%Y')} (un mes desde hoy)"
+            )
+        if fecha == hoy and not se_vende_para_hoy(ahora):  # FAQ 26
+            raise FechaInvalidaError(
+                f"Para hoy se pueden comprar entradas hasta las "
+                f"{texto_hora(config.HORA_LIMITE_COMPRA_PARA_HOY)}. Elegí otra fecha."
+            )
+        if not self._calendario.esta_abierto(fecha):  # FAQ 1
+            raise ParqueCerradoError("El parque está cerrado en la fecha elegida")

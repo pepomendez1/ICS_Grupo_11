@@ -16,6 +16,11 @@ FERIADOS_CERRADO = {(12, 25), (1, 1)}   # FAQ 1: (mes, día), de cualquier año
 HORA_APERTURA = time(8, 30)             # FAQ 11
 HORA_CIERRE = time(19, 0)               # FAQ 11
 
+# ---------- Venta de entradas (FAQ 25 y 26) ----------
+
+HORIZONTE_MESES = 1                       # FAQ 25: hasta hoy + 1 mes calendario, inclusive
+HORA_LIMITE_COMPRA_PARA_HOY = time(17, 30)  # FAQ 26: para el mismo día, hasta las 17:30 inclusive
+
 # ---------- Compra ----------
 
 CANTIDAD_MAXIMA_ENTRADAS = 10
