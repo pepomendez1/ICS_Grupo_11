@@ -606,3 +606,12 @@ class TestConfirmandoPago:
         html = volver_de_mp(cliente_mp, compra_id, "approved")
         assert "Estamos confirmando tu pago…" not in html
         assert QR in html
+
+
+class TestHorario:
+    """FAQ 11: el parque abre de 8:30 a 19:00."""
+
+    @pytest.mark.parametrize("ruta", ["/", "/comprar"])
+    def test_web_muestra_el_horario(self, cliente_logueado, ruta):
+        html = cliente_logueado.get(ruta).get_data(as_text=True)
+        assert "de 8:30 a 19:00" in html

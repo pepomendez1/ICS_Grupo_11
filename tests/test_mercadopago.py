@@ -117,7 +117,7 @@ class TestElegirPasarela:
         cliente = create_app(testing=True, repo=RepositorioMemoria()).test_client()
         registrar(cliente)
         cliente.post("/comprar", data={
-            "fecha_visita": "2099-01-01", "cantidad": "1", "edades": ["30"],  # jueves
+            "fecha_visita": "2099-01-08", "cantidad": "1", "edades": ["30"],  # jueves (el 1/1 cierra)
             "tipo_pase": "VIP", "forma_pago": "TARJETA",
         })
         assert preferencia_enviada(sdk)["items"][0]["unit_price"] == PRECIOS["VIP"]
