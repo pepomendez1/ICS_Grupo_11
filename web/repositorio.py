@@ -10,6 +10,19 @@ import os
 from datetime import date, datetime
 
 from parque.compra import Entrada, FormaPago, ResultadoCompra, TipoPase
+from parque.precios import tarifa_para
+
+
+def _armar_entrada(fila: dict, tipo_pase: str) -> Entrada:
+    """El precio guardado es el que se cobró; el nombre de la tarifa y el
+    descuento se derivan de la edad (las entradas viejas no tienen precio)."""
+    tarifa = tarifa_para(tipo_pase, fila["edad"])
+    precio = fila.get("precio")
+    return Entrada(
+        numero=fila["numero"], edad=fila["edad"], codigo=fila["codigo"],
+        precio=tarifa.precio if precio is None else precio,
+        descuento=tarifa.descuento, tarifa=tarifa.nombre,
+    )
 
 
 def _armar_compra(fila: dict, entradas=()) -> dict:
@@ -28,7 +41,7 @@ def _armar_compra(fila: dict, entradas=()) -> dict:
             tipo_pase=TipoPase(fila["tipo_pase"]),
             forma_pago=FormaPago(fila["forma_pago"]),
             entradas=[
-                Entrada(numero=e["numero"], edad=e["edad"], codigo=e["codigo"])
+                _armar_entrada(e, fila["tipo_pase"])
                 for e in sorted(entradas, key=lambda e: e["numero"])
             ],
         ),
@@ -73,6 +86,7 @@ class RepositorioMemoria:
         for e in resultado.entradas:
             self._entradas[e.codigo] = {
                 "codigo": e.codigo, "compra_id": compra_id, "numero": e.numero, "edad": e.edad,
+                "precio": e.precio,
             }
 
     def obtener_compra(self, compra_id):
@@ -217,8 +231,8 @@ class RepositorioPostgres:
                 ),
             )
             cur.executemany(
-                "insert into entradas (codigo, compra_id, numero, edad) values (%s, %s, %s, %s)",
-                [(e.codigo, compra_id, e.numero, e.edad) for e in resultado.entradas],
+                "insert into entradas (codigo, compra_id, numero, edad, precio) values (%s, %s, %s, %s, %s)",
+                [(e.codigo, compra_id, e.numero, e.edad, e.precio) for e in resultado.entradas],
             )
         self._en_transaccion(pasos)
 
@@ -227,7 +241,7 @@ class RepositorioPostgres:
         if not fila:
             return None
         entradas = self._ejecutar(
-            "select codigo, numero, edad from entradas where compra_id = %s", (compra_id,), todos=True
+            "select codigo, numero, edad, precio from entradas where compra_id = %s", (compra_id,), todos=True
         )
         return _armar_compra(dict(fila), [dict(e) for e in entradas])
 

@@ -12,6 +12,7 @@ from enum import Enum
 from typing import Callable, Optional, Protocol
 
 from parque.calendario import ahora_en_el_parque, motivo_sin_venta
+from parque.precios import tarifa_para
 
 from parque.config import (  # noqa: F401  (se re-exportan para la web y los tests)
     CANTIDAD_MAXIMA_ENTRADAS,
@@ -89,6 +90,9 @@ class Entrada:
     numero: int   # 1..cantidad
     edad: int
     codigo: str   # secrets.token_urlsafe: no se puede adivinar ni enumerar
+    precio: int = 0       # precio final de esta entrada (FAQ 6, 7 y 21)
+    descuento: int = 0    # porcentaje aplicado por la edad
+    tarifa: str = ""      # "General", "De 4 a 15 años", ...
 
 
 @dataclass
@@ -100,6 +104,11 @@ class ResultadoCompra:
     tipo_pase: Optional["TipoPase"] = None
     forma_pago: Optional["FormaPago"] = None
     entradas: list = field(default_factory=list)
+
+    @property
+    def sin_cargo(self) -> bool:
+        """Todas las entradas son gratis (por ejemplo, todos <= 3 años): no se paga."""
+        return self.monto == 0
 
     @property
     def mensaje(self) -> str:
@@ -150,18 +159,21 @@ class ServicioCompraEntradas:
     def comprar(self, usuario: Usuario, solicitud: SolicitudCompra) -> ResultadoCompra:
         self._validar(usuario, solicitud)
 
-        monto = solicitud.cantidad * PRECIOS[solicitud.tipo_pase.value]
+        entradas = []
+        for numero, edad in enumerate(solicitud.edades, start=1):
+            tarifa = tarifa_para(solicitud.tipo_pase, edad)
+            entradas.append(Entrada(
+                numero=numero, edad=edad, codigo=secrets.token_urlsafe(16),
+                precio=tarifa.precio, descuento=tarifa.descuento, tarifa=tarifa.nombre,
+            ))
+        monto = sum(e.precio for e in entradas)
 
+        # Con total $0 no hay nada que cobrar: no se pasa por Mercado Pago.
         url_pago = None
-        if solicitud.forma_pago == FormaPago.TARJETA:
+        if solicitud.forma_pago == FormaPago.TARJETA and monto > 0:
             url_pago = self._pasarela_pago.crear_pago(
                 monto, usuario.email, referencia=solicitud.referencia
             )
-
-        entradas = [
-            Entrada(numero=i, edad=edad, codigo=secrets.token_urlsafe(16))
-            for i, edad in enumerate(solicitud.edades, start=1)
-        ]
 
         resultado = ResultadoCompra(
             cantidad=solicitud.cantidad,

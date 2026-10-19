@@ -48,6 +48,10 @@ create table if not exists entradas (
   unique (compra_id, numero)
 );
 
+-- FAQ 6, 7 y 21: precio final de cada entrada (con el descuento por edad).
+-- Las entradas anteriores quedan con precio null.
+alter table entradas add column if not exists precio integer check (precio >= 0);
+
 create table if not exists mails (
   id       bigint generated always as identity primary key,
   para     text not null,

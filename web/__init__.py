@@ -11,6 +11,7 @@ from flask import Flask, abort, flash, g, jsonify, redirect, render_template, re
 
 from parque import config
 from parque.calendario import ahora_en_el_parque
+from parque.precios import reglas_de_precio
 from parque.compra import (
     CANTIDAD_MAXIMA_ENTRADAS,
     EDAD_MAXIMA,
@@ -27,6 +28,7 @@ from web.contenido import (
     HORARIOS_ALIMENTACION,
     PASES,
     SECTORES,
+    texto_descuentos,
     dia_de_cierre,
     horario,
     pesos,
@@ -78,6 +80,8 @@ def resultado_del_pago(compra, vuelta_mp):
     haya vuelto con failure."""
     if compra["resultado"].forma_pago == FormaPago.EFECTIVO:
         return "efectivo"
+    if compra["resultado"].sin_cargo:
+        return "sin_cargo"  # total $0: no pasa por Mercado Pago
     if compra["pagada"]:
         return "aprobado"
     if compra["estado"] == "rechazada":
@@ -128,7 +132,7 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
         return {
             "usuario": usuario_actual(), "precios": PRECIOS, "pases": PASES,
             "dia_cierre": dia_de_cierre(), "horario": horario(),
-            "bandeja_simulada": bandeja_simulada,
+            "bandeja_simulada": bandeja_simulada, "texto_descuentos": texto_descuentos(),
         }
 
     def base_url():
@@ -206,6 +210,7 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
             "meses": meses_de_compra(ahora, calendario),
             "dias_cortos": DIAS_CORTOS,
             "fecha_larga": fecha_larga,
+            "reglas_precio": reglas_de_precio(),
             "maximo": CANTIDAD_MAXIMA_ENTRADAS,
             "edad_maxima": EDAD_MAXIMA,
             "form": {},

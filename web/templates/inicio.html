@@ -112,7 +112,7 @@
 
 <section class="seccion">
   <h2>Pases</h2>
-  <p class="bajada">{{ horario }}. Hasta {{ maximo_entradas }} entradas por compra.</p>
+  <p class="bajada">{{ horario }}. Hasta {{ maximo_entradas }} entradas por compra. La única diferencia entre los pases es el precio.</p>
   <div class="pases">
     <div class="tarjeta">
       <h3>Pase {{ pases["REGULAR"].nombre }}</h3>
@@ -125,5 +125,6 @@
       <p class="bajada">{{ pases["VIP"].descripcion }}</p>
     </div>
   </div>
+  <p class="nota">Descuentos por visitante según la edad. {{ texto_descuentos }}.</p>
 </section>
 {% endblock %}

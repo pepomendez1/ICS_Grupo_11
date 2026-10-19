@@ -26,6 +26,7 @@ ACTIVIDADES = [
 ]
 
 PASES = {
+    # FAQ 6: la única diferencia entre los pases es el precio.
     "REGULAR": {
         "nombre": "Regular",
         "descripcion": "Acceso al parque, senderos y exhibiciones.",
@@ -33,8 +34,8 @@ PASES = {
     },
     "VIP": {
         "nombre": "VIP",
-        "descripcion": "Acceso al parque, senderos y exhibiciones, con ingreso por fila preferencial.",
-        "resumen": "Lo mismo que el Regular + ingreso por fila preferencial",
+        "descripcion": "Acceso al parque, senderos y exhibiciones.",
+        "resumen": "Parque, senderos y exhibiciones",
     },
 }
 
@@ -58,3 +59,13 @@ def horario() -> str:
     cierre = config.DIA_CIERRE
     return (f"Abierto de {nombre_del_dia((cierre + 1) % 7)} a {nombre_del_dia((cierre - 1) % 7)}, "
             f"{texto_horario()}")
+
+
+def texto_descuentos() -> str:
+    """"Hasta 3 años: sin cargo; de 4 a 15 años: 50% off; 60 años o más: 50% off"."""
+    partes = []
+    for _desde, _hasta, descuento, nombre in config.DESCUENTOS_POR_EDAD:
+        detalle = "sin cargo" if descuento == 100 else f"{descuento}% off"
+        partes.append(f"{nombre}: {detalle}")
+    texto = "; ".join(partes)
+    return texto[0].upper() + texto[1:]

@@ -27,7 +27,18 @@ CANTIDAD_MAXIMA_ENTRADAS = 10
 
 EDAD_MAXIMA = 150  # supuesto del equipo (sin confirmar por la PO); la edad 0 es válida
 
-PRECIOS = {  # por entrada, en pesos
-    "REGULAR": 50_000,
-    "VIP": 75_000,
+# ---------- Precios (FAQ 6, 7 y 21) ----------
+
+PRECIOS = {  # por entrada, en pesos. FAQ 6: la única diferencia entre los pases es el precio
+    "REGULAR": 10_000,
+    "VIP": 20_000,
 }
+
+# FAQ 7 y 21: descuento por visitante según su edad. (desde, hasta, % off, nombre);
+# hasta=None es "sin tope". Una edad que no entra en ninguna paga el precio completo.
+DESCUENTOS_POR_EDAD = [
+    (0, 3, 100, "Hasta 3 años"),
+    (4, 15, 50, "De 4 a 15 años"),
+    (60, None, 50, "60 años o más"),
+]
+TARIFA_GENERAL = "General"

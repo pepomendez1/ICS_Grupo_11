@@ -7,6 +7,13 @@
 <style>
   .confirmacion { max-width: 720px; margin: 0 auto; }
   .confirmacion h2 { margin: 32px 0 6px; font-size: 1.45rem; }
+  .desglose-compra { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: .95rem; }
+  .desglose-compra caption { text-align: left; font-weight: 700; color: var(--bosque); padding-bottom: 6px; }
+  .desglose-compra th, .desglose-compra td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--borde); }
+  .desglose-compra thead th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--suave); font-weight: 600; }
+  .desglose-compra .num { text-align: right; white-space: nowrap; }
+  .desglose-compra tfoot th, .desglose-compra tfoot td { border-bottom: 0; padding-top: 10px; }
+  @media (max-width: 560px) { .desglose-compra .col-desc { display: none; } }
   .acciones { margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; }
   @media (max-width: 560px) { .acciones .boton { width: 100%; } }
   .confirmando [hidden] { display: none !important; }
@@ -74,6 +81,8 @@
       <dd>
         {% if resultado_pago == "efectivo" %}
           Efectivo en boletería
+        {% elif resultado_pago == "sin_cargo" %}
+          Sin cargo (no hay nada que pagar)
         {% elif resultado_pago == "aprobado" %}
           Tarjeta · Mercado Pago (aprobado)
         {% elif rechazado %}
@@ -83,6 +92,21 @@
         {% endif %}
       </dd>
     </dl>
+    <table class="desglose-compra">
+      <caption>Detalle del precio</caption>
+      <thead><tr><th scope="col">Visitante</th><th scope="col">Tarifa</th><th scope="col" class="col-desc">Descuento</th><th scope="col" class="num">Subtotal</th></tr></thead>
+      <tbody>
+        {% for e in r.entradas %}
+        <tr>
+          <td>Entrada {{ e.numero }} · {{ e.edad }} años</td>
+          <td>{{ e.tarifa }}</td>
+          <td class="col-desc">{% if e.descuento == 100 %}Sin cargo{% elif e.descuento %}{{ e.descuento }}%{% else %}—{% endif %}</td>
+          <td class="num">{{ e.precio | pesos }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot><tr><th scope="row" colspan="3">Total</th><td class="num"><strong>{{ r.monto | pesos }}</strong></td></tr></tfoot>
+    </table>
   </div>
 
   {% if not rechazado and not confirmando %}

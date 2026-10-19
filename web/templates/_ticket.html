@@ -13,6 +13,7 @@
       <dt>Fecha</dt><dd>{{ r.fecha_visita.strftime('%d/%m/%Y') }}</dd>
       <dt>Pase</dt><dd>{{ pases[r.tipo_pase.value].nombre }}</dd>
       <dt>Visitante</dt><dd>{{ t.entrada.edad }} {{ "año" if t.entrada.edad == 1 else "años" }}</dd>
+      <dt>Tarifa</dt><dd>{{ t.entrada.tarifa }} · {{ t.entrada.precio | pesos }}</dd>
       <dt>Número</dt><dd>Entrada {{ t.entrada.numero }} de {{ r.cantidad }}</dd>
     </dl>
     <span class="estado estado-{{ estado.clave }}">{{ estado.texto }}</span>
