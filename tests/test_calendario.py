@@ -67,3 +67,23 @@ def test_un_mes_desde_diciembre_pasa_al_anio_siguiente():
 
 def test_fecha_maxima_de_compra_es_hoy_mas_un_mes():
     assert fecha_maxima_de_compra(date(2026, 10, 19)) == date(2026, 11, 19)
+
+
+# El cierre del parque es el motivo principal: va antes que el horario (FAQ 26)
+# y que el horizonte de un mes (FAQ 25).
+
+def test_un_lunes_despues_de_las_17_30_el_motivo_es_que_el_parque_cierra():
+    from datetime import datetime
+    from parque.calendario import motivo_sin_venta
+    lunes_a_la_noche = datetime(2026, 10, 19, 20, 18, tzinfo=parque.config.ZONA_HORARIA)
+    motivo = motivo_sin_venta(lunes_a_la_noche.date(), lunes_a_la_noche, CalendarioEcoHarmony())
+    assert motivo.tipo == "cerrado"
+    assert "lunes" in motivo.corto
+
+
+def test_un_lunes_fuera_del_mes_el_motivo_es_que_el_parque_cierra():
+    from datetime import datetime
+    from parque.calendario import motivo_sin_venta
+    ahora = datetime(2026, 10, 6, 10, 0, tzinfo=parque.config.ZONA_HORARIA)
+    motivo = motivo_sin_venta(date(2026, 11, 9), ahora, CalendarioEcoHarmony())  # lunes, después del 06/11
+    assert motivo.tipo == "cerrado"

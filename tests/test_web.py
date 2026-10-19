@@ -679,6 +679,11 @@ class TestCalendarioDeCompra:
         assert "disabled" in radio_fecha(html, "2027-01-01")
         assert "disabled" not in radio_fecha(html, "2026-12-26")
 
+    def test_web_hoy_lunes_despues_de_las_17_30_explica_que_el_parque_cierra(self, cliente_a_las):
+        lunes_a_la_noche = HOY.replace(day=12, hour=20, minute=18)  # lunes 12/10
+        html = cliente_a_las(lunes_a_la_noche).get("/comprar").get_data(as_text=True)
+        assert "no disponible: el parque cierra los lunes" in radio_fecha(html, "2026-10-12")
+
     def test_web_calendario_explica_por_que_un_dia_no_esta_disponible(self, cliente_logueado):
         html = cliente_logueado.get("/comprar").get_data(as_text=True)
         assert "no disponible: el parque cierra los lunes" in radio_fecha(html, "2026-10-12")

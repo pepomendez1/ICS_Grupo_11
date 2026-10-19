@@ -144,6 +144,13 @@ class TestFechaVisita:
         with pytest.raises(FechaInvalidaError, match="17:30"):
             servicio.comprar(usuario_registrado, solicitud_valida)
 
+    def test_comprar_entrada_para_hoy_lunes_despues_de_las_17_30_dice_que_el_parque_cierra_falla(self, servicio_con_reloj, usuario_registrado, solicitud_valida):
+        lunes_a_la_noche = HOY.replace(day=12, hour=20, minute=18)  # lunes 12/10, pasadas las 17:30
+        servicio = servicio_con_reloj(lunes_a_la_noche)
+        solicitud_valida.fecha_visita = lunes_a_la_noche.date()
+        with pytest.raises(ParqueCerradoError):
+            servicio.comprar(usuario_registrado, solicitud_valida)
+
     def test_comprar_entrada_para_manana_a_las_18_pasa(self, servicio_con_reloj, usuario_registrado, solicitud_valida):
         servicio = servicio_con_reloj(HOY.replace(hour=18, minute=0))
         manana = HOY.date() + timedelta(days=1)  # miércoles
