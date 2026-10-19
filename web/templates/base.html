@@ -3,54 +3,62 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#1e3a2b">
+  <meta name="theme-color" content="#386641">
   <title>{% block titulo %}EcoHarmony Park · Bioparque{% endblock %}</title>
+  <link rel="icon" href="/static/logo-icono.svg" type="image/svg+xml">
+  <link rel="icon" href="/static/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
   <style>
+    /* Paleta de la PO (FAQ 3): #386641 #6A994E #A7C957 #F2E8CF #BC4749.
+       Contrastes verificados en tests/test_paleta.py (AA >= 4.5). */
     :root {
-      --bosque: #1e3a2b;
-      --musgo: #3d6b4f;
-      --hoja: #8fb573;
-      --salvia: #e7eedf;
-      --tierra: #8a5a3b;
-      --crema: #f6f2e8;
-      --papel: #fffdf8;
-      --texto: #1f261f;
-      --suave: #5c6657;
-      --borde: #dcd4c0;
-      --error: #a63d2f;
-      --ok: #2f7a4a;
+      --bosque: #386641;        /* primario: botones, títulos y links */
+      --musgo: #6A994E;         /* decorativo: bordes de acento e íconos (no para texto) */
+      --hoja: #A7C957;          /* decorativo: franjas y detalles (no para texto) */
+      --crema: #F2E8CF;         /* fondo */
+      --error: #BC4749;         /* solo errores y acentos puntuales, sobre fondo claro */
+      --papel: #FFFDF6;         /* tarjetas y fondo de avisos */
+      --texto: #243327;         /* texto corrido: tono oscuro de #386641 */
+      --suave: #555F52;         /* texto secundario */
+      --borde: #E2D7BA;         /* bordes: tono de #F2E8CF */
+      --salvia: #EEF3DF;        /* fondo de selección: tinte de #A7C957 */
+      --sobre-bosque: #FFFFFF;  /* texto sobre #386641 */
+      --foco: #386641;          /* indicador de foco */
+      --ok: #386641;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0; background: var(--crema); color: var(--texto);
-      font-family: "Inter", system-ui, sans-serif; line-height: 1.5;
+      font-family: "Lato", "Helvetica Neue", Arial, sans-serif; line-height: 1.5;
       -webkit-text-size-adjust: 100%;
     }
-    a { color: var(--musgo); }
-    header { background: var(--bosque); color: var(--crema); }
+    a { color: var(--bosque); }
+    :focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+    header { background: var(--papel); border-bottom: 4px solid var(--hoja); }
     .barra {
-      max-width: 960px; margin: 0 auto; padding: 14px 20px;
+      max-width: 960px; margin: 0 auto; padding: 10px 20px;
       display: flex; align-items: center; justify-content: space-between; gap: 10px 20px; flex-wrap: wrap;
     }
     .marca {
-      font-family: "Fraunces", Georgia, serif; font-size: 1.35rem; font-weight: 700;
-      color: var(--crema); text-decoration: none; display: flex; align-items: center; gap: 10px;
+      font-size: 1.3rem; font-weight: 900; letter-spacing: -.01em;
+      color: var(--bosque); text-decoration: none; display: flex; align-items: center; gap: 10px;
     }
-    .marca svg { width: 30px; height: 30px; flex: none; }
+    .marca img { width: 46px; height: 46px; flex: none; display: block; }
     .marca small {
-      font-family: "Inter", system-ui, sans-serif; font-weight: 500; font-size: .7rem;
-      letter-spacing: .08em; text-transform: uppercase; opacity: .75; margin-left: 2px;
+      display: block; font-weight: 700; font-size: .66rem; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--suave); margin-top: -2px;
     }
     nav { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
     nav a, nav button {
-      color: var(--crema); text-decoration: none; font-size: .95rem; opacity: .9;
+      color: var(--bosque); text-decoration: none; font-size: .95rem; font-weight: 700;
       background: none; border: 0; cursor: pointer; font-family: inherit; padding: 0;
     }
-    nav a:hover, nav button:hover { opacity: 1; text-decoration: underline; text-decoration-color: var(--hoja); }
+    nav a:hover, nav button:hover { text-decoration: underline; text-decoration-color: var(--hoja); text-decoration-thickness: 3px; }
     main { max-width: 960px; margin: 0 auto; padding: 32px 20px 64px; }
-    h1, h2 { font-family: "Fraunces", Georgia, serif; color: var(--bosque); line-height: 1.15; }
+    h1, h2, h3 { color: var(--bosque); line-height: 1.15; font-weight: 900; letter-spacing: -.01em; }
     h1 { font-size: 2.2rem; margin: 0 0 8px; }
     .bajada { color: var(--suave); margin: 0 0 28px; }
     .tarjeta {
@@ -58,13 +66,13 @@
       padding: 28px; box-shadow: 0 1px 0 rgba(0,0,0,.03);
     }
     .angosta { max-width: 440px; margin: 0 auto; }
-    label { display: block; font-weight: 600; font-size: .92rem; margin-bottom: 6px; }
+    label { display: block; font-weight: 700; font-size: .92rem; margin-bottom: 6px; }
     .ayuda { font-weight: 400; color: var(--suave); font-size: .85rem; }
     input, select {
       width: 100%; padding: 12px; border: 1px solid var(--borde); border-radius: 8px;
       font: inherit; font-size: 1rem; background: #fff; color: var(--texto); min-height: 46px;
     }
-    input:focus, select:focus { outline: 2px solid var(--hoja); border-color: var(--hoja); }
+    input:focus-visible, select:focus-visible { outline: 3px solid var(--foco); outline-offset: 1px; border-color: var(--bosque); }
     .campo { margin-bottom: 20px; }
     .grilla { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -76,33 +84,33 @@
     }
     .opcion strong { display: block; color: var(--bosque); }
     .opcion small { color: var(--suave); }
-    .opcion input:checked + span { border-color: var(--musgo); box-shadow: inset 0 0 0 1px var(--musgo); background: var(--salvia); }
-    .opcion input:focus-visible + span { outline: 2px solid var(--hoja); }
+    .opcion input:checked + span { border-color: var(--bosque); box-shadow: inset 0 0 0 2px var(--bosque); background: var(--salvia); }
+    .opcion input:focus-visible + span { outline: 3px solid var(--foco); outline-offset: 2px; }
     .edades { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
     .boton {
-      display: inline-block; background: var(--bosque); color: var(--crema); border: 0;
-      padding: 13px 22px; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer;
+      display: inline-block; background: var(--bosque); color: var(--sobre-bosque); border: 0;
+      padding: 13px 22px; border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer;
       text-decoration: none; text-align: center; min-height: 46px;
     }
-    .boton:hover { background: var(--musgo); }
-    .boton.secundario { background: transparent; color: var(--bosque); border: 1px solid var(--bosque); }
-    .boton.secundario:hover { background: var(--salvia); }
+    .boton:hover { filter: brightness(.88); }
+    .boton.secundario { background: transparent; color: var(--bosque); border: 2px solid var(--bosque); }
+    .boton.secundario:hover { background: var(--salvia); filter: none; }
     .ancho { width: 100%; }
-    .aviso { padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: .95rem; }
-    .aviso.error { background: #f8e6e2; color: var(--error); border: 1px solid #ecc5bd; }
-    .aviso.ok { background: #e4f1e7; color: var(--ok); border: 1px solid #bfdcc7; }
-    .aviso.info { background: #f3ecdc; color: #6b4a2f; border: 1px solid #e3d3b2; }
+    .aviso { padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: .95rem; background: var(--papel); border: 1px solid var(--borde); border-left-width: 5px; }
+    .aviso.error { color: var(--error); border-color: var(--error); }
+    .aviso.ok { color: var(--bosque); border-left-color: var(--musgo); }
+    .aviso.info { color: var(--texto); border-left-color: var(--hoja); }
     .total {
       display: flex; justify-content: space-between; align-items: baseline;
       border-top: 1px dashed var(--borde); padding-top: 16px; margin: 8px 0 20px;
     }
-    .total strong { font-family: "Fraunces", Georgia, serif; font-size: 1.6rem; color: var(--bosque); }
+    .total strong { font-size: 1.6rem; font-weight: 900; color: var(--bosque); }
     dl.detalle { display: grid; grid-template-columns: auto 1fr; gap: 10px 24px; margin: 0; }
     dl.detalle dt { color: var(--suave); }
-    dl.detalle dd { margin: 0; font-weight: 600; }
+    dl.detalle dd { margin: 0; font-weight: 700; }
     .pie { color: var(--suave); font-size: .85rem; text-align: center; padding: 24px; }
     @media (max-width: 640px) {
-      .barra { padding: 12px 16px; }
+      .barra { padding: 10px 16px; }
       nav { gap: 14px; width: 100%; }
       nav a, nav button { font-size: .9rem; }
       main { padding: 22px 16px 48px; }
@@ -122,11 +130,7 @@
   <header>
     <div class="barra">
       <a class="marca" href="{{ url_for('inicio') }}" aria-label="EcoHarmony Park, inicio">
-        <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
-          <circle cx="16" cy="16" r="15" fill="#3d6b4f"/>
-          <path d="M16 5.5c6.2 3 8.6 10 4.4 16.3-1.3 2-2.8 3.2-4.4 3.9-1.6-.7-3.1-1.9-4.4-3.9C7.4 15.5 9.8 8.5 16 5.5Z" fill="#8fb573"/>
-          <path d="M16 9v17.5M16 14.5l3.4-2.6M16 18.5l-3.6-2.8M16 22l3-2.2" stroke="#1e3a2b" stroke-width="1.3" stroke-linecap="round"/>
-        </svg>
+        <img src="/static/logo.svg" alt="" width="46" height="46">
         <span>EcoHarmony Park <small>Bioparque</small></span>
       </a>
       <nav>

@@ -57,23 +57,25 @@ class _PdfEntradas(FPDF):
         self.set_margins(18, 18, 18)
 
     def encabezado(self, subtitulo: str):
-        self.set_fill_color(*VERDE_OSCURO)
-        self.rect(0, 0, self.w, 30, style="F")
+        # Fondo crema: sobre verde oscuro el logo (que es verde oscuro) no se vería.
+        self.set_fill_color(*CREMA)
+        self.rect(0, 0, self.w, 32, style="F")
         self.set_fill_color(*VERDE_CLARO)
-        self.rect(0, 30, self.w, 1.6, style="F")
-        logo = os.path.join(ESTATICOS, "logo.svg")
+        self.rect(0, 32, self.w, 1.8, style="F")
+        logo = os.path.join(ESTATICOS, "logo.svg")  # el mismo archivo que usan la web y el mail
         x_texto = 18
         if os.path.exists(logo):
-            self.image(logo, x=18, y=5, h=20)
-            x_texto = 42
+            self.image(logo, x=17, y=5, h=22)
+            x_texto = 43
         self.set_xy(x_texto, 8)
-        self.set_text_color(*CREMA)
+        self.set_text_color(*VERDE_OSCURO)
         self.set_font("Lato", size=20)
         self.cell(0, 9, "EcoHarmony Park")
-        self.set_xy(x_texto, 17)
+        self.set_xy(x_texto, 17.5)
+        self.set_text_color(*SUAVE)
         self.set_font("LatoLight", size=10)
         self.cell(0, 6, f"BIOPARQUE · {subtitulo.upper()}")
-        self.set_y(40)
+        self.set_y(42)
         self.set_text_color(*TEXTO)
 
     def dato(self, etiqueta: str, valor: str, ancho_etiqueta=42):

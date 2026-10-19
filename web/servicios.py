@@ -5,6 +5,7 @@ interfaz; cuál se usa depende de las variables de entorno. parque/compra.py
 no se entera.
 """
 import logging
+import os
 import smtplib
 import ssl
 import uuid
@@ -181,6 +182,11 @@ COLOR_SUAVE = "#555F52"
 COLOR_LINEA = "#E2D7BA"
 FUENTE = "Lato, 'Helvetica Neue', Arial, Helvetica, sans-serif"
 
+# Logo del mail: PNG generado desde web/static/logo.svg (scripts/generar_iconos.py),
+# porque Gmail y Outlook no muestran SVG. Va inline, referenciado por Content-ID.
+LOGO_MAIL = os.path.join(os.path.dirname(__file__), "static", "logo-mail.png")
+CID_LOGO = "logo@ecoharmony.park"
+
 
 def entradas_validas(resultado: Optional[ResultadoCompra]) -> bool:
     """Las entradas ya sirven para entrar: efectivo (se paga en boletería) o total $0."""
@@ -263,7 +269,13 @@ def _html_mail(titulo: str, cuerpo_html: str) -> str:
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
 </head><body style="margin:0;background:{COLOR_FONDO};font-family:{FUENTE};color:{COLOR_TEXTO}">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:{COLOR_PAPEL};border:1px solid {COLOR_LINEA};font-family:{FUENTE}">
-    <tr><td style="background:{COLOR_OSCURO};color:{COLOR_FONDO};padding:20px 28px;font-size:20px;font-weight:bold">EcoHarmony Park <span style="font-size:11px;letter-spacing:2px;font-weight:normal">BIOPARQUE</span></td></tr>
+    <tr><td style="padding:16px 28px;color:{COLOR_OSCURO}">
+      <table role="presentation" cellpadding="0" cellspacing="0"><tr>
+        <td style="padding-right:12px"><img src="cid:{CID_LOGO}" width="56" height="56" alt="" style="display:block;border:0"></td>
+        <td style="font-family:{FUENTE};font-size:21px;font-weight:900;color:{COLOR_OSCURO}">EcoHarmony Park<br>
+          <span style="font-size:11px;letter-spacing:2px;font-weight:bold;color:{COLOR_SUAVE}">BIOPARQUE</span></td>
+      </tr></table>
+    </td></tr>
     <tr><td style="height:4px;background:{COLOR_ACENTO}"></td></tr>
     <tr><td style="padding:28px">
       <h1 style="margin:0 0 8px;font-size:22px;color:{COLOR_OSCURO}">{escape(titulo)}</h1>
@@ -353,10 +365,13 @@ class NotificadorGmail:
         mail["To"] = para
         mail.set_content(texto)
         mail.add_alternative(html, subtype="html")
+        # Logo y QR como imágenes inline referenciadas desde el HTML por Content-ID
+        # (los clientes de mail suelen bloquear las data: URI).
+        parte_html = mail.get_body(preferencelist=("html",))
+        with open(LOGO_MAIL, "rb") as f:
+            parte_html.add_related(f.read(), maintype="image", subtype="png", cid=f"<{CID_LOGO}>",
+                                   disposition="inline", filename="logo.png")
         if imagenes:
-            # QR como imágenes inline referenciadas desde el HTML por Content-ID
-            # (los clientes de mail suelen bloquear las data: URI).
-            parte_html = mail.get_body(preferencelist=("html",))
             for numero, (cid, png) in enumerate(imagenes, start=1):
                 parte_html.add_related(
                     png, maintype="image", subtype="png", cid=f"<{cid}>",

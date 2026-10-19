@@ -66,6 +66,6 @@ def texto_descuentos() -> str:
     partes = []
     for _desde, _hasta, descuento, nombre in config.DESCUENTOS_POR_EDAD:
         detalle = "sin cargo" if descuento == 100 else f"{descuento}% off"
-        partes.append(f"{nombre}: {detalle}")
+        partes.append(f"{nombre[0].lower() + nombre[1:]}: {detalle}")
     texto = "; ".join(partes)
     return texto[0].upper() + texto[1:]
