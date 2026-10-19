@@ -31,6 +31,7 @@ from web.contenido import (
     horario,
     pesos,
 )
+from web.calendario_compra import DIAS_CORTOS, fecha_larga, meses_de_compra
 from web.entradas import estado_de, qr_svg, url_entrada
 from web.repositorio import crear_repositorio
 from web.servicios import (
@@ -96,8 +97,9 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
 
     pasarela = pasarela or crear_pasarela(repo, os.environ)
     notificador = notificador or crear_notificador(repo, os.environ)
+    calendario = CalendarioEcoHarmony()
     servicio = ServicioCompraEntradas(
-        calendario=CalendarioEcoHarmony(),
+        calendario=calendario,
         pasarela_pago=pasarela,
         notificador=notificador,
         reloj=reloj,
@@ -198,8 +200,12 @@ def create_app(reloj=ahora_en_el_parque, testing=False, repo=None, pasarela=None
     @app.route("/comprar", methods=["GET", "POST"])
     @login_requerido
     def comprar():
+        ahora = reloj()
         contexto = {
-            "hoy": reloj().date().isoformat(),
+            "hoy": ahora.date(),
+            "meses": meses_de_compra(ahora, calendario),
+            "dias_cortos": DIAS_CORTOS,
+            "fecha_larga": fecha_larga,
             "maximo": CANTIDAD_MAXIMA_ENTRADAS,
             "edad_maxima": EDAD_MAXIMA,
             "form": {},

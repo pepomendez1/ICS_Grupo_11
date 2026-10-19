@@ -1,6 +1,7 @@
 """Calendario del parque (FAQ 1 y 11) y para qué fechas se venden entradas (FAQ 25 y 26)."""
 import calendar as _calendar
-from datetime import date, datetime
+from dataclasses import dataclass
+from datetime import date, datetime, timedelta
 from typing import Optional
 
 from parque import config
@@ -61,3 +62,58 @@ def se_vende_para_hoy(ahora: datetime) -> bool:
 
 def texto_hora(t) -> str:
     return f"{t.hour}:{t.minute:02d}"
+
+
+# ---------- ¿Se venden entradas para esta fecha? ----------
+
+@dataclass
+class MotivoSinVenta:
+    tipo: str      # "pasado" | "horizonte" | "hora_limite" | "cerrado"
+    mensaje: str   # para el error de la compra
+    corto: str     # para el calendario ("no disponible: ...")
+
+
+def motivo_sin_venta(fecha: date, ahora: datetime, calendario) -> Optional[MotivoSinVenta]:
+    """La única fuente de verdad sobre qué días se venden: la usan la validación
+    del servicio y el calendario de la web. None si se puede comprar."""
+    hoy = ahora.date()
+    if fecha < hoy:
+        return MotivoSinVenta("pasado", "La fecha de visita debe ser hoy o una fecha futura", "ya pasó")
+    maxima = fecha_maxima_de_compra(hoy)
+    if fecha > maxima:  # FAQ 25
+        return MotivoSinVenta(
+            "horizonte",
+            f"Se pueden comprar entradas hasta el {maxima.strftime('%d/%m/%Y')} (un mes desde hoy)",
+            f"se vende hasta el {maxima.strftime('%d/%m')}",
+        )
+    if fecha == hoy and not se_vende_para_hoy(ahora):  # FAQ 26
+        limite = texto_hora(config.HORA_LIMITE_COMPRA_PARA_HOY)
+        return MotivoSinVenta(
+            "hora_limite",
+            f"Para hoy se pueden comprar entradas hasta las {limite}. Elegí otra fecha.",
+            f"para hoy se vende hasta las {limite}",
+        )
+    if not calendario.esta_abierto(fecha):  # FAQ 1
+        detalle = calendario.motivo_cierre(fecha) if hasattr(calendario, "motivo_cierre") else None
+        corto = (detalle or "el parque está cerrado")
+        return MotivoSinVenta("cerrado", "El parque está cerrado en la fecha elegida", corto[0].lower() + corto[1:])
+    return None
+
+
+@dataclass
+class DiaDeVenta:
+    fecha: date
+    motivo: Optional[MotivoSinVenta]
+
+    @property
+    def disponible(self) -> bool:
+        return self.motivo is None
+
+
+def dias_de_venta(desde: date, hasta: date, ahora: datetime, calendario) -> list:
+    """Cada día entre desde y hasta (inclusive) con su disponibilidad."""
+    dias, fecha = [], desde
+    while fecha <= hasta:
+        dias.append(DiaDeVenta(fecha, motivo_sin_venta(fecha, ahora, calendario)))
+        fecha += timedelta(days=1)
+    return dias

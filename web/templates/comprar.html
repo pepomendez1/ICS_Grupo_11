@@ -1,5 +1,31 @@
 {% extends "base.html" %}
 {% block titulo %}Comprar entradas · EcoHarmony Park{% endblock %}
+{% block estilos %}
+<style>
+  .calendario { border: 0; padding: 0; margin: 0 0 22px; min-width: 0; }
+  .calendario legend { font-weight: 600; font-size: .92rem; padding: 0; margin-bottom: 2px; }
+  .calendario-ayuda { margin: 0 0 10px; }
+  .meses { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+  .mes { background: #fff; border: 1px solid var(--borde); border-radius: 12px; padding: 12px; }
+  .mes-titulo { margin: 0 0 8px; font-weight: 700; color: var(--bosque); text-transform: capitalize; }
+  .dias-semana, .dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+  .dias-semana span { font-size: .72rem; color: var(--suave); text-transform: uppercase; letter-spacing: .04em; padding-bottom: 2px; }
+  .celda { position: relative; }
+  /* El radio queda accesible (foco y lector de pantalla); la etiqueta es la celda visible. */
+  .celda input { position: absolute; inset: 0; opacity: 0; margin: 0; width: 100%; height: 100%; min-height: 0; }
+  .celda label {
+    display: flex; align-items: center; justify-content: center; height: 40px; margin: 0;
+    border-radius: 8px; cursor: pointer; font-weight: 600; font-size: .95rem; color: var(--texto);
+  }
+  .celda input:not(:disabled) + label:hover { background: var(--salvia); }
+  .celda label.hoy { box-shadow: inset 0 0 0 2px var(--musgo); }
+  .celda input:checked + label { background: var(--bosque); color: #fff; box-shadow: none; }
+  .celda input:focus-visible + label { outline: 3px solid var(--hoja); outline-offset: 1px; }
+  .celda input:disabled + label { color: #8f8a80; cursor: not-allowed; font-weight: 400; text-decoration: line-through; text-decoration-color: #c9c2b2; }
+  .fecha-elegida { margin: 10px 0 0; font-weight: 600; color: var(--bosque); min-height: 1.5em; }
+  @media (max-width: 560px) { .celda label { height: 44px; } }
+</style>
+{% endblock %}
 {% block contenido %}
 <h1>Comprar entradas</h1>
 <p class="bajada">Elegí el día, cuántos van y cómo querés pagar. Máximo {{ maximo }} entradas por compra.</p>
@@ -8,15 +34,33 @@
 {% if reintento %}<div class="aviso info" role="status">Cargamos los datos de tu compra anterior. Revisalos y confirmá: podés volver a pagar con tarjeta o elegir efectivo.</div>{% endif %}
 
 <form class="tarjeta" method="post" novalidate id="form-compra">
-  <div class="grilla">
-    <div class="campo">
-      <label for="fecha_visita">Fecha de visita <span class="ayuda">(cerrado los {{ dia_cierre }})</span></label>
-      <input id="fecha_visita" name="fecha_visita" type="date" min="{{ hoy }}" value="{{ form.get('fecha_visita', '') }}">
+  <fieldset class="campo calendario">
+    <legend>Fecha de visita</legend>
+    <p class="ayuda calendario-ayuda">{{ horario }}. Cerrado los {{ dia_cierre }}, el 25/12 y el 1/1. Se venden entradas hasta un mes adelante.</p>
+    <div class="meses">
+      {% for mes in meses %}
+      <div class="mes">
+        <p class="mes-titulo">{{ mes.titulo }}</p>
+        <div class="dias-semana" aria-hidden="true">{% for d in dias_cortos %}<span>{{ d }}</span>{% endfor %}</div>
+        <div class="dias">
+          {% for semana in mes.semanas %}{% for d in semana %}
+            {% if d %}{% set iso = d.fecha.isoformat() %}
+            <div class="celda">
+              <input type="radio" name="fecha_visita" value="{{ iso }}" id="dia-{{ iso }}"{% if not d.disponible %} disabled{% endif %} aria-label="{{ fecha_larga(d.fecha) }}{% if not d.disponible %}, no disponible: {{ d.motivo.corto }}{% endif %}"{% if form.get('fecha_visita') == iso %} checked{% endif %}>
+              <label for="dia-{{ iso }}" class="dia{% if d.fecha == hoy %} hoy{% endif %}"{% if not d.disponible %} title="No disponible: {{ d.motivo.corto }}"{% endif %}>{{ d.fecha.day }}</label>
+            </div>
+            {% else %}<div class="celda vacia" aria-hidden="true"></div>{% endif %}
+          {% endfor %}{% endfor %}
+        </div>
+      </div>
+      {% endfor %}
     </div>
-    <div class="campo">
-      <label for="cantidad">Cantidad de entradas</label>
-      <input id="cantidad" name="cantidad" type="number" min="1" max="{{ maximo }}" value="{{ form.get('cantidad', '') }}">
-    </div>
+    <p class="fecha-elegida" id="fecha-elegida" aria-live="polite"></p>
+  </fieldset>
+
+  <div class="campo">
+    <label for="cantidad">Cantidad de entradas</label>
+    <input id="cantidad" name="cantidad" type="number" min="1" max="{{ maximo }}" value="{{ form.get('cantidad', '') }}">
   </div>
 
   <div class="campo">
@@ -96,6 +140,15 @@
     const pase = document.querySelector("input[name=tipo_pase]:checked");
     total.textContent = formato(pase && n > 0 ? n * precios[pase.value] : 0);
   }
+
+  // Muestra en palabras el día elegido (el radio ya lo anuncia el lector de pantalla).
+  const elegida = document.getElementById("fecha-elegida");
+  function mostrarFecha() {
+    const radio = document.querySelector("input[name=fecha_visita]:checked");
+    elegida.textContent = radio ? "Elegiste: " + radio.getAttribute("aria-label") : "";
+  }
+  document.querySelectorAll("input[name=fecha_visita]").forEach(r => r.addEventListener("change", mostrarFecha));
+  mostrarFecha();
 
   cantidad.addEventListener("input", renderEdades);
   document.querySelectorAll("input[name=tipo_pase]").forEach(r => r.addEventListener("change", actualizarTotal));

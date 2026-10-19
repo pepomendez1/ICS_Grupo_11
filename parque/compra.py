@@ -11,8 +11,7 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Callable, Optional, Protocol
 
-from parque import config
-from parque.calendario import ahora_en_el_parque, fecha_maxima_de_compra, se_vende_para_hoy, texto_hora
+from parque.calendario import ahora_en_el_parque, motivo_sin_venta
 
 from parque.config import (  # noqa: F401  (se re-exportan para la web y los tests)
     CANTIDAD_MAXIMA_ENTRADAS,
@@ -205,20 +204,11 @@ class ServicioCompraEntradas:
             raise FormaPagoInvalidaError("Debe seleccionar la forma de pago")
 
     def _validar_fecha(self, fecha_visita) -> None:
-        ahora = self._reloj()
-        hoy = ahora.date()
-        if fecha_visita is None or _como_fecha(fecha_visita) < hoy:
+        if fecha_visita is None:
             raise FechaInvalidaError("La fecha de visita debe ser hoy o una fecha futura")
-        fecha = _como_fecha(fecha_visita)
-        maxima = fecha_maxima_de_compra(hoy)
-        if fecha > maxima:  # FAQ 25
-            raise FechaInvalidaError(
-                f"Se pueden comprar entradas hasta el {maxima.strftime('%d/%m/%Y')} (un mes desde hoy)"
-            )
-        if fecha == hoy and not se_vende_para_hoy(ahora):  # FAQ 26
-            raise FechaInvalidaError(
-                f"Para hoy se pueden comprar entradas hasta las "
-                f"{texto_hora(config.HORA_LIMITE_COMPRA_PARA_HOY)}. Elegí otra fecha."
-            )
-        if not self._calendario.esta_abierto(fecha):  # FAQ 1
-            raise ParqueCerradoError("El parque está cerrado en la fecha elegida")
+        motivo = motivo_sin_venta(_como_fecha(fecha_visita), self._reloj(), self._calendario)
+        if motivo is None:
+            return
+        if motivo.tipo == "cerrado":
+            raise ParqueCerradoError(motivo.mensaje)
+        raise FechaInvalidaError(motivo.mensaje)
