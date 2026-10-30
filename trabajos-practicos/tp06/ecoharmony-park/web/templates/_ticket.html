@@ -1,0 +1,30 @@
+{# Una entrada como ticket con talón. Recibe: r (ResultadoCompra), t (entrada + qr), estado. #}
+<article class="ticket">
+  <div class="ticket-cuerpo">
+    <div class="ticket-marca">
+      <img src="/static/logo-icono.svg" alt="" width="30" height="30">
+      <div><strong>EcoHarmony Park</strong><small>Bioparque · Entrada</small></div>
+    </div>
+    <dl>
+      <dt>Fecha</dt><dd>{{ r.fecha_visita.strftime('%d/%m/%Y') }}</dd>
+      <dt>Pase</dt><dd>{{ pases[r.tipo_pase.value].nombre }}</dd>
+      <dt>Visitante</dt><dd>{{ t.entrada.edad }} {{ "año" if t.entrada.edad == 1 else "años" }}</dd>
+      <dt>Tarifa</dt><dd>{{ t.entrada.tarifa }} · {{ t.entrada.precio | pesos }}</dd>
+      <dt>Número</dt><dd>Entrada {{ t.entrada.numero }} de {{ r.cantidad }}</dd>
+    </dl>
+    <span class="estado estado-{{ estado.clave }}">{{ estado.texto }}</span>
+  </div>
+  <div class="ticket-talon">
+    {% if t.qr %}
+      {{ t.qr | safe }}
+      <code>{{ t.entrada.codigo[:12] }}</code>
+    {% elif estado.clave in ("rechazada", "cancelada", "vencida") %}
+      <p class="espera" style="color: var(--error)">Esta entrada no es válida</p>
+    {% else %}
+      <p class="espera">
+        <svg viewBox="0 0 34 34" fill="none" aria-hidden="true"><circle cx="17" cy="17" r="14" stroke="#555F52" stroke-width="2"/><path d="M17 9v8l5 3" stroke="#555F52" stroke-width="2" stroke-linecap="round"/></svg>
+        El QR aparece cuando se confirma el pago
+      </p>
+    {% endif %}
+  </div>
+</article>

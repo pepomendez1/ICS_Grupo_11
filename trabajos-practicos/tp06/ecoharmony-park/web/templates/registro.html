@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titulo %}Crear cuenta · EcoHarmony Park{% endblock %}
+{% block contenido %}
+<div class="angosta">
+  <h1>Crear cuenta</h1>
+  <p class="bajada">Registrate para comprar tus entradas.</p>
+  <form class="tarjeta" method="post">
+    <div class="campo">
+      <label for="nombre">Nombre</label>
+      <input id="nombre" name="nombre" value="{{ form.get('nombre', '') }}" required autofocus>
+    </div>
+    <div class="campo">
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" value="{{ form.get('email', '') }}" required>
+    </div>
+    <div class="campo">
+      <label for="password">Contraseña <span class="ayuda">(mínimo 6 caracteres)</span></label>
+      <input id="password" name="password" type="password" minlength="6" required>
+    </div>
+    <button class="boton ancho" type="submit">Crear cuenta</button>
+    <p class="ayuda" style="margin-bottom:0">¿Ya tenés cuenta? <a href="{{ url_for('login') }}">Ingresá</a>.</p>
+  </form>
+</div>
+{% endblock %}

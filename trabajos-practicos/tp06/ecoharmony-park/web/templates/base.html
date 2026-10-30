@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#386641">
+  <title>{% block titulo %}EcoHarmony Park · Bioparque{% endblock %}</title>
+  <link rel="icon" href="/static/logo-icono.svg" type="image/svg+xml">
+  <link rel="icon" href="/static/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* Paleta de la PO (FAQ 3): #386641 #6A994E #A7C957 #F2E8CF #BC4749.
+       Contrastes verificados en tests/test_paleta.py (AA >= 4.5). */
+    :root {
+      --bosque: #386641;        /* primario: botones, títulos y links */
+      --musgo: #6A994E;         /* decorativo: bordes de acento e íconos (no para texto) */
+      --hoja: #A7C957;          /* decorativo: franjas y detalles (no para texto) */
+      --crema: #F2E8CF;         /* fondo */
+      --error: #BC4749;         /* solo errores y acentos puntuales, sobre fondo claro */
+      --papel: #FFFDF6;         /* tarjetas y fondo de avisos */
+      --texto: #243327;         /* texto corrido: tono oscuro de #386641 */
+      --suave: #555F52;         /* texto secundario */
+      --borde: #E2D7BA;         /* bordes: tono de #F2E8CF */
+      --salvia: #EEF3DF;        /* fondo de selección: tinte de #A7C957 */
+      --sobre-bosque: #FFFFFF;  /* texto sobre #386641 */
+      --foco: #386641;          /* indicador de foco */
+      --ok: #386641;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--crema); color: var(--texto);
+      font-family: "Lato", "Helvetica Neue", Arial, sans-serif; line-height: 1.5;
+      -webkit-text-size-adjust: 100%;
+    }
+    a { color: var(--bosque); }
+    :focus-visible { outline: 3px solid var(--foco); outline-offset: 2px; }
+    header { background: var(--papel); border-bottom: 4px solid var(--hoja); }
+    .barra {
+      max-width: 960px; margin: 0 auto; padding: 10px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px 20px; flex-wrap: wrap;
+    }
+    .marca {
+      font-size: 1.3rem; font-weight: 900; letter-spacing: -.01em;
+      color: var(--bosque); text-decoration: none; display: flex; align-items: center; gap: 10px;
+    }
+    .marca img { width: 46px; height: 46px; flex: none; display: block; }
+    .marca small {
+      display: block; font-weight: 700; font-size: .66rem; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--suave); margin-top: -2px;
+    }
+    nav { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+    nav a, nav button {
+      color: var(--bosque); text-decoration: none; font-size: .95rem; font-weight: 700;
+      background: none; border: 0; cursor: pointer; font-family: inherit; padding: 0;
+    }
+    nav a:hover, nav button:hover { text-decoration: underline; text-decoration-color: var(--hoja); text-decoration-thickness: 3px; }
+    main { max-width: 960px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1, h2, h3 { color: var(--bosque); line-height: 1.15; font-weight: 900; letter-spacing: -.01em; }
+    h1 { font-size: 2.2rem; margin: 0 0 8px; }
+    .bajada { color: var(--suave); margin: 0 0 28px; }
+    .tarjeta {
+      background: var(--papel); border: 1px solid var(--borde); border-radius: 14px;
+      padding: 28px; box-shadow: 0 1px 0 rgba(0,0,0,.03);
+    }
+    .angosta { max-width: 440px; margin: 0 auto; }
+    label { display: block; font-weight: 700; font-size: .92rem; margin-bottom: 6px; }
+    .ayuda { font-weight: 400; color: var(--suave); font-size: .85rem; }
+    input, select {
+      width: 100%; padding: 12px; border: 1px solid var(--borde); border-radius: 8px;
+      font: inherit; font-size: 1rem; background: #fff; color: var(--texto); min-height: 46px;
+    }
+    input:focus-visible, select:focus-visible { outline: 3px solid var(--foco); outline-offset: 1px; border-color: var(--bosque); }
+    .campo { margin-bottom: 20px; }
+    .grilla { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .opcion { position: relative; }
+    .opcion input { position: absolute; opacity: 0; }
+    .opcion span {
+      display: block; border: 1px solid var(--borde); border-radius: 10px; padding: 14px;
+      cursor: pointer; background: #fff; height: 100%;
+    }
+    .opcion strong { display: block; color: var(--bosque); }
+    .opcion small { color: var(--suave); }
+    .opcion input:checked + span { border-color: var(--bosque); box-shadow: inset 0 0 0 2px var(--bosque); background: var(--salvia); }
+    .opcion input:focus-visible + span { outline: 3px solid var(--foco); outline-offset: 2px; }
+    .edades { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+    .boton {
+      display: inline-block; background: var(--bosque); color: var(--sobre-bosque); border: 0;
+      padding: 13px 22px; border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer;
+      text-decoration: none; text-align: center; min-height: 46px;
+    }
+    .boton:hover { filter: brightness(.88); }
+    .boton.secundario { background: transparent; color: var(--bosque); border: 2px solid var(--bosque); }
+    .boton.secundario:hover { background: var(--salvia); filter: none; }
+    .ancho { width: 100%; }
+    .aviso { padding: 12px 16px; border-radius: 10px; margin-bottom: 20px; font-size: .95rem; background: var(--papel); border: 1px solid var(--borde); border-left-width: 5px; }
+    .aviso.error { color: var(--error); border-color: var(--error); }
+    .aviso.ok { color: var(--bosque); border-left-color: var(--musgo); }
+    .aviso.info { color: var(--texto); border-left-color: var(--hoja); }
+    .total {
+      display: flex; justify-content: space-between; align-items: baseline;
+      border-top: 1px dashed var(--borde); padding-top: 16px; margin: 8px 0 20px;
+    }
+    .total strong { font-size: 1.6rem; font-weight: 900; color: var(--bosque); }
+    dl.detalle { display: grid; grid-template-columns: auto 1fr; gap: 10px 24px; margin: 0; }
+    dl.detalle dt { color: var(--suave); }
+    dl.detalle dd { margin: 0; font-weight: 700; }
+    .pie { color: var(--suave); font-size: .85rem; text-align: center; padding: 24px; }
+    @media (max-width: 640px) {
+      .barra { padding: 10px 16px; }
+      nav { gap: 14px; width: 100%; }
+      nav a, nav button { font-size: .9rem; }
+      main { padding: 22px 16px 48px; }
+      .grilla, .opciones { grid-template-columns: 1fr; }
+      .grilla { gap: 0; }
+      h1 { font-size: 1.75rem; }
+      .tarjeta { padding: 20px; }
+    }
+    @media print {
+      header, .pie, .no-imprimir { display: none !important; }
+      body, main { background: #fff; padding: 0; }
+    }
+  </style>
+  {% block estilos %}{% endblock %}
+</head>
+<body>
+  <header>
+    <div class="barra">
+      <a class="marca" href="{{ url_for('inicio') }}" aria-label="EcoHarmony Park, inicio">
+        <img src="/static/logo.svg" alt="" width="46" height="46">
+        <span>EcoHarmony Park <small>Bioparque</small></span>
+      </a>
+      <nav>
+        {% if usuario %}
+          <a href="{{ url_for('comprar') }}">Comprar entradas</a>
+          {% if bandeja_simulada %}<a href="{{ url_for('mails') }}">Mis mails</a>{% endif %}
+          <form method="post" action="{{ url_for('logout') }}" style="margin:0">
+            <button type="submit">Salir ({{ usuario.nombre }})</button>
+          </form>
+        {% else %}
+          <a href="{{ url_for('login') }}">Ingresar</a>
+          <a href="{{ url_for('registro') }}">Crear cuenta</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+  <main>
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+      {% for categoria, mensaje in mensajes %}
+        <div class="aviso {{ categoria }}">{{ mensaje }}</div>
+      {% endfor %}
+    {% endwith %}
+    {% block contenido %}{% endblock %}
+  </main>
+  <div class="pie">EcoHarmony Park · Bioparque · {{ horario }}</div>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

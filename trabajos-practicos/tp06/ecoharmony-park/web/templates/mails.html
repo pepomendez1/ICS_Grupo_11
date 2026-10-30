@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titulo %}Mis mails · EcoHarmony Park{% endblock %}
+{% block estilos %}
+<style>
+  .adjunto { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 14px 0 0; padding: 10px 12px;
+             background: var(--salvia); border-radius: 8px; color: var(--bosque); }
+</style>
+{% endblock %}
+{% block contenido %}
+<h1>Mis mails</h1>
+<p class="bajada">Bandeja de prueba: así llegarían los mails si Gmail estuviera configurado.</p>
+{% for m in mails %}
+  <div class="tarjeta" style="margin-bottom:14px">
+    <div class="ayuda">{{ m.enviado | fecha_hora }} · Para: {{ m.para }}</div>
+    <h2 style="margin:6px 0 8px; font-size:1.15rem">{{ m.asunto }}</h2>
+    <p style="margin:0; white-space:pre-line; overflow-wrap:anywhere">{{ m.cuerpo }}</p>
+    {% if m.adjunto_nombre %}
+    <p class="adjunto">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true"><path d="M8 12.5 14.5 6a3 3 0 1 1 4.2 4.2l-8 8a5 5 0 0 1-7-7l7.5-7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Adjunto: <a href="{{ url_for('adjunto_mail', mail_id=m.id) }}" download>{{ m.adjunto_nombre }}</a> <span class="ayuda">(PDF)</span>
+    </p>
+    {% endif %}
+  </div>
+{% else %}
+  <div class="tarjeta">Todavía no recibiste mails. <a href="{{ url_for('comprar') }}">Comprá tus entradas</a>.</div>
+{% endfor %}
+{% endblock %}
