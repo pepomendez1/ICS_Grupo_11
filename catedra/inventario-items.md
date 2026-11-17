@@ -1,16 +1,16 @@
 # Inventario de ítems de configuración
 
-Inventario contrastado con el árbol del repositorio del commit `cfd8fc4cc2a20f7ed926c5c42ef837f2a5ff28e5`, más los documentos modificados por esta corrección. Fecha de revisión del inventario: 2026-11-17.
+Inventario contrastado con el árbol del repositorio del commit `ead43789baf6040966322f70a45d15d70bd176df`, más la actualización de las referencias al cronograma en README y TP04. Fecha de revisión del inventario: 2026-11-17.
 
-Cada fila identifica un archivo real. El SHA de blob identifica su contenido; el commit proporciona el contexto del conjunto. Para los documentos modificados en esta corrección, la revisión es el commit que incorpora este inventario. Los ID de archivo deben conservarse en futuras actualizaciones; los nuevos se agregan al final. Las reglas, origen y responsabilidad de cada familia se detallan en el [README](../README.md#ítems-de-configuración).
+Cada fila identifica un archivo real. El SHA de blob identifica su contenido; el commit proporciona el contexto del conjunto. Para este inventario, la revisión es el commit que incorpora su actualización. Los ID de archivo deben conservarse en futuras actualizaciones; los nuevos se agregan al final. Las reglas, origen y responsabilidad de cada familia se detallan en el [README](../README.md#ítems-de-configuración).
 
-La clasificación de ítems de configuración activos está en el [README](../README.md#ítems-de-configuración) y en [TP04](../trabajos-practicos/tp04/tp04-salida.md#3-definición-de-ítems-de-configuración). **Este archivo es un inventario físico de archivos, no una declaración de que cada archivo es IC:** también incluye recursos auxiliares, fuentes externas y material de estudio. La cátedra distingue IC de Producto, Proyecto e Iteración; la clasificación se asigna en esas tablas y no se deduce de la extensión del archivo. Los archivos aún no disponibles (como el cronograma oficial) no aparecen aquí como presentes.
+La clasificación de ítems de configuración activos está en el [README](../README.md#ítems-de-configuración) y en [TP04](../trabajos-practicos/tp04/tp04-salida.md#3-definición-de-ítems-de-configuración). **Este archivo es un inventario físico de archivos, no una declaración de que cada archivo es IC:** también incluye recursos auxiliares, fuentes externas y material de estudio. La cátedra distingue IC de Producto, Proyecto e Iteración; la clasificación se asigna en esas tablas y no se deduce de la extensión del archivo. Los archivos aún no disponibles no aparecen aquí como presentes. Las diapositivas y el cronograma incorporados se registran como referencias externas, sin declararlos IC activos del producto o proyecto.
 
 “Presente” sólo acredita existencia, no entrega ni aprobación docente. El estado de aprobación requiere evidencia propia. No se incluyen carpetas reservadas como entregables. La aplicación del TP06 se controla como conjunto, con todos sus componentes individualizados aquí.
 
 | ID de archivo | Nombre | Ubicación / acceso | Tipo / función | Revisión del contenido | Estado |
 |---|---|---|---|---|---|
-| F-001 | `README.md` | [README.md](../README.md) | Documentación de gestión | Commit de esta corrección | Presente; aprobación no acreditada |
+| F-001 | `README.md` | [README.md](../README.md) | Documentación de gestión | `66c04d5e4840901ea5f56a5ade11c032579e61bc` | Presente; aprobación no acreditada |
 | F-002 | `plan-de-catedra.pdf` | [catedra/plan-de-catedra.pdf](../catedra/plan-de-catedra.pdf) | Referencia externa | `ba7db2ce580e4ce8dbf224dd969eef1c1c689277` | Presente; aprobación no acreditada |
 | F-003 | `2026-08-14-scm.pdf` | [material-teorico/apuntes/2026-08-14-scm.pdf](../material-teorico/apuntes/2026-08-14-scm.pdf) | Material de estudio | `0332d8e3d46a1622ae8f0e4798baad67e77680ca` | Presente; aprobación no acreditada |
 | F-004 | `2026-08-21-agilismo-y-user-stories.pdf` | [material-teorico/apuntes/2026-08-21-agilismo-y-user-stories.pdf](../material-teorico/apuntes/2026-08-21-agilismo-y-user-stories.pdf) | Material de estudio | `6749b19d98ad6bff37ac2b36b5ee5f9c665c8568` | Presente; aprobación no acreditada |
@@ -38,7 +38,7 @@ La clasificación de ítems de configuración activos está en el [README](../RE
 | F-026 | `ti01-release-crm-saas-multi-tenant.pdf` | [trabajos-investigacion/ti01/ti01-release-crm-saas-multi-tenant.pdf](../trabajos-investigacion/ti01/ti01-release-crm-saas-multi-tenant.pdf) | Entregable / evidencia | `6414cb8b0edb9e4f0b395f710c014de30fe7f944` | Presente; aprobación no acreditada |
 | F-027 | `ti02-poster-scrum-at-scale.pdf` | [trabajos-investigacion/ti02/ti02-poster-scrum-at-scale.pdf](../trabajos-investigacion/ti02/ti02-poster-scrum-at-scale.pdf) | Entregable / evidencia | `bb4654ce0ab9701b38cb9fe4bc5914e458ed51fb` | Presente; aprobación no acreditada |
 | F-028 | `isw-enunciados-tp-evaluables-2026.pdf` | [trabajos-practicos/isw-enunciados-tp-evaluables-2026.pdf](../trabajos-practicos/isw-enunciados-tp-evaluables-2026.pdf) | Referencia externa | `4ea078a9e798ccec9ba762ce767e43cb85560f4f` | Presente; aprobación no acreditada |
-| F-029 | `tp04-salida.md` | [trabajos-practicos/tp04/tp04-salida.md](../trabajos-practicos/tp04/tp04-salida.md) | Documentación de gestión | Commit de esta corrección | Presente; aprobación no acreditada |
+| F-029 | `tp04-salida.md` | [trabajos-practicos/tp04/tp04-salida.md](../trabajos-practicos/tp04/tp04-salida.md) | Documentación de gestión | `12b1dcf1bbae981c6cd7faf93bbc121ccdc69a23` | Presente; aprobación no acreditada |
 | F-030 | `.env.example` | [trabajos-practicos/tp06/tp06-ecoharmony-park/.env.example](../trabajos-practicos/tp06/tp06-ecoharmony-park/.env.example) | Configuración / documentación del software | `721e3b42e44328193b7bfef270dd16bb9c354b38` | Presente; aprobación no acreditada |
 | F-031 | `.gitignore` | [trabajos-practicos/tp06/tp06-ecoharmony-park/.gitignore](../trabajos-practicos/tp06/tp06-ecoharmony-park/.gitignore) | Configuración / documentación del software | `6795dd6b6193cf967d831b50e5f72a1bfc1bdf16` | Presente; aprobación no acreditada |
 | F-032 | `DECISIONES_DISENO.md` | [trabajos-practicos/tp06/tp06-ecoharmony-park/DECISIONES_DISENO.md](../trabajos-practicos/tp06/tp06-ecoharmony-park/DECISIONES_DISENO.md) | Configuración / documentación del software | `0b38098a2b25335cc2f97f1a5b26b4748c0fee8e` | Presente; aprobación no acreditada |
@@ -98,12 +98,19 @@ La clasificación de ítems de configuración activos está en el [README](../RE
 | F-086 | `tp07-maqueta-final-03.jpeg` | [trabajos-practicos/tp07/tp07-maqueta-final-03.jpeg](../trabajos-practicos/tp07/tp07-maqueta-final-03.jpeg) | Entregable / evidencia | `e4fe02642e5d66122a4cbb3e361d96d7dd589c25` | Presente; aprobación no acreditada |
 | F-087 | `tp07-salida.pdf` | [trabajos-practicos/tp07/tp07-salida.pdf](../trabajos-practicos/tp07/tp07-salida.pdf) | Entregable / evidencia | `f9e92b335455ddd7be9822a54d93981d75aa84ab` | Presente; aprobación no acreditada |
 | F-088 | `inventario-items.md` | [catedra/inventario-items.md](inventario-items.md) | Registro de gestión | Commit de esta corrección | Presente; sujeto a revisión del grupo |
+| F-089 | `09-testing-de-software.pdf` | [material-teorico/diapositivas/09-testing-de-software.pdf](../material-teorico/diapositivas/09-testing-de-software.pdf) | Referencia externa | `fd7458e8bff6fb26da7a8df16d27a1e67807216f` | Presente; aprobación no acreditada |
+| F-090 | `10-lean-y-kanban.pdf` | [material-teorico/diapositivas/10-lean-y-kanban.pdf](../material-teorico/diapositivas/10-lean-y-kanban.pdf) | Referencia externa | `830156545e0b3b0045edd2ef06c01f44477617f5` | Presente; aprobación no acreditada |
+| F-091 | `11-metricas-en-los-diferentes-enfoques.pdf` | [material-teorico/diapositivas/11-metricas-en-los-diferentes-enfoques.pdf](../material-teorico/diapositivas/11-metricas-en-los-diferentes-enfoques.pdf) | Referencia externa | `113719e7632f2303d6228ec7665b6796ce27d731` | Presente; aprobación no acreditada |
+| F-092 | `12-ppqa-introduccion.pdf` | [material-teorico/diapositivas/12-ppqa-introduccion.pdf](../material-teorico/diapositivas/12-ppqa-introduccion.pdf) | Referencia externa | `a8d733482385c2c46c336e22a86e91c7f61d3bb3` | Presente; aprobación no acreditada |
+| F-093 | `13-revisiones-tecnicas.pdf` | [material-teorico/diapositivas/13-revisiones-tecnicas.pdf](../material-teorico/diapositivas/13-revisiones-tecnicas.pdf) | Referencia externa | `55640781e0b99a9c3fc292f4007abafc3487d39d` | Presente; aprobación no acreditada |
+| F-094 | `14-auditorias-de-software.pdf` | [material-teorico/diapositivas/14-auditorias-de-software.pdf](../material-teorico/diapositivas/14-auditorias-de-software.pdf) | Referencia externa | `22cd41142107c975417aaa56ba5a9df7ce012bf3` | Presente; aprobación no acreditada |
+| F-095 | `15-retrospectivas.pdf` | [material-teorico/diapositivas/15-retrospectivas.pdf](../material-teorico/diapositivas/15-retrospectivas.pdf) | Referencia externa | `f436dc0ee62a3c8d42b3a4ac1a6d5a9649d110b1` | Presente; aprobación no acreditada |
+| F-096 | `cronograma-catedra-2026.pdf` | [catedra/cronograma-catedra-2026.pdf](../catedra/cronograma-catedra-2026.pdf) | Referencia externa | `f8f924220e6bbb686c04e384303851535bc33e70` | Presente; aprobación no acreditada |
 
 ## Pendientes de incorporación y cotejo
 
 | Elemento | Situación verificada | Acción necesaria |
 |---|---|---|
-| Cronograma oficial | No se encontró un archivo de cronograma del curso | Obtener el original de la cátedra, incorporarlo en `catedra/` y registrar la nueva fila; no completar fechas estimadas |
 | Plantilla oficial de IC | No se encontró la plantilla con los encabezados exigidos | Cotejar las columnas de este registro y de la tabla de familias con el original y completar cualquier campo adicional |
 | TP sin entregables incorporados | TP01, TP02, TP03, TP05 y TP08 a TP14 tienen directorios reservados sin entregables | Incorporar los resultados correspondientes cuando estén disponibles; no declarar trabajos aprobados por la existencia de una carpeta |
 
