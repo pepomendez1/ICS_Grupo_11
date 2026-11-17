@@ -108,6 +108,8 @@ La clasificación de ítems de configuración activos está en el [README](../RE
 | F-096 | `cronograma-catedra-2026.pdf` | [catedra/cronograma-catedra-2026.pdf](../catedra/cronograma-catedra-2026.pdf) | Referencia externa | `f8f924220e6bbb686c04e384303851535bc33e70` | Presente; aprobación no acreditada |
 | F-097 | `2026-09-04-gestion-de-proyectos-procesos-y-mvp.pdf` | [material-teorico/apuntes/2026-09-04-gestion-de-proyectos-procesos-y-mvp.pdf](../material-teorico/apuntes/2026-09-04-gestion-de-proyectos-procesos-y-mvp.pdf) | Material de estudio | `7bbece83b66e0b7dc569d75955fe0556e61003ac` | Presente; aprobación no acreditada |
 | F-098 | `2026-09-11-metricas-agilismo-y-scrum.pdf` | [material-teorico/apuntes/2026-09-11-metricas-agilismo-y-scrum.pdf](../material-teorico/apuntes/2026-09-11-metricas-agilismo-y-scrum.pdf) | Material de estudio | `834132e316bc7a1ff8a712fb2918dc1ecd7e4def` | Presente; aprobación no acreditada |
+| F-099 | `2026-09-25-niveles-de-prueba-y-testing.pdf` | [material-teorico/apuntes/2026-09-25-niveles-de-prueba-y-testing.pdf](../material-teorico/apuntes/2026-09-25-niveles-de-prueba-y-testing.pdf) | Material de estudio | `443653f53c6f8ba724fb0c395e8f7db43461c139` | Presente; aprobación no acreditada |
+| F-100 | `2026-10-16-lean-kanban-y-agile-testing.pdf` | [material-teorico/apuntes/2026-10-16-lean-kanban-y-agile-testing.pdf](../material-teorico/apuntes/2026-10-16-lean-kanban-y-agile-testing.pdf) | Material de estudio | `ba3160439fcbc7506837f3ea8cf974897d990616` | Presente; aprobación no acreditada |
 
 ## Pendientes de incorporación y cotejo
 
