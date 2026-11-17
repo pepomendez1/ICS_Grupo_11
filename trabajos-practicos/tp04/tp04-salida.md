@@ -61,27 +61,23 @@ La salida de este TP es la URL pública y este documento de definición de IC y 
 
 ## 3. Definición de ítems de configuración
 
-Se identifican elementos reales del repositorio y se distingue entre entregables, material de estudio, referencias externas y registros de gestión. Una carpeta reservada no acredita un trabajo realizado.
+En las diapositivas 17, 38 y 39 del material de SCM, la cátedra define los IC como artefactos del producto o proyecto que requieren conocer su estado y evolución, exige identificación unívoca, regla de nombrado y ubicación, y distingue **Producto / Proyecto / Iteración**. Por ello, esta tabla clasifica los ítems controlados y no confunde los archivos de consulta con el producto desarrollado.
 
-| ID | Ítem / alcance | Descripción y función | Regla de nombrado | Ubicación física | Tipo | Origen / responsable de mantenimiento | Identificación de versión y estado |
-|---|---|---|---|---|---|---|---|
-| IC-01 | README | Organización y reglas de SCM | `README.md` | Raíz | Documentación de gestión | Grupo 11 | Commit Git; documento en evolución |
-| IC-02 | Plan de cátedra | Planificación institucional de la asignatura | `plan-de-catedra.pdf` | `catedra/` | Referencia externa | Cátedra; grupo incorpora el original | Blob Git; presente |
-| IC-03 | Apuntes | Notas de clase elaboradas por estudiantes | `<fecha>-<tema>.<ext>` | `material-teorico/apuntes/` | Material de estudio | Autores de los apuntes; grupo mantiene | Blob Git; presentes |
-| IC-04 | Bibliografía | Documentos consultados para el cursado | `<tema>-<titulo>.<ext>` | `material-teorico/bibliografia/` | Referencia externa | Autores originales; grupo incorpora | Blob Git; presente |
-| IC-05 | Diapositivas | Presentaciones de los temas de la asignatura | `<nro>-<tema>.<ext>` | `material-teorico/diapositivas/` | Referencia externa | Cátedra; grupo incorpora | Blob Git; presentes |
-| IC-06 | Enunciados de TP | Consignas y entregables requeridos | `isw-enunciados-tp-evaluables-<año>.pdf` | `trabajos-practicos/` | Referencia externa | Cátedra; grupo incorpora | Blob Git; presente |
-| IC-07 | Informe del TP04 | URL, diseño del repositorio y criterios SCM | `tp04-salida.md` | `trabajos-practicos/tp04/` | Entregable documental | Grupo 11 | Commit Git; presente, aprobación docente no acreditada |
-| IC-08 | Aplicación del TP06 | Código, pruebas, esquema SQL, configuración, documentación y recursos de EcoHarmony Park | `tp06-ecoharmony-park/`; nombres internos propios de las herramientas | `trabajos-practicos/tp06/` | Producto de software compuesto | Grupo 11 | Commit Git del conjunto; presente |
-| IC-09 | Informe y evidencias del TP07 | Informe, gráficos y fotografías de la maqueta | `tp07-<descripcion>.<ext>` | `trabajos-practicos/tp07/` | Entregable documental y evidencias | Grupo 11 | Blob Git por archivo; presentes |
-| IC-10 | Lineamientos de investigación | Consigna oficial de investigación | `isw-lineamientos-trabajos-investigacion-2026-2c.pdf` | `trabajos-investigacion/` | Referencia externa | Cátedra; grupo incorpora | Blob Git; presente |
-| IC-11 | Trabajo de investigación 01 | Documento sobre release de CRM SaaS multi-tenant | `ti01-<descripcion>.pdf` | `trabajos-investigacion/ti01/` | Entregable documental | Grupo 11 | Blob Git; presente |
-| IC-12 | Trabajo de investigación 02 | Póster sobre Scrum at Scale | `ti02-<descripcion>.pdf` | `trabajos-investigacion/ti02/` | Entregable documental | Grupo 11 | Blob Git; presente |
-| IC-13 | Material de preparación de parciales | Temarios y resúmenes; no son exámenes resueltos ni productos del proyecto | `<descripcion>.<ext>` | `parciales/` | Material de estudio | Grupo mantiene las copias; autoría según documento | Blob Git; presente |
-| IC-14 | Inventario de archivos | Identificación individual, ruta, tipo y revisión de los archivos | `inventario-items.md` | `catedra/` | Registro de gestión | Grupo 11 | Commit Git; actualizar al incorporar, mover o retirar archivos |
+| ID | Nombre del ítem de configuración | Regla de nombrado | Ubicación física | Tipo de ítem (Producto / Proyecto / Iteración) | Estado y alcance |
+|---|---|---|---|---|---|
+| IC-01 | Reglas de gestión de configuración del grupo | `README.md` | Raíz | Proyecto (común) | Presente |
+| IC-07 | Definición del repositorio y SCM del TP04 | `tp04-salida.md` | `trabajos-practicos/tp04/` | Proyecto (entrega TP04) | Presente; revisión docente pendiente |
+| IC-08 | Aplicación EcoHarmony Park: código, diseño, pruebas y recursos | `tp06-ecoharmony-park/` (nombres internos del lenguaje y herramientas) | `trabajos-practicos/tp06/` | Producto | Presente; se controla como conjunto |
+| IC-09 | Informe, maqueta y evidencias del TP07 | `tp07-<descripcion>.<ext>` | `trabajos-practicos/tp07/` | Proyecto (entrega TP07) | Presentes; revisar clasificación de gráficos por iteración |
+| IC-11 | Documento del trabajo de investigación 01 | `ti01-<descripcion>.pdf` | `trabajos-investigacion/ti01/` | Proyecto (entrega TI01) | Presente |
+| IC-12 | Póster del trabajo de investigación 02 | `ti02-<descripcion>.pdf` | `trabajos-investigacion/ti02/` | Proyecto (entrega TI02) | Presente |
+| IC-14 | Inventario de elementos del repositorio | `inventario-items.md` | `catedra/` | Proyecto (común) | Presente; registra también referencias |
 
-El [inventario individual](../../catedra/inventario-items.md) detalla los archivos. No se dispone de la plantilla original de la cátedra para cotejar sus encabezados exactos; se explicitan ID, alcance, descripción, regla, ubicación, tipo, origen/responsabilidad, revisión y estado. Si la plantilla exige otros campos, deben completarse a partir de esa fuente.
+**Proyecto (común)** indica documentos que acompañan el trabajo del grupo; **Proyecto (entrega)** identifica el hito asociado. **Iteración** se utilizará para artefactos específicos de una iteración cuando estén identificados, por ejemplo un plan o reporte de defectos. No se inventan iteraciones a partir de carpetas de TP. Los gráficos de TP07 deben revisarse antes de asignarles una iteración.
 
+El [inventario individual](../../catedra/inventario-items.md) registra también bibliografía, apuntes, material de cátedra y archivos de referencia, sin equiparar todos esos archivos a IC activos. Los ID de las categorías que se reclasificaron como referencias se reservan por trazabilidad. No se acredita aprobación docente solamente por estar el archivo publicado.
+
+El cronograma solicitado por la profesora **no se encontró en** `catedra/`; se incorporará el original cuando esté disponible.
 ## 4. Reglas de nombrado
 
 Se aplican las [reglas y excepciones del README](../../README.md#convenciones-y-reglas-de-nombrado). Los nombres de documentos externos conservan la identificación de su edición; `2c` sólo identifica el archivo oficial de lineamientos y no agrega un campo a todos los entregables. Las revisiones se recuperan por Git, no mediante un sufijo de versión de LB.
