@@ -110,12 +110,15 @@ La clasificación de ítems de configuración activos está en el [README](../RE
 | F-098 | `2026-09-11-metricas-agilismo-y-scrum.pdf` | [material-teorico/apuntes/2026-09-11-metricas-agilismo-y-scrum.pdf](../material-teorico/apuntes/2026-09-11-metricas-agilismo-y-scrum.pdf) | Material de estudio | `834132e316bc7a1ff8a712fb2918dc1ecd7e4def` | Presente; aprobación no acreditada |
 | F-099 | `2026-09-25-niveles-de-prueba-y-testing.pdf` | [material-teorico/apuntes/2026-09-25-niveles-de-prueba-y-testing.pdf](../material-teorico/apuntes/2026-09-25-niveles-de-prueba-y-testing.pdf) | Material de estudio | `443653f53c6f8ba724fb0c395e8f7db43461c139` | Presente; aprobación no acreditada |
 | F-100 | `2026-10-16-lean-kanban-y-agile-testing.pdf` | [material-teorico/apuntes/2026-10-16-lean-kanban-y-agile-testing.pdf](../material-teorico/apuntes/2026-10-16-lean-kanban-y-agile-testing.pdf) | Material de estudio | `ba3160439fcbc7506837f3ea8cf974897d990616` | Presente; aprobación no acreditada |
+| F-101 | `tp01-enunciado-requerimientos-agiles-user-stories.pdf` | [trabajos-practicos/tp01/tp01-enunciado-requerimientos-agiles-user-stories.pdf](../trabajos-practicos/tp01/tp01-enunciado-requerimientos-agiles-user-stories.pdf) | Referencia externa | `28c4119670134900cf6182dd6d4857903b5baac8` | Presente; aprobación no acreditada |
+| F-102 | `tp02-enunciado-requerimientos-agiles-us-y-estimaciones.pdf` | [trabajos-practicos/tp02/tp02-enunciado-requerimientos-agiles-us-y-estimaciones.pdf](../trabajos-practicos/tp02/tp02-enunciado-requerimientos-agiles-us-y-estimaciones.pdf) | Referencia externa | `93f567925da65d30777234fe8a9ead3fe67d2bfa` | Presente; aprobación no acreditada |
+| F-103 | `tp03-enunciado-requerimientos-agiles-us-estimaciones-y-mvp.pdf` | [trabajos-practicos/tp03/tp03-enunciado-requerimientos-agiles-us-estimaciones-y-mvp.pdf](../trabajos-practicos/tp03/tp03-enunciado-requerimientos-agiles-us-estimaciones-y-mvp.pdf) | Referencia externa | `a631fe2a96a4e2c64115f90f837e72be36443e40` | Presente; aprobación no acreditada |
 
 ## Pendientes de incorporación y cotejo
 
 | Elemento | Situación verificada | Acción necesaria |
 |---|---|---|
 | Plantilla oficial de IC | No se encontró la plantilla con los encabezados exigidos | Cotejar las columnas de este registro y de la tabla de familias con el original y completar cualquier campo adicional |
-| TP sin entregables incorporados | TP01, TP02, TP03, TP05 y TP08 a TP14 tienen directorios reservados sin entregables | Incorporar los resultados correspondientes cuando estén disponibles; no declarar trabajos aprobados por la existencia de una carpeta |
+| TP sin entregables incorporados | TP01, TP02 y TP03 sólo tienen sus enunciados; TP05 y TP08 a TP14 tienen directorios reservados sin entregables | Incorporar los resultados correspondientes cuando estén disponibles; no declarar trabajos aprobados por la existencia de una carpeta |
 
 El plan de cátedra sí está presente: [plan-de-catedra.pdf](plan-de-catedra.pdf). La línea base histórica y el criterio para establecer nuevas LB están en el [README](../README.md#líneas-base-del-proyecto).
