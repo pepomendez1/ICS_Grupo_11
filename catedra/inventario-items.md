@@ -4,6 +4,8 @@ Inventario contrastado con el árbol del repositorio del commit `cfd8fc4cc2a20f7
 
 Cada fila identifica un archivo real. El SHA de blob identifica su contenido; el commit proporciona el contexto del conjunto. Para los documentos modificados en esta corrección, la revisión es el commit que incorpora este inventario. Los ID de archivo deben conservarse en futuras actualizaciones; los nuevos se agregan al final. Las reglas, origen y responsabilidad de cada familia se detallan en el [README](../README.md#ítems-de-configuración).
 
+La clasificación de ítems de configuración activos está en el [README](../README.md#ítems-de-configuración) y en [TP04](../trabajos-practicos/tp04/tp04-salida.md#3-definición-de-ítems-de-configuración). **Este archivo es un inventario físico de archivos, no una declaración de que cada archivo es IC:** también incluye recursos auxiliares, fuentes externas y material de estudio. La cátedra distingue IC de Producto, Proyecto e Iteración; la clasificación se asigna en esas tablas y no se deduce de la extensión del archivo. Los archivos aún no disponibles (como el cronograma oficial) no aparecen aquí como presentes.
+
 “Presente” sólo acredita existencia, no entrega ni aprobación docente. El estado de aprobación requiere evidencia propia. No se incluyen carpetas reservadas como entregables. La aplicación del TP06 se controla como conjunto, con todos sus componentes individualizados aquí.
 
 | ID de archivo | Nombre | Ubicación / acceso | Tipo / función | Revisión del contenido | Estado |
