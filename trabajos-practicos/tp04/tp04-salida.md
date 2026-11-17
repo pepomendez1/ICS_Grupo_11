@@ -55,7 +55,7 @@ Usuarios de GitHub con acceso al repositorio:
 
 La [estructura del repositorio](../../README.md#estructura-del-proyecto) y las [reglas de nombrado](../../README.md#convenciones-y-reglas-de-nombrado) se mantienen en el README como referencia común.
 
-El [plan de cátedra](../../catedra/plan-de-catedra.pdf) ya está incorporado. El **cronograma oficial del curso está pendiente de incorporación**: debe obtenerse de la cátedra y agregarse a `catedra/`, sin inventar fechas.
+El [plan de cátedra](../../catedra/plan-de-catedra.pdf) y el [cronograma oficial del curso 2026](../../catedra/cronograma-catedra-2026.pdf) están incorporados en `catedra/`. Se conserva exactamente el PDF del cronograma proporcionado, reformateado para mejorar su legibilidad.
 
 La salida de este TP es la URL pública y este documento de definición de IC y criterios de LB, de acuerdo con el [enunciado del TP04, página 9](../isw-enunciados-tp-evaluables-2026.pdf). “Salida” significa entregable exigido por una consigna; no es una segunda clasificación del mismo archivo.
 
@@ -77,7 +77,7 @@ En las diapositivas 17, 38 y 39 del material de SCM, la cátedra define los IC c
 
 El [inventario individual](../../catedra/inventario-items.md) registra también bibliografía, apuntes, material de cátedra y archivos de referencia, sin equiparar todos esos archivos a IC activos. Los ID de las categorías que se reclasificaron como referencias se reservan por trazabilidad. No se acredita aprobación docente solamente por estar el archivo publicado.
 
-El cronograma solicitado por la profesora **no se encontró en** `catedra/`; se incorporará el original cuando esté disponible.
+El cronograma solicitado por la profesora está registrado en el inventario como **referencia externa (F-096)**; su incorporación no implica aprobación docente ni la creación de una nueva línea base.
 ## 4. Reglas de nombrado
 
 Se aplican las [reglas y excepciones del README](../../README.md#convenciones-y-reglas-de-nombrado). Los nombres de documentos externos conservan la identificación de su edición; `2c` sólo identifica el archivo oficial de lineamientos y no agrega un campo a todos los entregables. Las revisiones se recuperan por Git, no mediante un sufijo de versión de LB.

@@ -90,6 +90,7 @@ ICS_Grupo_11/
 │
 ├── catedra/
 │   ├── plan-de-catedra.pdf
+│   ├── cronograma-catedra-2026.pdf
 │   └── inventario-items.md
 │
 ├── material-teorico/
@@ -129,7 +130,7 @@ ICS_Grupo_11/
 
 **`catedra/`**
 
-Contiene el [plan de cátedra](catedra/plan-de-catedra.pdf) ya incorporado y el [inventario de ítems](catedra/inventario-items.md). El cronograma oficial del curso está **pendiente de incorporación**: no se encontró en el repositorio y no se reemplaza por fechas estimadas. Cuando el grupo disponga del original, deberá incorporarlo aquí como `cronograma-catedra-2026.<ext>` y registrarlo en el inventario.
+Contiene el [plan de cátedra](catedra/plan-de-catedra.pdf), el [cronograma oficial del curso 2026](catedra/cronograma-catedra-2026.pdf) y el [inventario de ítems](catedra/inventario-items.md). El cronograma está incorporado y registrado como referencia externa; se conserva exactamente el PDF proporcionado, reformateado para mejorar su legibilidad.
 
 **`material-teorico/`**
 
