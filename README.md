@@ -287,27 +287,23 @@ reglas-de-comunicacion.md
 
 ## Ítems de configuración
 
-Se controlan tanto los entregables del grupo como las copias de referencia necesarias para reproducir el trabajo. Se distingue su función: un material de estudio no es un producto desarrollado. Las categorías siguientes corresponden a archivos presentes; los directorios reservados sin entregables no se presentan como trabajos terminados.
+Un **ítem de configuración (IC)** es un artefacto del producto o del proyecto que puede cambiar o debe compartirse, y del cual necesitamos conocer el estado y la evolución. Su identificación requiere un nombre unívoco, una regla de nombrado y una ubicación dentro del repositorio (material de cátedra de SCM, diapositivas 17 y 38).
 
-| ID | Ítem / alcance | Descripción y función | Regla de nombrado | Ubicación física | Tipo | Origen / responsable de mantenimiento | Identificación de versión y estado |
-|---|---|---|---|---|---|---|---|
-| IC-01 | README | Organización y reglas de SCM | `README.md` | Raíz | Documentación de gestión | Grupo 11 | Commit Git; documento en evolución |
-| IC-02 | Plan de cátedra | Planificación institucional de la asignatura | `plan-de-catedra.pdf` | `catedra/` | Referencia externa | Cátedra; grupo incorpora el original | Blob Git; presente |
-| IC-03 | Apuntes | Notas de clase elaboradas por estudiantes | `<fecha>-<tema>.<ext>` | `material-teorico/apuntes/` | Material de estudio | Autores de los apuntes; grupo mantiene | Blob Git; presentes |
-| IC-04 | Bibliografía | Documentos consultados para el cursado | `<tema>-<titulo>.<ext>` | `material-teorico/bibliografia/` | Referencia externa | Autores originales; grupo incorpora | Blob Git; presente |
-| IC-05 | Diapositivas | Presentaciones de los temas de la asignatura | `<nro>-<tema>.<ext>` | `material-teorico/diapositivas/` | Referencia externa | Cátedra; grupo incorpora | Blob Git; presentes |
-| IC-06 | Enunciados de TP | Consignas y entregables requeridos | `isw-enunciados-tp-evaluables-<año>.pdf` | `trabajos-practicos/` | Referencia externa | Cátedra; grupo incorpora | Blob Git; presente |
-| IC-07 | Informe del TP04 | URL, diseño del repositorio y criterios SCM | `tp04-salida.md` | `trabajos-practicos/tp04/` | Entregable documental | Grupo 11 | Commit Git; presente, aprobación docente no acreditada |
-| IC-08 | Aplicación del TP06 | Código, pruebas, esquema SQL, configuración, documentación y recursos de EcoHarmony Park | `tp06-ecoharmony-park/`; nombres internos propios de las herramientas | `trabajos-practicos/tp06/` | Producto de software compuesto | Grupo 11 | Commit Git del conjunto; presente |
-| IC-09 | Informe y evidencias del TP07 | Informe, gráficos y fotografías de la maqueta | `tp07-<descripcion>.<ext>` | `trabajos-practicos/tp07/` | Entregable documental y evidencias | Grupo 11 | Blob Git por archivo; presentes |
-| IC-10 | Lineamientos de investigación | Consigna oficial de investigación | `isw-lineamientos-trabajos-investigacion-2026-2c.pdf` | `trabajos-investigacion/` | Referencia externa | Cátedra; grupo incorpora | Blob Git; presente |
-| IC-11 | Trabajo de investigación 01 | Documento sobre release de CRM SaaS multi-tenant | `ti01-<descripcion>.pdf` | `trabajos-investigacion/ti01/` | Entregable documental | Grupo 11 | Blob Git; presente |
-| IC-12 | Trabajo de investigación 02 | Póster sobre Scrum at Scale | `ti02-<descripcion>.pdf` | `trabajos-investigacion/ti02/` | Entregable documental | Grupo 11 | Blob Git; presente |
-| IC-13 | Material de preparación de parciales | Temarios y resúmenes; no son exámenes resueltos ni productos del proyecto | `<descripcion>.<ext>` | `parciales/` | Material de estudio | Grupo mantiene las copias; autoría según documento | Blob Git; presente |
-| IC-14 | Inventario de archivos | Identificación individual, ruta, tipo y revisión de los archivos | `inventario-items.md` | `catedra/` | Registro de gestión | Grupo 11 | Commit Git; actualizar al incorporar, mover o retirar archivos |
+La cátedra diferencia **Producto**, **Proyecto** e **Iteración** (diapositiva 39). Para el proyecto se identifican elementos comunes y documentos asociados a entregas; los registros específicos de una iteración deben asociarse con esa iteración identificada, sin suponerla por el nombre de un TP. Los archivos externos y el material de estudio pueden almacenarse para consulta **sin declararlos automáticamente IC del proyecto**.
 
-El [inventario individual](catedra/inventario-items.md) identifica los archivos y sus revisiones. “Presente” no significa “aprobado”.
+| ID | Nombre del ítem de configuración | Regla de nombrado | Ubicación física | Tipo de ítem (Producto / Proyecto / Iteración) | Estado y alcance |
+|---|---|---|---|---|---|
+| IC-01 | Reglas de gestión de configuración del grupo | `README.md` | Raíz | Proyecto (común) | Presente |
+| IC-07 | Definición del repositorio y SCM del TP04 | `tp04-salida.md` | `trabajos-practicos/tp04/` | Proyecto (entrega TP04) | Presente; revisión docente pendiente |
+| IC-08 | Aplicación EcoHarmony Park: código, diseño, pruebas y recursos | `tp06-ecoharmony-park/` (nombres internos del lenguaje y herramientas) | `trabajos-practicos/tp06/` | Producto | Presente; se controla como conjunto |
+| IC-09 | Informe, maqueta y evidencias del TP07 | `tp07-<descripcion>.<ext>` | `trabajos-practicos/tp07/` | Proyecto (entrega TP07) | Presentes; revisar clasificación de gráficos por iteración |
+| IC-11 | Documento del trabajo de investigación 01 | `ti01-<descripcion>.pdf` | `trabajos-investigacion/ti01/` | Proyecto (entrega TI01) | Presente |
+| IC-12 | Póster del trabajo de investigación 02 | `ti02-<descripcion>.pdf` | `trabajos-investigacion/ti02/` | Proyecto (entrega TI02) | Presente |
+| IC-14 | Inventario de elementos del repositorio | `inventario-items.md` | `catedra/` | Proyecto (común) | Presente; registra también referencias |
 
+La clasificación *Producto* incluye el software y sus componentes; *Proyecto* incluye la organización, los registros y las entregas del equipo; *Iteración* se reserva a elementos propios de una iteración identificada, como un plan de iteración o reporte de defectos (diapositiva 39). En TP07 hay gráficos burndown/burnup, pero falta corroborar en el informe si corresponden a una iteración específica antes de registrarlos como IC de *Iteración*.
+
+**Archivos de referencia, fuera de esta selección de IC:** plan de cátedra, diapositivas, bibliografía, apuntes, resúmenes de parciales, enunciados y lineamientos oficiales. Permanecen accesibles en el repositorio; el [inventario individual](catedra/inventario-items.md) mantiene su localización y revisión. Los identificadores IC-02 a IC-06, IC-10 e IC-13 quedan reservados como referencias históricas de la tabla anterior, no como ítems activos. La presencia de un archivo no implica aprobación de la cátedra.
 ---
 
 ## Control de versiones
