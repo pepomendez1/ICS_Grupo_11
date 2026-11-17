@@ -89,6 +89,8 @@ La estructura general del repositorio es la siguiente:
 ICS_Grupo_11/
 │
 ├── catedra/
+│   ├── plan-de-catedra.pdf
+│   └── inventario-items.md
 │
 ├── material-teorico/
 │   ├── apuntes/
@@ -127,7 +129,7 @@ ICS_Grupo_11/
 
 **`catedra/`**
 
-Contiene el material institucional provisto por la cátedra, como el plan de cátedra, las condiciones de cursado y documentos equivalentes.
+Contiene el [plan de cátedra](catedra/plan-de-catedra.pdf) ya incorporado y el [inventario de ítems](catedra/inventario-items.md). El cronograma oficial del curso está **pendiente de incorporación**: no se encontró en el repositorio y no se reemplaza por fechas estimadas. Cuando el grupo disponga del original, deberá incorporarlo aquí como `cronograma-catedra-2026.<ext>` y registrarlo en el inventario.
 
 **`material-teorico/`**
 
@@ -187,6 +189,8 @@ Con el objetivo de mantener una estructura consistente y facilitar la identifica
 - Las fechas deberán expresarse utilizando el estándar **ISO 8601**: `AAAA-MM-DD` (ejemplo: `2026-08-18`).
 - Los números correlativos (trabajos prácticos, diapositivas, etc.) se escriben con **dos dígitos** para permitir el ordenamiento automático: `01`, `02`, ..., `14`.
 
+> **Excepciones:** `README.md` conserva el nombre estándar. Dentro de `tp06-ecoharmony-park/` se conservan los nombres requeridos por Python, herramientas, recursos y documentación existente (por ejemplo, `__init__.py`, `test_*.py`, `requirements.txt`, `DECISIONES_DISENO.md`). No se renombran automáticamente porque pueden tener referencias internas.
+
 > **Nota:** el nombre del repositorio (`ICS_Grupo_11`) se conserva tal cual para no romper los enlaces ya compartidos. La convención kebab-case aplica al contenido interno del repositorio.
 
 ### Trabajos prácticos
@@ -204,9 +208,11 @@ Se utiliza la expresión `tp*` para hacer referencia de manera genérica al conj
 
 Dentro de cada carpeta se almacenarán tanto los archivos necesarios para realizar el trabajo como su salida o entregable final.
 
-**Salidas de trabajos prácticos**
+**Entregables de trabajos prácticos (salidas)**
 
-El archivo de salida principal deberá utilizar la convención `tp<nro>-salida.<extension>`. Ejemplos:
+Una salida es el resultado exigido por la consigna, no necesariamente un único archivo. En el TP04 es la URL del repositorio y el documento de SCM (`tp04-salida.md`); en el TP06 está el proyecto `tp06-ecoharmony-park/`; en el TP07 están `tp07-salida.pdf` y sus evidencias. La palabra `salida` no define una categoría adicional de IC que duplique los mismos archivos.
+
+Cuando el entregable principal sea un informe, deberá utilizar la convención `tp<nro>-salida.<extension>`. Ejemplos:
 
 ```
 tp04-salida.pdf
@@ -281,23 +287,26 @@ reglas-de-comunicacion.md
 
 ## Ítems de configuración
 
-Se consideran **Ítems de Configuración (IC)** aquellos elementos que, debido a su relevancia dentro del proyecto, requieren identificación, versionado y control de cambios.
+Se controlan tanto los entregables del grupo como las copias de referencia necesarias para reproducir el trabajo. Se distingue su función: un material de estudio no es un producto desarrollado. Las categorías siguientes corresponden a archivos presentes; los directorios reservados sin entregables no se presentan como trabajos terminados.
 
-| Ítem de Configuración | Regla de nombrado | Ubicación física | Tipo |
-|-----------------------|-------------------|------------------|------|
-| README | `README.md` | `/` | Documentación |
-| Material de cátedra | `<descripcion>.<ext>` | `/catedra/` | Documentación |
-| Diapositivas | `<nro>-<tema>.<ext>` | `/material-teorico/diapositivas/` | Documentación |
-| Bibliografía | `<tema>-<titulo>.<ext>` | `/material-teorico/bibliografia/` | Documentación |
-| Apuntes | `<fecha>-<tema>.<ext>` | `/material-teorico/apuntes/` | Documentación |
-| Enunciados de TP | `isw-enunciados-tp-evaluables-<año>.pdf` | `/trabajos-practicos/` | Documentación |
-| Trabajos prácticos | `tp<nro>-<descripcion>.<ext>` | `/trabajos-practicos/tp<nro>/` | Producto |
-| Salidas de TP | `tp<nro>-salida.<ext>` | `/trabajos-practicos/tp<nro>/` | Producto |
-| Trabajos de investigación | `ti<nro>-<descripcion>.<ext>` | `/trabajos-investigacion/ti<nro>/` | Producto |
-| Lineamientos de trabajos de investigación | `isw-lineamientos-trabajos-investigacion-<año>-<cuatrimestre>.pdf` | `/trabajos-investigacion/` | Documentación |
-| Parciales | `<descripcion>.<ext>` | `/parciales/` | Producto |
+| ID | Ítem / alcance | Descripción y función | Regla de nombrado | Ubicación física | Tipo | Origen / responsable de mantenimiento | Identificación de versión y estado |
+|---|---|---|---|---|---|---|---|
+| IC-01 | README | Organización y reglas de SCM | `README.md` | Raíz | Documentación de gestión | Grupo 11 | Commit Git; documento en evolución |
+| IC-02 | Plan de cátedra | Planificación institucional de la asignatura | `plan-de-catedra.pdf` | `catedra/` | Referencia externa | Cátedra; grupo incorpora el original | Blob Git; presente |
+| IC-03 | Apuntes | Notas de clase elaboradas por estudiantes | `<fecha>-<tema>.<ext>` | `material-teorico/apuntes/` | Material de estudio | Autores de los apuntes; grupo mantiene | Blob Git; presentes |
+| IC-04 | Bibliografía | Documentos consultados para el cursado | `<tema>-<titulo>.<ext>` | `material-teorico/bibliografia/` | Referencia externa | Autores originales; grupo incorpora | Blob Git; presente |
+| IC-05 | Diapositivas | Presentaciones de los temas de la asignatura | `<nro>-<tema>.<ext>` | `material-teorico/diapositivas/` | Referencia externa | Cátedra; grupo incorpora | Blob Git; presentes |
+| IC-06 | Enunciados de TP | Consignas y entregables requeridos | `isw-enunciados-tp-evaluables-<año>.pdf` | `trabajos-practicos/` | Referencia externa | Cátedra; grupo incorpora | Blob Git; presente |
+| IC-07 | Informe del TP04 | URL, diseño del repositorio y criterios SCM | `tp04-salida.md` | `trabajos-practicos/tp04/` | Entregable documental | Grupo 11 | Commit Git; presente, aprobación docente no acreditada |
+| IC-08 | Aplicación del TP06 | Código, pruebas, esquema SQL, configuración, documentación y recursos de EcoHarmony Park | `tp06-ecoharmony-park/`; nombres internos propios de las herramientas | `trabajos-practicos/tp06/` | Producto de software compuesto | Grupo 11 | Commit Git del conjunto; presente |
+| IC-09 | Informe y evidencias del TP07 | Informe, gráficos y fotografías de la maqueta | `tp07-<descripcion>.<ext>` | `trabajos-practicos/tp07/` | Entregable documental y evidencias | Grupo 11 | Blob Git por archivo; presentes |
+| IC-10 | Lineamientos de investigación | Consigna oficial de investigación | `isw-lineamientos-trabajos-investigacion-2026-2c.pdf` | `trabajos-investigacion/` | Referencia externa | Cátedra; grupo incorpora | Blob Git; presente |
+| IC-11 | Trabajo de investigación 01 | Documento sobre release de CRM SaaS multi-tenant | `ti01-<descripcion>.pdf` | `trabajos-investigacion/ti01/` | Entregable documental | Grupo 11 | Blob Git; presente |
+| IC-12 | Trabajo de investigación 02 | Póster sobre Scrum at Scale | `ti02-<descripcion>.pdf` | `trabajos-investigacion/ti02/` | Entregable documental | Grupo 11 | Blob Git; presente |
+| IC-13 | Material de preparación de parciales | Temarios y resúmenes; no son exámenes resueltos ni productos del proyecto | `<descripcion>.<ext>` | `parciales/` | Material de estudio | Grupo mantiene las copias; autoría según documento | Blob Git; presente |
+| IC-14 | Inventario de archivos | Identificación individual, ruta, tipo y revisión de los archivos | `inventario-items.md` | `catedra/` | Registro de gestión | Grupo 11 | Commit Git; actualizar al incorporar, mover o retirar archivos |
 
-Los ítems definidos en esta tabla se encuentran sujetos a las reglas de gestión de configuración establecidas por el grupo.
+El [inventario individual](catedra/inventario-items.md) identifica los archivos y sus revisiones. “Presente” no significa “aprobado”.
 
 ---
 
@@ -338,64 +347,48 @@ Los commits deberán representar, siempre que sea posible, una unidad lógica de
 
 ## Líneas base del proyecto
 
-Una **línea base** representa una versión formalmente revisada y/o aprobada de un conjunto de ítems de configuración.
+Una **línea base (LB)** es un conjunto identificado de ítems de configuración en revisiones concretas, formalmente revisado y acordado como referencia para continuar el trabajo. Su registro debe permitir reconstruir ese conjunto y controlar cualquier cambio posterior.
 
-Para este proyecto, se establecerá una línea base cuando el grupo revise y acuerde que un trabajo práctico se encuentra completo y listo para su entrega. Si el equipo docente solicita correcciones, se generará una nueva versión de esa línea base.
+### Criterio y momento de establecimiento
 
-Una vez establecida una línea base, cualquier modificación posterior deberá estar debidamente justificada, por ejemplo:
+Se establece una LB al cerrar un hito de entrega de un TP o trabajo de investigación, después de que el grupo verifique:
+1. Que los entregables exigidos por la consigna estén presentes y completos.
+2. Que cada ítem esté identificado, ubicado y registrado en el inventario.
+3. Que los enlaces y documentos sean coherentes; si incluye software, que se registren las comprobaciones y resultados pertinentes.
+4. Que exista un acuerdo de revisión que identifique responsables, fecha, alcance, revisiones y observaciones pendientes.
 
-- Corrección solicitada por el equipo docente.
-- Error detectado luego de la entrega.
-- Cambio necesario en algún ítem de configuración.
-- Nueva versión aprobada del entregable.
+La revisión interna para entregar y la aprobación docente son estados distintos. No se declara aprobación docente sin evidencia.
 
-### Convención de líneas base
+### Identificación y registro
 
-Las líneas base se identificarán mediante **tags de Git** utilizando la estructura `lb<nro>-tp<nro>-v<version>`.
+Los ítems evolucionan mediante revisiones identificadas por commits. **Una corrección revisada y acordada origina una nueva línea base, con otro identificador; no una versión de la misma LB.**
 
-Ejemplo:
+La convención para nuevas etiquetas es `lb<secuencia>-<hito>`, con secuencia global de dos dígitos y un hito descriptivo; por ejemplo, `lb02-tp04-correccion`. El ejemplo es una convención, no una LB ya establecida.
 
-```
-lb1-tp04-v1
-```
+Cada nueva LB se marca mediante un tag anotado sobre el commit revisado. La anotación o el acta enlazada debe indicar: identificador, fecha, motivo/hito, revisores, acuerdo, lista de ítems y revisiones, comprobaciones efectuadas, pendientes y LB anterior. Aunque el tag referencia todo el repositorio, su alcance formal lo determina esa lista. No se mueve ni se sobrescribe un tag ya establecido.
 
-Donde:
+### Línea base histórica verificada
 
-- `lb1` → primera línea base establecida para ese TP.
-- `tp04` → trabajo práctico al que corresponde.
-- `v1` → primera versión aprobada.
+| Tag existente | Commit de referencia | Fecha registrada | Alcance documentado | Tratamiento |
+|---|---|---|---|---|
+| [`lb1-tp04-v1`](https://github.com/pepomendez1/ICS_Grupo_11/tree/lb1-tp04-v1) | `9d411f0c3ad02441f6a176ad94bc2b52e91e000f` | 2026-08-24 | La anotación declara revisión y acuerdo del grupo para el TP04 y todos los IC disponibles en esa entrega | Se conserva como evidencia histórica. Su sufijo heredado no se utiliza para crear nuevas LB. |
 
-En caso de generarse una nueva versión:
-
-```
-lb1-tp04-v2
-```
-
-Si posteriormente se establece una nueva línea base:
-
-```
-lb2-tp04-v1
-```
-
-De esta manera se mantiene la trazabilidad de las versiones aprobadas a lo largo del proyecto.
+La corrección de esta documentación no constituye por sí sola una nueva LB: falta registrar la revisión y el acuerdo del grupo sobre el conjunto corregido.
 
 ---
 
 ## Gestión de cambios
 
-Los cambios realizados sobre ítems que formen parte de una línea base deberán ser controlados y justificados.
+Los cambios sobre ítems incluidos en una LB requieren:
+1. Registrar la solicitud, su motivo, solicitante e ítems afectados.
+2. Analizar impacto en entregables, código, pruebas y documentación.
+3. Registrar la decisión del grupo antes de modificar el conjunto controlado.
+4. Implementar el cambio y registrarlo en commits descriptivos.
+5. Revisar el resultado y guardar la evidencia de las verificaciones.
+6. Actualizar el inventario y el estado de los ítems.
+7. Cuando se cumpla el criterio de cierre, establecer **otra LB con un nuevo identificador**, enlazando la anterior y la solicitud.
 
-El proceso general será:
-
-1. Identificar la necesidad del cambio.
-2. Determinar el ítem de configuración afectado.
-3. Realizar la modificación correspondiente.
-4. Registrar el cambio mediante un commit descriptivo.
-5. Verificar que la modificación no afecte negativamente otros ítems.
-6. Generar una nueva versión cuando corresponda.
-7. Establecer una nueva línea base si la modificación es revisada y/o aprobada.
-
-Esto permite mantener la integridad, trazabilidad y reproducibilidad de los elementos almacenados en el repositorio.
+La LB anterior permanece recuperable sin alteraciones.
 
 ---
 
@@ -415,7 +408,7 @@ Fecha en la que se genera o incorpora un archivo al repositorio. Se utiliza el e
 
 **`<cuatrimestre>`**
 
-Cuatrimestre correspondiente al cursado. Se utiliza `1c` para el primer cuatrimestre y `2c` para el segundo cuatrimestre.
+La mención `2c` se conserva únicamente como parte del nombre del documento oficial de lineamientos de investigación para identificar su edición. No es un campo requerido para nombrar los entregables del grupo.
 
 **`<año>`**
 
@@ -433,9 +426,9 @@ Título descriptivo utilizado para identificar el contenido específico de un do
 
 Descripción breve y representativa del contenido de un archivo. Ejemplos: `tp04-salida.pdf`, `tp04-matriz-riesgos.xlsx`, `tp04-evidencias.pdf`.
 
-**`<version>`**
+**`<secuencia>` y `<hito>`**
 
-Número entero que identifica la versión correspondiente de una línea base. Ejemplos: `lb1-tp04-v1`, `lb1-tp04-v2`, `lb2-tp04-v1`.
+Secuencia global de dos dígitos de una nueva LB y descripción del hito que representa. Las versiones o revisiones corresponden a los ítems; cada LB tiene una identidad distinta.
 
 ---
 
