@@ -113,12 +113,16 @@ La clasificación de ítems de configuración activos está en el [README](../RE
 | F-101 | `tp01-enunciado-requerimientos-agiles-user-stories.pdf` | [trabajos-practicos/tp01/tp01-enunciado-requerimientos-agiles-user-stories.pdf](../trabajos-practicos/tp01/tp01-enunciado-requerimientos-agiles-user-stories.pdf) | Referencia externa | `28c4119670134900cf6182dd6d4857903b5baac8` | Presente; aprobación no acreditada |
 | F-102 | `tp02-enunciado-requerimientos-agiles-us-y-estimaciones.pdf` | [trabajos-practicos/tp02/tp02-enunciado-requerimientos-agiles-us-y-estimaciones.pdf](../trabajos-practicos/tp02/tp02-enunciado-requerimientos-agiles-us-y-estimaciones.pdf) | Referencia externa | `93f567925da65d30777234fe8a9ead3fe67d2bfa` | Presente; aprobación no acreditada |
 | F-103 | `tp03-enunciado-requerimientos-agiles-us-estimaciones-y-mvp.pdf` | [trabajos-practicos/tp03/tp03-enunciado-requerimientos-agiles-us-estimaciones-y-mvp.pdf](../trabajos-practicos/tp03/tp03-enunciado-requerimientos-agiles-us-estimaciones-y-mvp.pdf) | Referencia externa | `a631fe2a96a4e2c64115f90f837e72be36443e40` | Presente; aprobación no acreditada |
+| F-104 | `tp04-enunciado-scm-herramientas-de-scm.pdf` | [trabajos-practicos/tp04/tp04-enunciado-scm-herramientas-de-scm.pdf](../trabajos-practicos/tp04/tp04-enunciado-scm-herramientas-de-scm.pdf) | Referencia externa | `b64649b322124b161ad9d1920e9bc0802e866387` | Presente; aprobación no acreditada |
+| F-105 | `tp05-enunciado-scm-uso-del-repositorio.pdf` | [trabajos-practicos/tp05/tp05-enunciado-scm-uso-del-repositorio.pdf](../trabajos-practicos/tp05/tp05-enunciado-scm-uso-del-repositorio.pdf) | Referencia externa | `507e4d972b5b97b3494f6cbcfa652a49ec74c3ef` | Presente; aprobación no acreditada |
+| F-106 | `tp06-enunciado-tdd.pdf` | [trabajos-practicos/tp06/tp06-enunciado-tdd.pdf](../trabajos-practicos/tp06/tp06-enunciado-tdd.pdf) | Referencia externa | `19890d15bcc8db2eae1bbe10600f3f408d435e6d` | Presente; aprobación no acreditada |
+| F-107 | `tp07-enunciado-scrum-ejercicio-de-aplicacion.pdf` | [trabajos-practicos/tp07/tp07-enunciado-scrum-ejercicio-de-aplicacion.pdf](../trabajos-practicos/tp07/tp07-enunciado-scrum-ejercicio-de-aplicacion.pdf) | Referencia externa | `b6ff71ca739f62838b8e1d230af01af08cef81be` | Presente; aprobación no acreditada |
 
 ## Pendientes de incorporación y cotejo
 
 | Elemento | Situación verificada | Acción necesaria |
 |---|---|---|
 | Plantilla oficial de IC | No se encontró la plantilla con los encabezados exigidos | Cotejar las columnas de este registro y de la tabla de familias con el original y completar cualquier campo adicional |
-| TP sin entregables incorporados | TP01, TP02 y TP03 sólo tienen sus enunciados; TP05 y TP08 a TP14 tienen directorios reservados sin entregables | Incorporar los resultados correspondientes cuando estén disponibles; no declarar trabajos aprobados por la existencia de una carpeta |
+| TP sin entregables incorporados | TP01, TP02, TP03 y TP05 sólo tienen sus enunciados; TP08 a TP14 tienen directorios reservados sin entregables | Incorporar los resultados correspondientes cuando estén disponibles; no declarar trabajos aprobados por la existencia de una carpeta |
 
 El plan de cátedra sí está presente: [plan-de-catedra.pdf](plan-de-catedra.pdf). La línea base histórica y el criterio para establecer nuevas LB están en el [README](../README.md#líneas-base-del-proyecto).
