@@ -102,6 +102,7 @@ ICS_Grupo_11/
 │
 ├── trabajos-practicos/
 │   ├── isw-enunciados-tp-evaluables-2026.pdf
+│   ├── isw-guia-trabajos-practicos-resueltos.pdf
 │   │
 │   ├── tp01/
 │   ├── tp02/
