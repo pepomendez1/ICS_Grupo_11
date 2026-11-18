@@ -209,9 +209,11 @@ Se utiliza la expresión `tp*` para hacer referencia de manera genérica al conj
 
 Dentro de cada carpeta se almacenarán tanto los archivos necesarios para realizar el trabajo como su salida o entregable final.
 
-**Salidas de trabajos prácticos**
+**Entregables de trabajos prácticos (salidas)**
 
-El archivo de salida principal deberá utilizar la convención `tp<nro>-salida.<extension>`. Ejemplos:
+Una salida es el resultado exigido por la consigna, no necesariamente un único archivo. En el TP04 es la URL del repositorio y el documento de SCM (`tp04-salida.md`); en el TP06 está el proyecto `tp06-ecoharmony-park/`; en el TP07 están `tp07-salida.pdf` y sus evidencias. La palabra `salida` no define una categoría adicional de IC que duplique los mismos archivos.
+
+Cuando el entregable principal sea un informe, deberá utilizar la convención `tp<nro>-salida.<extension>`. Ejemplos:
 
 ```
 tp04-salida.pdf
