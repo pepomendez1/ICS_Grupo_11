@@ -119,6 +119,7 @@ La clasificación de ítems de configuración activos está en el [README](../RE
 | F-107 | `tp07-enunciado-scrum-ejercicio-de-aplicacion.pdf` | [trabajos-practicos/tp07/tp07-enunciado-scrum-ejercicio-de-aplicacion.pdf](../trabajos-practicos/tp07/tp07-enunciado-scrum-ejercicio-de-aplicacion.pdf) | Referencia externa | `b6ff71ca739f62838b8e1d230af01af08cef81be` | Presente; aprobación no acreditada |
 | F-108 | `17-componentes-de-proyecto-sw.pdf` | [material-teorico/diapositivas/17-componentes-de-proyecto-sw.pdf](../material-teorico/diapositivas/17-componentes-de-proyecto-sw.pdf) | Referencia externa | `71d1cd7899c08ca067bd335cf24e7eefc4418cb6` | Presente; aprobación no acreditada |
 | F-109 | `18-tdd.pdf` | [material-teorico/diapositivas/18-tdd.pdf](../material-teorico/diapositivas/18-tdd.pdf) | Referencia externa | `d65cc312af25684efcc953a2f5d1e5e93ebe0557` | Presente; aprobación no acreditada |
+| F-110 | `isw-guia-trabajos-practicos-resueltos.pdf` | [trabajos-practicos/isw-guia-trabajos-practicos-resueltos.pdf](../trabajos-practicos/isw-guia-trabajos-practicos-resueltos.pdf) | Referencia externa | `53a16ba0211844cf38dde68723261137a08c974e` | Presente; aprobación no acreditada |
 
 ## Pendientes de incorporación y cotejo
 
