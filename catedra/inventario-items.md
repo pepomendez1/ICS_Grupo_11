@@ -121,6 +121,7 @@ La clasificación de ítems de configuración activos está en el [README](../RE
 | F-109 | `18-tdd.pdf` | [material-teorico/diapositivas/18-tdd.pdf](../material-teorico/diapositivas/18-tdd.pdf) | Referencia externa | `d65cc312af25684efcc953a2f5d1e5e93ebe0557` | Presente; aprobación no acreditada |
 | F-110 | `isw-guia-trabajos-practicos-resueltos.pdf` | [trabajos-practicos/isw-guia-trabajos-practicos-resueltos.pdf](../trabajos-practicos/isw-guia-trabajos-practicos-resueltos.pdf) | Referencia externa | `53a16ba0211844cf38dde68723261137a08c974e` | Presente; aprobación no acreditada |
 | F-111 | `kanban-guia-oficial-de-kanban.pdf` | [material-teorico/bibliografia/kanban-guia-oficial-de-kanban.pdf](../material-teorico/bibliografia/kanban-guia-oficial-de-kanban.pdf) | Referencia externa | `6e0d088c2133978e67be42fc0e44728fa92c47fc` | Presente; aprobación no acreditada |
+| F-112 | `kanban-kanban-vs-scrum.pdf` | [material-teorico/bibliografia/kanban-kanban-vs-scrum.pdf](../material-teorico/bibliografia/kanban-kanban-vs-scrum.pdf) | Referencia externa | `88bfe2a7db166edbddf657558a7220808f7cae18` | Presente; aprobación no acreditada |
 
 ## Pendientes de incorporación y cotejo
 
