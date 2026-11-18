@@ -124,6 +124,7 @@ La clasificación de ítems de configuración activos está en el [README](../RE
 | F-112 | `kanban-kanban-vs-scrum.pdf` | [material-teorico/bibliografia/kanban-kanban-vs-scrum.pdf](../material-teorico/bibliografia/kanban-kanban-vs-scrum.pdf) | Referencia externa | `88bfe2a7db166edbddf657558a7220808f7cae18` | Presente; aprobación no acreditada |
 | F-113 | `testing-introduccion-a-las-pruebas-de-sistemas-de-informacion.pdf` | [material-teorico/bibliografia/testing-introduccion-a-las-pruebas-de-sistemas-de-informacion.pdf](../material-teorico/bibliografia/testing-introduccion-a-las-pruebas-de-sistemas-de-informacion.pdf) | Referencia externa | `169edc2726fbf20cccb2fb945d65889b678569c1` | Presente; aprobación no acreditada |
 | F-114 | `resumen-segundo-parcial-lean-y-kanban.md` | [parciales/resumen-segundo-parcial-lean-y-kanban.md](../parciales/resumen-segundo-parcial-lean-y-kanban.md) | Material de estudio | `01c2287898b8610ffe9af93367884e4f3a741518` | Presente; aprobación no acreditada |
+| F-115 | `resumen-segundo-parcial-calidad-y-auditorias.md` | [parciales/resumen-segundo-parcial-calidad-y-auditorias.md](../parciales/resumen-segundo-parcial-calidad-y-auditorias.md) | Material de estudio | `b775e84b2a937982af9b00ea0e74dccdb6304757` | Presente; aprobación no acreditada |
 
 ## Pendientes de incorporación y cotejo
 
