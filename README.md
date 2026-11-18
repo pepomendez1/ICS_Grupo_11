@@ -190,6 +190,8 @@ Con el objetivo de mantener una estructura consistente y facilitar la identifica
 - Las fechas deberán expresarse utilizando el estándar **ISO 8601**: `AAAA-MM-DD` (ejemplo: `2026-08-18`).
 - Los números correlativos (trabajos prácticos, diapositivas, etc.) se escriben con **dos dígitos** para permitir el ordenamiento automático: `01`, `02`, ..., `14`.
 
+> **Excepciones:** `README.md` conserva el nombre estándar. Dentro de `tp06-ecoharmony-park/` se conservan los nombres requeridos por Python, herramientas, recursos y documentación existente (por ejemplo, `__init__.py`, `test_*.py`, `requirements.txt`, `DECISIONES_DISENO.md`). No se renombran automáticamente porque pueden tener referencias internas.
+
 > **Nota:** el nombre del repositorio (`ICS_Grupo_11`) se conserva tal cual para no romper los enlaces ya compartidos. La convención kebab-case aplica al contenido interno del repositorio.
 
 ### Trabajos prácticos
