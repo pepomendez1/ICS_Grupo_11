@@ -344,46 +344,33 @@ Los commits deberán representar, siempre que sea posible, una unidad lógica de
 
 ## Líneas base del proyecto
 
-Una **línea base** representa una versión formalmente revisada y/o aprobada de un conjunto de ítems de configuración.
+Una **línea base (LB)** es un conjunto identificado de ítems de configuración en revisiones concretas, formalmente revisado y acordado como referencia para continuar el trabajo. Su registro debe permitir reconstruir ese conjunto y controlar cualquier cambio posterior.
 
-Para este proyecto, se establecerá una línea base cuando el grupo revise y acuerde que un trabajo práctico se encuentra completo y listo para su entrega. Si el equipo docente solicita correcciones, se generará una nueva versión de esa línea base.
+### Criterio y momento de establecimiento
 
-Una vez establecida una línea base, cualquier modificación posterior deberá estar debidamente justificada, por ejemplo:
+Se establece una LB al cerrar un hito de entrega de un TP o trabajo de investigación, después de que el grupo verifique:
+1. Que los entregables exigidos por la consigna estén presentes y completos.
+2. Que cada ítem esté identificado, ubicado y registrado en el inventario.
+3. Que los enlaces y documentos sean coherentes; si incluye software, que se registren las comprobaciones y resultados pertinentes.
+4. Que exista un acuerdo de revisión que identifique responsables, fecha, alcance, revisiones y observaciones pendientes.
 
-- Corrección solicitada por el equipo docente.
-- Error detectado luego de la entrega.
-- Cambio necesario en algún ítem de configuración.
-- Nueva versión aprobada del entregable.
+La revisión interna para entregar y la aprobación docente son estados distintos. No se declara aprobación docente sin evidencia.
 
-### Convención de líneas base
+### Identificación y registro
 
-Las líneas base se identificarán mediante **tags de Git** utilizando la estructura `lb<nro>-tp<nro>-v<version>`.
+Los ítems evolucionan mediante revisiones identificadas por commits. **Una corrección revisada y acordada origina una nueva línea base, con otro identificador; no una versión de la misma LB.**
 
-Ejemplo:
+La convención para nuevas etiquetas es `lb<secuencia>-<hito>`, con secuencia global de dos dígitos y un hito descriptivo; por ejemplo, `lb02-tp04-correccion`. El ejemplo es una convención, no una LB ya establecida.
 
-```
-lb1-tp04-v1
-```
+Cada nueva LB se marca mediante un tag anotado sobre el commit revisado. La anotación o el acta enlazada debe indicar: identificador, fecha, motivo/hito, revisores, acuerdo, lista de ítems y revisiones, comprobaciones efectuadas, pendientes y LB anterior. Aunque el tag referencia todo el repositorio, su alcance formal lo determina esa lista. No se mueve ni se sobrescribe un tag ya establecido.
 
-Donde:
+### Línea base histórica verificada
 
-- `lb1` → primera línea base establecida para ese TP.
-- `tp04` → trabajo práctico al que corresponde.
-- `v1` → primera versión aprobada.
+| Tag existente | Commit de referencia | Fecha registrada | Alcance documentado | Tratamiento |
+|---|---|---|---|---|
+| [`lb1-tp04-v1`](https://github.com/pepomendez1/ICS_Grupo_11/tree/lb1-tp04-v1) | `9d411f0c3ad02441f6a176ad94bc2b52e91e000f` | 2026-08-24 | La anotación declara revisión y acuerdo del grupo para el TP04 y todos los IC disponibles en esa entrega | Se conserva como evidencia histórica. Su sufijo heredado no se utiliza para crear nuevas LB. |
 
-En caso de generarse una nueva versión:
-
-```
-lb1-tp04-v2
-```
-
-Si posteriormente se establece una nueva línea base:
-
-```
-lb2-tp04-v1
-```
-
-De esta manera se mantiene la trazabilidad de las versiones aprobadas a lo largo del proyecto.
+La corrección de esta documentación no constituye por sí sola una nueva LB: falta registrar la revisión y el acuerdo del grupo sobre el conjunto corregido.
 
 ---
 
