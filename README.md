@@ -421,7 +421,7 @@ Fecha en la que se genera o incorpora un archivo al repositorio. Se utiliza el e
 
 **`<cuatrimestre>`**
 
-Cuatrimestre correspondiente al cursado. Se utiliza `1c` para el primer cuatrimestre y `2c` para el segundo cuatrimestre.
+La mención `2c` se conserva únicamente como parte del nombre del documento oficial de lineamientos de investigación para identificar su edición. No es un campo requerido para nombrar los entregables del grupo.
 
 **`<año>`**
 
@@ -439,9 +439,9 @@ Título descriptivo utilizado para identificar el contenido específico de un do
 
 Descripción breve y representativa del contenido de un archivo. Ejemplos: `tp04-salida.pdf`, `tp04-matriz-riesgos.xlsx`, `tp04-evidencias.pdf`.
 
-**`<version>`**
+**`<secuencia>` y `<hito>`**
 
-Número entero que identifica la versión correspondiente de una línea base. Ejemplos: `lb1-tp04-v1`, `lb1-tp04-v2`, `lb2-tp04-v1`.
+Secuencia global de dos dígitos de una nueva LB y descripción del hito que representa. Las versiones o revisiones corresponden a los ítems; cada LB tiene una identidad distinta.
 
 ---
 
