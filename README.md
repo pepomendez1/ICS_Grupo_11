@@ -340,6 +340,8 @@ remove: eliminar archivo duplicado
 
 Los commits deberán representar, siempre que sea posible, una unidad lógica de cambio.
 
+> **Excepción TP06:** los commits del código de `tp06-ecoharmony-park/` siguen la convención del ciclo TDD: `test(rojo)` para el test que falla, `feat(verde)` para el código que lo hace pasar, y `refactor`, `chore` o `style` para el resto. Se conservan así porque son la evidencia del ciclo rojo-verde exigido por el TP06.
+
 ---
 
 ## Líneas base del proyecto
