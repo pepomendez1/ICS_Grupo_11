@@ -84,65 +84,45 @@ Se aplican las [reglas y excepciones del README](../../README.md#convenciones-y-
 
 ## 5. Criterio para la creación de líneas base
 
-### 5.1. Definición adoptada
+Una **línea base (LB)** es un conjunto identificado de ítems de configuración en revisiones concretas, formalmente revisado y acordado como referencia para continuar el trabajo. Su registro debe permitir reconstruir ese conjunto y controlar cualquier cambio posterior.
 
-Una **línea base** es una configuración que ha sido formalmente revisada y acordada, que sirve como base para desarrollos posteriores y que sólo puede modificarse a través de un procedimiento formal de control de cambios.
+### Criterio y momento de establecimiento
 
-### 5.2. Momento de creación
+Se establece una LB al cerrar un hito de entrega de un TP o trabajo de investigación, después de que el grupo verifique:
+1. Que los entregables exigidos por la consigna estén presentes y completos.
+2. Que cada ítem esté identificado, ubicado y registrado en el inventario.
+3. Que los enlaces y documentos sean coherentes; si incluye software, que se registren las comprobaciones y resultados pertinentes.
+4. Que exista un acuerdo de revisión que identifique responsables, fecha, alcance, revisiones y observaciones pendientes.
 
-**Se establecerá una línea base cuando el grupo revise y acuerde que un trabajo práctico se encuentra completo y listo para su entrega. Si el equipo docente solicita correcciones, se generará una nueva versión de esa línea base.**
+La revisión interna para entregar y la aprobación docente son estados distintos. No se declara aprobación docente sin evidencia.
 
-Se eligió ese momento porque:
+### Identificación y registro
 
-- Marca un estado **cerrado y verificable** del conjunto de ítems de configuración.
-- Permite reproducir exactamente el contenido entregado, independientemente de los cambios posteriores.
-- Está precedido por una revisión formal y un acuerdo explícito del equipo, que es lo que distingue una línea base de un simple punto de guardado.
+Los ítems evolucionan mediante revisiones identificadas por commits. **Una corrección revisada y acordada origina una nueva línea base, con otro identificador; no una versión de la misma LB.**
 
-### 5.3. Mecanismo de marcado
+La convención para nuevas etiquetas es `lb<secuencia>-<hito>`, con secuencia global de dos dígitos y un hito descriptivo; por ejemplo, `lb02-tp04-correccion`. El ejemplo es una convención, no una LB ya establecida.
 
-Las líneas base se marcan mediante **tags de Git**, que asocian un nombre estable a un commit determinado. A diferencia de una rama, un tag no se desplaza cuando se agregan nuevos commits, por lo que preserva de forma permanente el estado del repositorio en ese instante.
+Cada nueva LB se marca mediante un tag anotado sobre el commit revisado. La anotación o el acta enlazada debe indicar: identificador, fecha, motivo/hito, revisores, acuerdo, lista de ítems y revisiones, comprobaciones efectuadas, pendientes y LB anterior. Aunque el tag referencia todo el repositorio, su alcance formal lo determina esa lista. No se mueve ni se sobrescribe un tag ya establecido.
 
-### 5.4. Convención de nomenclatura
+### Línea base histórica verificada
 
-```
-lb<nro>-tp<nro>-v<version>
-```
+| Tag existente | Commit de referencia | Fecha registrada | Alcance documentado | Tratamiento |
+|---|---|---|---|---|
+| [`lb1-tp04-v1`](https://github.com/pepomendez1/ICS_Grupo_11/tree/lb1-tp04-v1) | `9d411f0c3ad02441f6a176ad94bc2b52e91e000f` | 2026-08-24 | La anotación declara revisión y acuerdo del grupo para el TP04 y todos los IC disponibles en esa entrega | Se conserva como evidencia histórica. Su sufijo heredado no se utiliza para crear nuevas LB. |
 
-Ejemplo: `lb1-tp04-v1`
+La corrección de esta documentación no constituye por sí sola una nueva LB: falta registrar la revisión y el acuerdo del grupo sobre el conjunto corregido.
 
-| Componente | Significado |
-|------------|-------------|
-| `lb1` | Primera línea base establecida para ese trabajo práctico. |
-| `tp04` | Trabajo práctico al que corresponde. |
-| `v1` | Primera versión aprobada. |
+## 6. Control de cambios
 
-Evolución posible:
+Los cambios sobre ítems incluidos en una LB requieren:
+1. Registrar la solicitud, su motivo, solicitante e ítems afectados.
+2. Analizar impacto en entregables, código, pruebas y documentación.
+3. Registrar la decisión del grupo antes de modificar el conjunto controlado.
+4. Implementar el cambio y registrarlo en commits descriptivos.
+5. Revisar el resultado y guardar la evidencia de las verificaciones.
+6. Actualizar el inventario y el estado de los ítems.
+7. Cuando se cumpla el criterio de cierre, establecer **otra LB con un nuevo identificador**, enlazando la anterior y la solicitud.
 
-| Tag | Situación |
-|-----|-----------|
-| `lb1-tp04-v1` | Primera versión aprobada de la primera línea base. |
-| `lb1-tp04-v2` | Nueva versión de esa misma línea base (por ejemplo, tras una corrección solicitada). |
-| `lb2-tp04-v1` | Se establece una nueva línea base para el mismo trabajo práctico. |
-
-### 5.5. Modificaciones posteriores
-
-Una vez establecida una línea base, toda modificación sobre los ítems que la integran deberá estar justificada. Motivos admitidos:
-
-- Corrección solicitada por el equipo docente.
-- Error detectado luego de la entrega.
-- Cambio necesario en algún ítem de configuración.
-- Nueva versión aprobada del entregable.
-
-Procedimiento:
-
-1. Identificar la necesidad del cambio.
-2. Determinar el ítem de configuración afectado.
-3. Realizar la modificación correspondiente.
-4. Registrar el cambio mediante un commit descriptivo.
-5. Verificar que la modificación no afecte negativamente otros ítems.
-6. Generar una nueva versión cuando corresponda.
-7. Establecer una nueva línea base si la modificación es revisada y/o aprobada.
-
----
+La LB anterior permanece recuperable sin alteraciones.
 
 _Ingeniería y Calidad de Software · UTN FRC · Grupo 11_
