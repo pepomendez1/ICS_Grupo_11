@@ -1,6 +1,6 @@
 # Inventario de ítems de configuración
 
-Inventario contrastado con el árbol del repositorio de la rama `main` al 2026-11-17 (filas F-001 a F-142), más la actualización de las referencias al cronograma en README y TP04. Fecha de revisión del inventario: 2026-11-17.
+Inventario contrastado con el árbol del repositorio de la rama `main` al 2026-11-17 (filas F-001 a F-143), más la actualización de las referencias al cronograma en README y TP04. Fecha de revisión del inventario: 2026-11-17.
 
 Cada fila identifica un archivo real. El SHA de blob identifica su contenido; el commit proporciona el contexto del conjunto. Para este inventario, la revisión es el commit que incorpora su actualización. Los ID de archivo deben conservarse en futuras actualizaciones; los nuevos se agregan al final. Las reglas, origen y responsabilidad de cada familia se detallan en el [README](../README.md#ítems-de-configuración).
 
@@ -152,6 +152,7 @@ La clasificación de ítems de configuración activos está en el [README](../RE
 | F-140 | `tp06-salida.pdf` | [trabajos-practicos/tp06/tp06-salida.pdf](../trabajos-practicos/tp06/tp06-salida.pdf) | Entregable / evidencia | `f8dfc76962ac226994812465814dcacc001fbe06` | Presente; aprobación no acreditada |
 | F-141 | `tp06-faq-po.pdf` | [trabajos-practicos/tp06/tp06-faq-po.pdf](../trabajos-practicos/tp06/tp06-faq-po.pdf) | Referencia externa | `7cfb19d0a03dd34495a1a4ca005bd0bd3f901c1a` | Presente; aprobación no acreditada |
 | F-142 | `tp06-user-story-comprar-entradas.png` | [trabajos-practicos/tp06/tp06-user-story-comprar-entradas.png](../trabajos-practicos/tp06/tp06-user-story-comprar-entradas.png) | Referencia externa | `9ad4b0a0a9b1b77d74559a127a4df7e9055636ba` | Presente; aprobación no acreditada |
+| F-143 | `.gitignore` | [.gitignore](../.gitignore) | Configuración del repositorio | `e43b0f988953ae3a84b00331d0ccf5f7d51cb3cf` | Presente; aprobación no acreditada |
 
 ## Pendientes de incorporación y cotejo
 
