@@ -376,19 +376,16 @@ La corrección de esta documentación no constituye por sí sola una nueva LB: f
 
 ## Gestión de cambios
 
-Los cambios realizados sobre ítems que formen parte de una línea base deberán ser controlados y justificados.
+Los cambios sobre ítems incluidos en una LB requieren:
+1. Registrar la solicitud, su motivo, solicitante e ítems afectados.
+2. Analizar impacto en entregables, código, pruebas y documentación.
+3. Registrar la decisión del grupo antes de modificar el conjunto controlado.
+4. Implementar el cambio y registrarlo en commits descriptivos.
+5. Revisar el resultado y guardar la evidencia de las verificaciones.
+6. Actualizar el inventario y el estado de los ítems.
+7. Cuando se cumpla el criterio de cierre, establecer **otra LB con un nuevo identificador**, enlazando la anterior y la solicitud.
 
-El proceso general será:
-
-1. Identificar la necesidad del cambio.
-2. Determinar el ítem de configuración afectado.
-3. Realizar la modificación correspondiente.
-4. Registrar el cambio mediante un commit descriptivo.
-5. Verificar que la modificación no afecte negativamente otros ítems.
-6. Generar una nueva versión cuando corresponda.
-7. Establecer una nueva línea base si la modificación es revisada y/o aprobada.
-
-Esto permite mantener la integridad, trazabilidad y reproducibilidad de los elementos almacenados en el repositorio.
+La LB anterior permanece recuperable sin alteraciones.
 
 ---
 
