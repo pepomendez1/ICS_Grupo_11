@@ -80,47 +80,7 @@ El [inventario individual](../../catedra/inventario-items.md) registra también 
 El cronograma solicitado por la profesora está registrado en el inventario como **referencia externa (F-096)**; su incorporación no implica aprobación docente ni la creación de una nueva línea base.
 ## 4. Reglas de nombrado
 
-### 4.1. Reglas generales
-
-Aplican a todos los ítems de configuración sin excepción:
-
-- Los nombres de carpetas y archivos utilizan la convención **kebab-case**: todo en minúsculas, palabras separadas por `-` (guion medio), sin espacios, sin guiones bajos ni mayúsculas.
-- Se evitan caracteres especiales y tildes.
-- Se mantienen las extensiones originales de los documentos.
-- Las fechas se expresan según el estándar **ISO 8601**: `AAAA-MM-DD`.
-- Los números correlativos se escriben con **dos dígitos** (`01`, `02`, …, `14`) para permitir el ordenamiento automático.
-
-> El nombre del repositorio (`ICS_Grupo_11`) se conserva tal cual para no romper los enlaces ya compartidos. La convención kebab-case aplica al contenido interno.
-
-### 4.2. Reglas por tipo de ítem
-
-| Ítem | Convención | Ejemplo |
-|------|------------|---------|
-| Apuntes | `<fecha>-<tema>.<ext>` | `2026-08-14-scm.pdf` |
-| Diapositivas | `<nro>-<tema>.<ext>` | `02-scm.pdf` |
-| Bibliografía | `<tema>-<titulo>.<ext>` | `scm-little-book-of-configuration-management.pdf` |
-| Material de cátedra | `<descripcion>.<ext>` | `plan-de-catedra.pdf` |
-| Trabajos prácticos | `tp<nro>-<descripcion>.<ext>` | `tp04-matriz-riesgos.xlsx` |
-| Salidas de TP | `tp<nro>-salida.<ext>` | `tp04-salida.md` |
-| Trabajos de investigación | `ti<nro>-<descripcion>.<ext>` | `ti01-metricas-de-calidad.pdf` |
-| Parciales | `<descripcion>.<ext>` | `temas-primer-parcial.md` |
-
-**Criterio de selección del prefijo:** cada convención antepone el dato por el cual conviene ordenar esa carpeta. Los apuntes llevan **fecha** porque interesa el orden cronológico de las clases; las diapositivas llevan **número** porque interesa el orden de dictado; la bibliografía lleva **tema** porque interesa agrupar por materia.
-
-### 4.3. Glosario de componentes
-
-| Componente | Definición |
-|------------|------------|
-| `<nro>` | Número correlativo de dos dígitos. Ej.: `01`, `02`, `14`. |
-| `<fecha>` | Fecha en formato ISO 8601 `AAAA-MM-DD`. Ej.: `2026-08-14`. |
-| `<tema>` | Palabra o conjunto de palabras en kebab-case que describen el contenido principal. |
-| `<titulo>` | Título descriptivo que identifica el contenido específico de un documento. |
-| `<descripcion>` | Descripción breve y representativa del contenido del archivo. |
-| `<version>` | Número entero que identifica la versión de una línea base. |
-| `<año>` | Año de cursado, cuatro dígitos. Ej.: `2026`. |
-| `<cuatrimestre>` | `1c` para el primer cuatrimestre, `2c` para el segundo. |
-
----
+Se aplican las [reglas y excepciones del README](../../README.md#convenciones-y-reglas-de-nombrado). Los nombres de documentos externos conservan la identificación de su edición; `2c` sólo identifica el archivo oficial de lineamientos y no agrega un campo a todos los entregables. Las revisiones se recuperan por Git, no mediante un sufijo de versión de LB.
 
 ## 5. Criterio para la creación de líneas base
 
