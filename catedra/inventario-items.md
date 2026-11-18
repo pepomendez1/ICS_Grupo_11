@@ -10,7 +10,7 @@ La clasificación de ítems de configuración activos está en el [README](../RE
 
 | ID de archivo | Nombre | Ubicación / acceso | Tipo / función | Revisión del contenido | Estado |
 |---|---|---|---|---|---|
-| F-001 | `README.md` | [README.md](../README.md) | Documentación de gestión | `66c04d5e4840901ea5f56a5ade11c032579e61bc` | Presente; aprobación no acreditada |
+| F-001 | `README.md` | [README.md](../README.md) | Documentación de gestión | `6b212b0d659471a23a66e460b8a45224bdf0a040` | Presente; aprobación no acreditada |
 | F-002 | `plan-de-catedra.pdf` | [catedra/plan-de-catedra.pdf](../catedra/plan-de-catedra.pdf) | Referencia externa | `ba7db2ce580e4ce8dbf224dd969eef1c1c689277` | Presente; aprobación no acreditada |
 | F-003 | `2026-08-14-scm.pdf` | [material-teorico/apuntes/2026-08-14-scm.pdf](../material-teorico/apuntes/2026-08-14-scm.pdf) | Material de estudio | `0332d8e3d46a1622ae8f0e4798baad67e77680ca` | Presente; aprobación no acreditada |
 | F-004 | `2026-08-21-agilismo-y-user-stories.pdf` | [material-teorico/apuntes/2026-08-21-agilismo-y-user-stories.pdf](../material-teorico/apuntes/2026-08-21-agilismo-y-user-stories.pdf) | Material de estudio | `6749b19d98ad6bff37ac2b36b5ee5f9c665c8568` | Presente; aprobación no acreditada |
