@@ -117,6 +117,7 @@ La clasificación de ítems de configuración activos está en el [README](../RE
 | F-105 | `tp05-enunciado-scm-uso-del-repositorio.pdf` | [trabajos-practicos/tp05/tp05-enunciado-scm-uso-del-repositorio.pdf](../trabajos-practicos/tp05/tp05-enunciado-scm-uso-del-repositorio.pdf) | Referencia externa | `507e4d972b5b97b3494f6cbcfa652a49ec74c3ef` | Presente; aprobación no acreditada |
 | F-106 | `tp06-enunciado-tdd.pdf` | [trabajos-practicos/tp06/tp06-enunciado-tdd.pdf](../trabajos-practicos/tp06/tp06-enunciado-tdd.pdf) | Referencia externa | `19890d15bcc8db2eae1bbe10600f3f408d435e6d` | Presente; aprobación no acreditada |
 | F-107 | `tp07-enunciado-scrum-ejercicio-de-aplicacion.pdf` | [trabajos-practicos/tp07/tp07-enunciado-scrum-ejercicio-de-aplicacion.pdf](../trabajos-practicos/tp07/tp07-enunciado-scrum-ejercicio-de-aplicacion.pdf) | Referencia externa | `b6ff71ca739f62838b8e1d230af01af08cef81be` | Presente; aprobación no acreditada |
+| F-108 | `17-componentes-de-proyecto-sw.pdf` | [material-teorico/diapositivas/17-componentes-de-proyecto-sw.pdf](../material-teorico/diapositivas/17-componentes-de-proyecto-sw.pdf) | Referencia externa | `71d1cd7899c08ca067bd335cf24e7eefc4418cb6` | Presente; aprobación no acreditada |
 
 ## Pendientes de incorporación y cotejo
 
