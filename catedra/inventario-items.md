@@ -1,6 +1,6 @@
 # Inventario de ítems de configuración
 
-Inventario contrastado con el árbol del repositorio del commit `ead43789baf6040966322f70a45d15d70bd176df`, más la actualización de las referencias al cronograma en README y TP04. Fecha de revisión del inventario: 2026-11-17.
+Inventario contrastado con el árbol del repositorio de la rama `main` al 2026-11-17 (filas F-001 a F-127), más la actualización de las referencias al cronograma en README y TP04. Fecha de revisión del inventario: 2026-11-17.
 
 Cada fila identifica un archivo real. El SHA de blob identifica su contenido; el commit proporciona el contexto del conjunto. Para este inventario, la revisión es el commit que incorpora su actualización. Los ID de archivo deben conservarse en futuras actualizaciones; los nuevos se agregan al final. Las reglas, origen y responsabilidad de cada familia se detallan en el [README](../README.md#ítems-de-configuración).
 
