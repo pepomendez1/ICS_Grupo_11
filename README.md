@@ -190,8 +190,6 @@ Con el objetivo de mantener una estructura consistente y facilitar la identifica
 - Las fechas deberán expresarse utilizando el estándar **ISO 8601**: `AAAA-MM-DD` (ejemplo: `2026-08-18`).
 - Los números correlativos (trabajos prácticos, diapositivas, etc.) se escriben con **dos dígitos** para permitir el ordenamiento automático: `01`, `02`, ..., `14`.
 
-> **Excepciones:** `README.md` conserva el nombre estándar. Dentro de `tp06-ecoharmony-park/` se conservan los nombres requeridos por Python, herramientas, recursos y documentación existente (por ejemplo, `__init__.py`, `test_*.py`, `requirements.txt`, `DECISIONES_DISENO.md`). No se renombran automáticamente porque pueden tener referencias internas.
-
 > **Nota:** el nombre del repositorio (`ICS_Grupo_11`) se conserva tal cual para no romper los enlaces ya compartidos. La convención kebab-case aplica al contenido interno del repositorio.
 
 ### Trabajos prácticos
@@ -209,11 +207,9 @@ Se utiliza la expresión `tp*` para hacer referencia de manera genérica al conj
 
 Dentro de cada carpeta se almacenarán tanto los archivos necesarios para realizar el trabajo como su salida o entregable final.
 
-**Entregables de trabajos prácticos (salidas)**
+**Salidas de trabajos prácticos**
 
-Una salida es el resultado exigido por la consigna, no necesariamente un único archivo. En el TP04 es la URL del repositorio y el documento de SCM (`tp04-salida.md`); en el TP06 está el proyecto `tp06-ecoharmony-park/`; en el TP07 están `tp07-salida.pdf` y sus evidencias. La palabra `salida` no define una categoría adicional de IC que duplique los mismos archivos.
-
-Cuando el entregable principal sea un informe, deberá utilizar la convención `tp<nro>-salida.<extension>`. Ejemplos:
+El archivo de salida principal deberá utilizar la convención `tp<nro>-salida.<extension>`. Ejemplos:
 
 ```
 tp04-salida.pdf
@@ -344,48 +340,64 @@ Los commits deberán representar, siempre que sea posible, una unidad lógica de
 
 ## Líneas base del proyecto
 
-Una **línea base (LB)** es un conjunto identificado de ítems de configuración en revisiones concretas, formalmente revisado y acordado como referencia para continuar el trabajo. Su registro debe permitir reconstruir ese conjunto y controlar cualquier cambio posterior.
+Una **línea base** representa una versión formalmente revisada y/o aprobada de un conjunto de ítems de configuración.
 
-### Criterio y momento de establecimiento
+Para este proyecto, se establecerá una línea base cuando el grupo revise y acuerde que un trabajo práctico se encuentra completo y listo para su entrega. Si el equipo docente solicita correcciones, se generará una nueva versión de esa línea base.
 
-Se establece una LB al cerrar un hito de entrega de un TP o trabajo de investigación, después de que el grupo verifique:
-1. Que los entregables exigidos por la consigna estén presentes y completos.
-2. Que cada ítem esté identificado, ubicado y registrado en el inventario.
-3. Que los enlaces y documentos sean coherentes; si incluye software, que se registren las comprobaciones y resultados pertinentes.
-4. Que exista un acuerdo de revisión que identifique responsables, fecha, alcance, revisiones y observaciones pendientes.
+Una vez establecida una línea base, cualquier modificación posterior deberá estar debidamente justificada, por ejemplo:
 
-La revisión interna para entregar y la aprobación docente son estados distintos. No se declara aprobación docente sin evidencia.
+- Corrección solicitada por el equipo docente.
+- Error detectado luego de la entrega.
+- Cambio necesario en algún ítem de configuración.
+- Nueva versión aprobada del entregable.
 
-### Identificación y registro
+### Convención de líneas base
 
-Los ítems evolucionan mediante revisiones identificadas por commits. **Una corrección revisada y acordada origina una nueva línea base, con otro identificador; no una versión de la misma LB.**
+Las líneas base se identificarán mediante **tags de Git** utilizando la estructura `lb<nro>-tp<nro>-v<version>`.
 
-La convención para nuevas etiquetas es `lb<secuencia>-<hito>`, con secuencia global de dos dígitos y un hito descriptivo; por ejemplo, `lb02-tp04-correccion`. El ejemplo es una convención, no una LB ya establecida.
+Ejemplo:
 
-Cada nueva LB se marca mediante un tag anotado sobre el commit revisado. La anotación o el acta enlazada debe indicar: identificador, fecha, motivo/hito, revisores, acuerdo, lista de ítems y revisiones, comprobaciones efectuadas, pendientes y LB anterior. Aunque el tag referencia todo el repositorio, su alcance formal lo determina esa lista. No se mueve ni se sobrescribe un tag ya establecido.
+```
+lb1-tp04-v1
+```
 
-### Línea base histórica verificada
+Donde:
 
-| Tag existente | Commit de referencia | Fecha registrada | Alcance documentado | Tratamiento |
-|---|---|---|---|---|
-| [`lb1-tp04-v1`](https://github.com/pepomendez1/ICS_Grupo_11/tree/lb1-tp04-v1) | `9d411f0c3ad02441f6a176ad94bc2b52e91e000f` | 2026-08-24 | La anotación declara revisión y acuerdo del grupo para el TP04 y todos los IC disponibles en esa entrega | Se conserva como evidencia histórica. Su sufijo heredado no se utiliza para crear nuevas LB. |
+- `lb1` → primera línea base establecida para ese TP.
+- `tp04` → trabajo práctico al que corresponde.
+- `v1` → primera versión aprobada.
 
-La corrección de esta documentación no constituye por sí sola una nueva LB: falta registrar la revisión y el acuerdo del grupo sobre el conjunto corregido.
+En caso de generarse una nueva versión:
+
+```
+lb1-tp04-v2
+```
+
+Si posteriormente se establece una nueva línea base:
+
+```
+lb2-tp04-v1
+```
+
+De esta manera se mantiene la trazabilidad de las versiones aprobadas a lo largo del proyecto.
 
 ---
 
 ## Gestión de cambios
 
-Los cambios sobre ítems incluidos en una LB requieren:
-1. Registrar la solicitud, su motivo, solicitante e ítems afectados.
-2. Analizar impacto en entregables, código, pruebas y documentación.
-3. Registrar la decisión del grupo antes de modificar el conjunto controlado.
-4. Implementar el cambio y registrarlo en commits descriptivos.
-5. Revisar el resultado y guardar la evidencia de las verificaciones.
-6. Actualizar el inventario y el estado de los ítems.
-7. Cuando se cumpla el criterio de cierre, establecer **otra LB con un nuevo identificador**, enlazando la anterior y la solicitud.
+Los cambios realizados sobre ítems que formen parte de una línea base deberán ser controlados y justificados.
 
-La LB anterior permanece recuperable sin alteraciones.
+El proceso general será:
+
+1. Identificar la necesidad del cambio.
+2. Determinar el ítem de configuración afectado.
+3. Realizar la modificación correspondiente.
+4. Registrar el cambio mediante un commit descriptivo.
+5. Verificar que la modificación no afecte negativamente otros ítems.
+6. Generar una nueva versión cuando corresponda.
+7. Establecer una nueva línea base si la modificación es revisada y/o aprobada.
+
+Esto permite mantener la integridad, trazabilidad y reproducibilidad de los elementos almacenados en el repositorio.
 
 ---
 
@@ -405,7 +417,7 @@ Fecha en la que se genera o incorpora un archivo al repositorio. Se utiliza el e
 
 **`<cuatrimestre>`**
 
-La mención `2c` se conserva únicamente como parte del nombre del documento oficial de lineamientos de investigación para identificar su edición. No es un campo requerido para nombrar los entregables del grupo.
+Cuatrimestre correspondiente al cursado. Se utiliza `1c` para el primer cuatrimestre y `2c` para el segundo cuatrimestre.
 
 **`<año>`**
 
@@ -423,9 +435,9 @@ Título descriptivo utilizado para identificar el contenido específico de un do
 
 Descripción breve y representativa del contenido de un archivo. Ejemplos: `tp04-salida.pdf`, `tp04-matriz-riesgos.xlsx`, `tp04-evidencias.pdf`.
 
-**`<secuencia>` y `<hito>`**
+**`<version>`**
 
-Secuencia global de dos dígitos de una nueva LB y descripción del hito que representa. Las versiones o revisiones corresponden a los ítems; cada LB tiene una identidad distinta.
+Número entero que identifica la versión correspondiente de una línea base. Ejemplos: `lb1-tp04-v1`, `lb1-tp04-v2`, `lb2-tp04-v1`.
 
 ---
 
