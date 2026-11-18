@@ -1,6 +1,6 @@
 # Inventario de ítems de configuración
 
-Inventario contrastado con el árbol del repositorio de la rama `main` al 2026-11-17 (filas F-001 a F-143), más la actualización de las referencias al cronograma en README y TP04. Fecha de revisión del inventario: 2026-11-17.
+Inventario contrastado con el árbol del repositorio de la rama `main` al 2026-11-17 (filas F-001 a F-149), más la actualización de las referencias al cronograma en README y TP04. Fecha de revisión del inventario: 2026-11-17.
 
 Cada fila identifica un archivo real. El SHA de blob identifica su contenido; el commit proporciona el contexto del conjunto. Para este inventario, la revisión es el commit que incorpora su actualización. Los ID de archivo deben conservarse en futuras actualizaciones; los nuevos se agregan al final. Las reglas, origen y responsabilidad de cada familia se detallan en el [README](../README.md#ítems-de-configuración).
 
@@ -153,13 +153,19 @@ La clasificación de ítems de configuración activos está en el [README](../RE
 | F-141 | `tp06-faq-po.pdf` | [trabajos-practicos/tp06/tp06-faq-po.pdf](../trabajos-practicos/tp06/tp06-faq-po.pdf) | Referencia externa | `7cfb19d0a03dd34495a1a4ca005bd0bd3f901c1a` | Presente; aprobación no acreditada |
 | F-142 | `tp06-user-story-comprar-entradas.png` | [trabajos-practicos/tp06/tp06-user-story-comprar-entradas.png](../trabajos-practicos/tp06/tp06-user-story-comprar-entradas.png) | Referencia externa | `9ad4b0a0a9b1b77d74559a127a4df7e9055636ba` | Presente; aprobación no acreditada |
 | F-143 | `.gitignore` | [.gitignore](../.gitignore) | Configuración del repositorio | `e43b0f988953ae3a84b00331d0ccf5f7d51cb3cf` | Presente; aprobación no acreditada |
+| F-144 | `tp08-enunciado-testing-metodos-de-caja-negra.pdf` | [trabajos-practicos/tp08/tp08-enunciado-testing-metodos-de-caja-negra.pdf](../trabajos-practicos/tp08/tp08-enunciado-testing-metodos-de-caja-negra.pdf) | Referencia externa | `4cc911096383f7ecf28057a6c40257a14c87adc1` | Presente; aprobación no acreditada |
+| F-145 | `tp09-enunciado-testing-metodos-de-caja-negra.pdf` | [trabajos-practicos/tp09/tp09-enunciado-testing-metodos-de-caja-negra.pdf](../trabajos-practicos/tp09/tp09-enunciado-testing-metodos-de-caja-negra.pdf) | Referencia externa | `d435f9a80fab6e91bb528e67febd042eda74b4ce` | Presente; aprobación no acreditada |
+| F-146 | `tp10-enunciado-kanban-ejercicio-de-aplicacion.pdf` | [trabajos-practicos/tp10/tp10-enunciado-kanban-ejercicio-de-aplicacion.pdf](../trabajos-practicos/tp10/tp10-enunciado-kanban-ejercicio-de-aplicacion.pdf) | Referencia externa | `2afd4a13196c80f5f03c34976c7b8e0f05cc6346` | Presente; aprobación no acreditada |
+| F-147 | `tp11-enunciado-scrum-dinamica-de-retrospectiva.pdf` | [trabajos-practicos/tp11/tp11-enunciado-scrum-dinamica-de-retrospectiva.pdf](../trabajos-practicos/tp11/tp11-enunciado-scrum-dinamica-de-retrospectiva.pdf) | Referencia externa | `88159782c007e1d31b315e4ffc54e14523d81812` | Presente; aprobación no acreditada |
+| F-148 | `tp12-enunciado-design-thinking-publicidad-de-instagram.pdf` | [trabajos-practicos/tp12/tp12-enunciado-design-thinking-publicidad-de-instagram.pdf](../trabajos-practicos/tp12/tp12-enunciado-design-thinking-publicidad-de-instagram.pdf) | Referencia externa | `9eb8129edf5462ae43c48155874977b4e53a0c7d` | Presente; aprobación no acreditada |
+| F-149 | `tp13-enunciado-scrum-planificacion-de-release-y-de-sprint.pdf` | [trabajos-practicos/tp13/tp13-enunciado-scrum-planificacion-de-release-y-de-sprint.pdf](../trabajos-practicos/tp13/tp13-enunciado-scrum-planificacion-de-release-y-de-sprint.pdf) | Referencia externa | `8368dca1ae38676bf618e4b17269d54eac38560c` | Presente; aprobación no acreditada |
 
 ## Pendientes de incorporación y cotejo
 
 | Elemento | Situación verificada | Acción necesaria |
 |---|---|---|
 | Plantilla oficial de IC | No se encontró la plantilla con los encabezados exigidos | Cotejar las columnas de este registro y de la tabla de familias con el original y completar cualquier campo adicional |
-| TP sin entregables incorporados | TP01, TP02, TP03 y TP05 sólo tienen sus enunciados; TP08 a TP14 tienen directorios reservados sin entregables | Incorporar los resultados correspondientes cuando estén disponibles; no declarar trabajos aprobados por la existencia de una carpeta |
+| TP sin entregables incorporados | TP01, TP02, TP03 y TP05 sólo tienen sus enunciados; del TP08 al TP13 tienen solo el enunciado y el TP14 sigue reservado | Incorporar los resultados correspondientes cuando estén disponibles; no declarar trabajos aprobados por la existencia de una carpeta |
 | Segundo parcial (2026-10-31) | No hay resolución incorporada; las fotos subidas inicialmente a esa carpeta correspondían al primer parcial y se reubicaron (F-131 a F-139) | Incorporar la resolución del segundo parcial cuando esté disponible |
 
 El plan de cátedra sí está presente: [plan-de-catedra.pdf](plan-de-catedra.pdf). La línea base histórica y el criterio para establecer nuevas LB están en el [README](../README.md#líneas-base-del-proyecto).
